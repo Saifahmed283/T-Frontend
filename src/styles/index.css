@@ -57,6 +57,7 @@
 @keyframes spin360 { to { transform: rotate(360deg); } }
 @keyframes fadeup { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 @keyframes grow { from { width: 0; } to { width: 100%; } }
+@keyframes shrink { from { width: 100%; } to { width: 0; } }
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 
 .contour-bg { animation: drift 40s linear infinite alternate; }

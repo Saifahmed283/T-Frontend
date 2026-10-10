@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import Intro from './Intro'
 import { useHead } from '@/hooks/useHead'
-import { WhatsNew, CauseExhibition } from '@/pages/site/additions'
+import { WhatsNew, CauseExhibition, PrivilegeToggle } from '@/pages/site/additions'
 import { Evidence, Knowledge, Learning, Join, Conversation } from '@/pages/site/home'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -41,6 +41,7 @@ export default function Site(props: Props) {
             <Learning />
             <Join />
             <Conversation />
+            <PrivilegeToggle />
           </>
         )}
       </main>
