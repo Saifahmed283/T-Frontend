@@ -1,12 +1,16 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useHead } from '@/hooks/useHead'
+import { useDashboard } from '@/hooks/useDashboard'
 import { useMetrics } from '@/hooks/useMetrics'
 import { CountUp, Logo, Emblem, Reveal } from '@/components/motion/fx'
 import { Badge, EmptyState, LiveStatus, SegmentedControl } from '@/components/ui'
 import { method } from '@/content/data'
+import { ApiError, type ApiStage, type ApiStatus, type Assignment } from '@/lib/api'
 
 type Status = 'On track' | 'At risk' | 'Blocked'
-const assignments: { id: string; name: string; client: string; sector: string; gate: number; status: Status; lead: string; value: number }[] = [
+type Row = { id: string; name: string; client: string; sector: string; gate: number; status: Status; lead: string; value: number }
+
+const demoRows: Row[] = [
   { id: 'TM-25-031', name: 'Governorate investment map — phase II', client: 'Assiut Governorate', sector: 'Public sector', gate: 5, status: 'On track', lead: 'M. Baraka', value: 182 },
   { id: 'TM-25-034', name: 'TVET curricula re-tooling', client: 'GIZ programme', sector: 'Development partners', gate: 6, status: 'On track', lead: 'S. Fahmy', value: 240 },
   { id: 'TM-26-002', name: 'Blended-finance cooperative structure', client: 'Delta Impact Fund', sector: 'NGOs', gate: 3, status: 'At risk', lead: 'N. Adel', value: 96 },
@@ -15,8 +19,29 @@ const assignments: { id: string; name: string; client: string; sector: string; g
   { id: 'TM-26-011', name: 'Teaming bid — regional LED framework', client: 'Landell Mills (prime)', sector: 'Consultancies', gate: 4, status: 'At risk', lead: 'S. Fahmy', value: 145 },
   { id: 'TM-26-014', name: 'Train-the-trainer certification', client: 'AAST Academy', sector: 'Learning', gate: 7, status: 'On track', lead: 'N. Adel', value: 64 },
 ]
+
+const demoActivity: [string, string, string][] = [
+  ['2m', 'Procurement pack downloaded', 'Ministry of Planning · governments hub'],
+  ['1h', 'G5 gate passed', 'TM-25-031 · Assiut Governorate'],
+  ['3h', 'New expert registration', 'Public finance · Amman'],
+  ['Yesterday', 'Policy brief published (AR)', 'Investment climate reform'],
+  ['Yesterday', 'Risk flagged', 'TM-26-002 · term-sheet delay'],
+]
+
 const statusTone: Record<Status, 'ok' | 'warn' | 'risk'> = { 'On track': 'ok', 'At risk': 'warn', Blocked: 'risk' }
 const stageColors = ['#0c1d30', '#31455b', '#2e6f9e', '#7fa650', '#c97b2d', '#6b4e94', '#a98a4b', '#5e6772']
+const statusLabel: Record<ApiStatus, Status> = { ON_TRACK: 'On track', AT_RISK: 'At risk', BLOCKED: 'Blocked' }
+const gateOf = (stage: ApiStage) => Number(stage.slice(1))
+const toRow = (a: Assignment): Row => ({ id: a.id, name: a.name, client: a.client, sector: a.sector, gate: gateOf(a.stage), status: statusLabel[a.status], lead: a.lead?.name ?? '—', value: a.value })
+
+function timeAgo(iso: string): string {
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'just now'
+  if (s < 3600) return `${Math.floor(s / 60)}m`
+  if (s < 86400) return `${Math.floor(s / 3600)}h`
+  if (s < 172800) return 'Yesterday'
+  return `${Math.floor(s / 86400)}d`
+}
 
 const navItems = [
   { k: 'Overview', i: 'M3 12h4l3-8 4 16 3-8h4' },
@@ -75,19 +100,19 @@ function Segments() {
   )
 }
 
-function PortfolioPulse() {
-  const total = assignments.length
+function PortfolioPulse({ rows }: { rows: Row[] }) {
+  const total = rows.length || 1
   const barColor: Record<Status, string> = { 'On track': '#2f6b3a', 'At risk': '#9a6700', Blocked: '#8f1f1f' }
-  const byStatus = (['On track', 'At risk', 'Blocked'] as const).map((s) => ({ s, n: assignments.filter((a) => a.status === s).length }))
-  const stages = Array.from({ length: method.length }, (_, g) => ({ g, n: assignments.filter((a) => a.gate === g).length }))
+  const byStatus = (['On track', 'At risk', 'Blocked'] as const).map((s) => ({ s, n: rows.filter((r) => r.status === s).length }))
+  const stages = method.map((_, g) => ({ g, n: rows.filter((r) => r.gate === g).length }))
   return (
     <section className="border border-line bg-ivory p-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-xl font-medium">Portfolio pulse</h2>
-          <p className="text-xs text-slate">Status and stage distribution across all tenant engagements</p>
+          <p className="text-xs text-slate">Status and stage distribution across the current scope</p>
         </div>
-        <span className="eyebrow text-slate">7 engagements · all tenants</span>
+        <span className="eyebrow text-slate">{rows.length} engagements</span>
       </div>
       <div className="mt-6 grid gap-8 md:grid-cols-2">
         <div>
@@ -123,25 +148,88 @@ function PortfolioPulse() {
   )
 }
 
+function SignIn({ onLogin, hint }: { onLogin: (email: string, password: string) => Promise<void>; hint: string }) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setErr('')
+    try {
+      await onLogin(email, password)
+    } catch (ex) {
+      setErr(ex instanceof ApiError ? ex.message : 'Sign-in failed')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <section className="border border-line bg-ivory p-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-medium">Sign in to the portal</h2>
+          <p className="text-xs text-slate">{hint}</p>
+        </div>
+      </div>
+      <form onSubmit={submit} className="mt-5 flex flex-wrap items-end gap-3">
+        <label className="flex flex-col gap-1 text-xs text-slate">
+          Email
+          <input type="email" autoComplete="username" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="portal@terramorph.local"
+            className="w-56 border-b-2 border-navy/20 bg-transparent px-1 py-2 text-sm text-navy focus:border-gold-strong focus:outline-none" />
+        </label>
+        <label className="flex flex-col gap-1 text-xs text-slate">
+          Password
+          <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required
+            className="w-56 border-b-2 border-navy/20 bg-transparent px-1 py-2 text-sm text-navy focus:border-gold-strong focus:outline-none" />
+        </label>
+        <button type="submit" disabled={busy} className="bg-navy px-5 py-2.5 text-sm text-ivory transition hover:bg-navy-2 disabled:opacity-50">
+          {busy ? 'Signing in…' : 'Sign in'}
+        </button>
+        {err && <p role="alert" className="text-sm text-error">{err}</p>}
+      </form>
+    </section>
+  )
+}
+
 export default function Dashboard() {
   useHead('Client portal', 'TerraMorph engagement portal: assignments, G0–G7 stage progress, expert pipeline and activity.')
+  const { data, source, loading, error, needsAuth, reload, login, logout } = useDashboard()
   const [view, setView] = useState('Overview')
   const [collapsed, setCollapsed] = useState(false)
   const [filter, setFilter] = useState<'All' | Status>('All')
   const [q, setQ] = useState('')
-  const [selected, setSelected] = useState(assignments[0].id)
-  const [workspace, setWorkspace] = useState('All tenants')
-  const [ready, setReady] = useState(false)
+  const [selected, setSelected] = useState('')
+  const [scope, setScope] = useState('All clients')
   const [announce, setAnnounce] = useState('')
   const m = useMetrics()
   const t0 = useRef(0)
   const pending = useRef(false)
   const kpisRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const t = setTimeout(() => setReady(true), 450)
-    return () => clearTimeout(t)
-  }, [])
+  const ready = !loading
+  const baseRows = useMemo(() => (data ? data.assignments.map(toRow) : demoRows), [data])
+  const clients = useMemo(() => ['All clients', ...new Set(baseRows.map((r) => r.client))], [baseRows])
+  const rows = useMemo(() => baseRows.filter((a) =>
+    (filter === 'All' || a.status === filter) &&
+    (scope === 'All clients' || a.client === scope) &&
+    (a.name + a.client + a.id).toLowerCase().includes(q.toLowerCase())), [baseRows, filter, q, scope])
+  const sel = useMemo(() => rows.find((a) => a.id === selected) ?? rows[0] ?? baseRows[0], [rows, selected, baseRows])
+  const activity: [string, string, string][] = data
+    ? data.activity.items.map((i) => [timeAgo(i.createdAt), i.message, i.assignment?.name ?? i.user?.name ?? ''])
+    : demoActivity
+  const kpis: { l: string; v: number; s?: string; d: number[]; delta: string; tone: string }[] = data ? [
+    { l: 'Active assignments', v: data.summary.activeAssignments, d: [3, 4, 4, 5, 6, 6, 7], delta: `${data.summary.statuses.AT_RISK ?? 0} at risk · ${data.summary.statuses.BLOCKED ?? 0} blocked`, tone: 'text-warn-strong' },
+    { l: 'Contract value (USD k)', v: data.summary.contractValue, d: [620, 700, 760, 820, 910, 990, 1075], delta: 'sum across active engagements', tone: 'text-slate' },
+    { l: 'Experts on roster', v: data.summary.expertsOnRoster, d: [140, 152, 160, 171, 188, 201, 214], delta: `${data.summary.notesReceived} intake notes received`, tone: 'text-slate' },
+    { l: 'Outcomes verified', v: data.summary.outcomesVerified, s: '%', d: [80, 84, 83, 87, 89, 90, 92], delta: 'G6/G7 gate pass rate', tone: 'text-ok-strong' },
+  ] : [
+    { l: 'Active assignments', v: 7, d: [3, 4, 4, 5, 6, 6, 7], delta: '▲ +2 this quarter', tone: 'text-ok-strong' },
+    { l: 'Contract value (USD k)', v: 1075, d: [620, 700, 760, 820, 910, 990, 1075], delta: '▲ +18.4% QoQ', tone: 'text-ok-strong' },
+    { l: 'Experts on roster', v: 214, d: [140, 152, 160, 171, 188, 201, 214], delta: '31 pending review', tone: 'text-warn-strong' },
+    { l: 'Outcomes verified', v: 92, s: '%', d: [80, 84, 83, 87, 89, 90, 92], delta: 'G6 gate pass rate', tone: 'text-slate' },
+  ]
 
   useEffect(() => {
     const el = kpisRef.current
@@ -151,7 +239,7 @@ export default function Dashboard() {
         pending.current = false
         const t3t = performance.now() - t0.current
         m.push('t3t', t3t)
-        if (import.meta.env.DEV) console.debug(`[tm] time-to-task after tenant switch: ${Math.round(t3t)}ms`)
+        if (import.meta.env.DEV) console.debug(`[tm] time-to-task after scope switch: ${Math.round(t3t)}ms`)
       }
     }, { threshold: 0.5 })
     io.observe(el)
@@ -160,18 +248,6 @@ export default function Dashboard() {
   }, [])
 
   const notify = (msg: string) => { setAnnounce(msg); setTimeout(() => setAnnounce(''), 3000) }
-  const workspaces = ['All tenants', ...new Set(assignments.map((a) => a.client))]
-  const rows = useMemo(() => assignments.filter((a) =>
-    (filter === 'All' || a.status === filter) &&
-    (workspace === 'All tenants' || a.client === workspace) &&
-    (a.name + a.client + a.id).toLowerCase().includes(q.toLowerCase())), [filter, q, workspace])
-  const sel = assignments.find((a) => a.id === selected) ?? assignments[0]
-  const kpis = [
-    { l: 'Active assignments', v: 7, d: [3, 4, 4, 5, 6, 6, 7], delta: '▲ +2 this quarter', tone: 'text-ok-strong' },
-    { l: 'Contract value (USD k)', v: 1075, d: [620, 700, 760, 820, 910, 990, 1075], delta: '▲ +18.4% QoQ', tone: 'text-ok-strong' },
-    { l: 'Experts on roster', v: 214, d: [140, 152, 160, 171, 188, 201, 214], delta: '31 pending review', tone: 'text-warn-strong' },
-    { l: 'Outcomes verified', v: 92, s: '%', d: [80, 84, 83, 87, 89, 90, 92], delta: 'G6 gate pass rate', tone: 'text-slate' },
-  ]
 
   return (
     <div className="flex min-h-screen bg-ivory-2 text-navy">
@@ -192,6 +268,7 @@ export default function Dashboard() {
         </nav>
         <div className="border-t border-ivory/10 p-4">
           <button onClick={() => setCollapsed(!collapsed)} className="eyebrow w-full text-start text-ivory/50 hover:text-ivory">{collapsed ? '→' : '← Collapse'}</button>
+          {data && <button onClick={() => void logout()} className="eyebrow mt-4 block text-ivory/60 hover:text-ivory">Sign out</button>}
           {!collapsed && <a href="/" className="eyebrow mt-4 block text-gold-light hover:text-ivory">↖ Public site</a>}
         </div>
       </aside>
@@ -213,19 +290,30 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <label className="hidden items-center gap-2 text-xs text-slate sm:flex">
-              <span className="sr-only">Tenant workspace</span>
-              <select value={workspace} onChange={(e) => { const w = e.target.value; setWorkspace(w); notify(`Switched to ${w}`); t0.current = performance.now(); pending.current = true; if (import.meta.env.DEV) console.debug(`[tm] tenant switch to ${w}`) }} aria-label="Switch tenant workspace"
+              <span className="sr-only">Client scope</span>
+              <select value={scope} onChange={(e) => { const w = e.target.value; setScope(w); notify(`Scoped to ${w}`); t0.current = performance.now(); pending.current = true; if (import.meta.env.DEV) console.debug(`[tm] scope switch to ${w}`) }} aria-label="Filter by client"
                 className="max-w-44 border border-line bg-transparent px-3 py-2 text-sm text-navy focus-visible:outline-gold-strong">
-                {workspaces.map((w) => <option key={w} value={w}>{w}</option>)}
+                {clients.map((w) => <option key={w} value={w}>{w}</option>)}
               </select>
             </label>
-            <span className="hidden items-center gap-2 text-xs text-slate lg:flex"><span className="pulse-dot h-2 w-2 rounded-full bg-ok" />Live · synced 2m ago</span>
-            <Badge tone="gold">Admin</Badge>
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-navy font-display text-ivory">MB</div>
+            {data
+              ? <Badge pulse tone="ok" className="hidden sm:inline-flex">Live · {data.session?.role ?? 'member'}</Badge>
+              : <Badge tone="warn" className="hidden sm:inline-flex">Demo data</Badge>}
+            <div className="grid h-10 w-10 place-items-center rounded-full bg-navy font-display text-ivory">{(data?.session?.user.name ?? 'Guest').slice(0, 2).toUpperCase()}</div>
           </div>
         </header>
 
         <div className="space-y-6 px-5 pt-8 md:px-10">
+          {error && (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 border border-risk/30 bg-risk/5 px-5 py-3 text-sm">
+              <span className="text-risk-strong">Could not load live data — {error}. Showing sample data.</span>
+              <button onClick={() => void reload()} className="eyebrow border border-line px-3 py-1.5 text-slate transition hover:border-navy hover:text-navy">Retry</button>
+            </div>
+          )}
+          {needsAuth && (
+            <SignIn onLogin={login} hint="The API is scoped per tenant. Sign in with a seeded portal account to replace the sample data with live assignments. The seed password is in the backend .env (SEED_ADMIN_PASSWORD)." />
+          )}
+
           {/* KPIs */}
           <div ref={kpisRef} className="grid grid-cols-2 gap-px bg-line xl:grid-cols-4" aria-busy={!ready}>
             {kpis.map((k, i) => (
@@ -249,13 +337,13 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <PortfolioPulse />
+          <PortfolioPulse rows={baseRows} />
 
           <div className="grid gap-6 xl:grid-cols-[1.7fr_1fr]">
             {/* Table */}
             <section className="border border-line bg-ivory">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line p-5">
-                <h2 className="text-xl font-medium">Assignment ledger{workspace !== 'All tenants' && <span className="ms-2 text-sm text-slate">— {workspace}</span>}</h2>
+                <h2 className="text-xl font-medium">Assignment ledger{scope !== 'All clients' && <span className="ms-2 text-sm text-slate">— {scope}</span>}</h2>
                 <div className="flex flex-wrap items-center gap-3">
                   <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search ID, client…" aria-label="Search assignments"
                     className="w-44 border-b-2 border-navy/20 bg-transparent px-1 py-2 text-sm focus:border-gold-strong focus:outline-none" />
@@ -285,14 +373,14 @@ export default function Dashboard() {
                     </thead>
                     <tbody>
                       {rows.map((a) => (
-                        <tr key={a.id} onClick={() => setSelected(a.id)} className={`cursor-pointer border-t border-line transition ${selected === a.id ? 'bg-ivory-2' : 'hover:bg-ivory-2/60'}`}>
+                        <tr key={a.id} onClick={() => setSelected(a.id)} className={`cursor-pointer border-t border-line transition ${sel?.id === a.id ? 'bg-ivory-2' : 'hover:bg-ivory-2/60'}`}>
                           <td className="px-5 py-4">
                             <p className="font-normal text-navy">{a.name}</p>
                             <p className="text-xs text-slate">{a.id} · {a.client}</p>
                           </td>
                           <td className="px-3 py-4">
                             <div className="flex gap-0.5">{method.map((_, i) => <span key={i} className={`h-3 w-1.5 ${i <= a.gate ? 'bg-gold' : 'bg-line'}`} />)}</div>
-                            <p className="mt-1 text-xs text-slate">G{a.gate} · {method[a.gate].name}</p>
+                            <p className="mt-1 text-xs text-slate">G{a.gate} · {method[a.gate]?.name}</p>
                           </td>
                           <td className="px-3 py-4"><Badge pulse tone={statusTone[a.status]}>{a.status}</Badge></td>
                           <td className="px-5 py-4 text-end font-mono tabular-nums">{a.value}</td>
@@ -302,28 +390,34 @@ export default function Dashboard() {
                   </table>
                 </div>
               ) : (
-                <EmptyState eyebrow="FILTER" title="No assignments match" body="Try a different search term, status, or tenant scope." />
+                <EmptyState eyebrow="FILTER" title="No assignments match" body="Try a different search term, status, or client scope." />
               )}
             </section>
 
             {/* Detail */}
             <section className="relative overflow-hidden bg-navy p-6 text-ivory">
-              <p className="eyebrow text-gold-light">{sel.id} · {sel.sector}</p>
-              <h2 className="mt-3 text-2xl leading-snug font-medium">{sel.name}</h2>
-              <p className="mt-1 text-sm text-ivory/60">{sel.client} · Lead {sel.lead}</p>
-              <ol className="mt-8 space-y-0">
-                {method.map((m, i) => (
-                  <li key={m.g} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <span className={`grid h-6 w-6 place-items-center rounded-full border text-[0.6rem] ${i < sel.gate ? 'border-gold bg-gold text-navy' : i === sel.gate ? 'border-gold-light text-gold-light' : 'border-ivory/20 text-ivory/40'}`}>{i < sel.gate ? '✓' : m.g}</span>
-                      {i < 7 && <span className={`h-5 w-px ${i < sel.gate ? 'bg-gold' : 'bg-ivory/15'}`} />}
-                    </div>
-                    <div className={`text-sm ${i === sel.gate ? 'text-ivory' : 'text-ivory/50'}`}>
-                      {m.name}{i === sel.gate && <span className="ms-2 text-xs text-gold-light">— in progress · {m.out}</span>}
-                    </div>
-                  </li>
-                ))}
-              </ol>
+              {sel ? (
+                <>
+                  <p className="eyebrow text-gold-light">{sel.id} · {sel.sector}</p>
+                  <h2 className="mt-3 text-2xl leading-snug font-medium">{sel.name}</h2>
+                  <p className="mt-1 text-sm text-ivory/60">{sel.client} · Lead {sel.lead}</p>
+                  <ol className="mt-8 space-y-0">
+                    {method.map((mm, i) => (
+                      <li key={mm.g} className="flex gap-4">
+                        <div className="flex flex-col items-center">
+                          <span className={`grid h-6 w-6 place-items-center rounded-full border text-[0.6rem] ${i < sel.gate ? 'border-gold bg-gold text-navy' : i === sel.gate ? 'border-gold-light text-gold-light' : 'border-ivory/20 text-ivory/40'}`}>{i < sel.gate ? '✓' : mm.g}</span>
+                          {i < 7 && <span className={`h-5 w-px ${i < sel.gate ? 'bg-gold' : 'bg-ivory/15'}`} />}
+                        </div>
+                        <div className={`text-sm ${i === sel.gate ? 'text-ivory' : 'text-ivory/50'}`}>
+                          {mm.name}{i === sel.gate && <span className="ms-2 text-xs text-gold-light">— in progress · {mm.out}</span>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              ) : (
+                <p className="text-sm text-ivory/60">Select an assignment to see its G0–G7 stage detail.</p>
+              )}
             </section>
           </div>
 
@@ -333,7 +427,7 @@ export default function Dashboard() {
                 <h2 className="text-xl font-medium">Dashboard of interests</h2>
                 <p className="text-xs text-slate">From the "Hello! I am…" intake — who is asking about what, last 30 days</p>
               </div>
-              <span className="eyebrow text-gold">312 notes received</span>
+              <span className="eyebrow text-gold">{data ? `${data.summary.notesReceived} notes received` : '312 notes received'}</span>
             </div>
             <div className="mt-6 overflow-x-auto">
               <table className="w-full min-w-[620px] text-sm">
@@ -372,20 +466,15 @@ export default function Dashboard() {
             </section>
             <section className="border border-line bg-ivory p-6">
               <h2 className="text-xl font-medium">Activity</h2>
-              <p className="mb-6 text-xs text-slate">Across all engagements — why statuses changed</p>
+              <p className="mb-6 text-xs text-slate">{data ? 'Why statuses changed — live from the API' : 'Across all engagements — why statuses changed'}</p>
               <ul className="space-y-5 text-sm">
-                {[
-                  ['2m', 'Procurement pack downloaded', 'Ministry of Planning · governments hub'],
-                  ['1h', 'G5 gate passed', 'TM-25-031 · Assiut Governorate'],
-                  ['3h', 'New expert registration', 'Public finance · Amman'],
-                  ['Yesterday', 'Policy brief published (AR)', 'Investment climate reform'],
-                  ['Yesterday', 'Risk flagged', 'TM-26-002 · term-sheet delay'],
-                ].map(([t, a, b]) => (
+                {activity.map(([t, a, b]) => (
                   <li key={a + t} className="flex gap-4">
                     <span className="w-16 shrink-0 text-xs text-slate">{t}</span>
-                    <div className="border-s border-gold/50 ps-4"><p>{a}</p><p className="text-xs text-slate">{b}</p></div>
+                    <div className="border-s border-gold/50 ps-4"><p>{a}</p>{b && <p className="text-xs text-slate">{b}</p>}</div>
                   </li>
                 ))}
+                {!activity.length && <li className="text-sm text-slate">No activity recorded yet.</li>}
               </ul>
             </section>
           </div>

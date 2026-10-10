@@ -23,13 +23,15 @@ Source lives under `src/`, organised feature-first. Imports use the `@` alias (m
 - `src/pages/site/Intro.tsx` - Introductory splash shown once per browser
 - `src/pages/site/home/` - Homepage sections, one file per section (`Head`, `Evidence`, `Knowledge`, `Learning`, `Join`, `Conversation`, `SearchOverlay`) plus `index.tsx` as the barrel that re-exports them
 - `src/pages/site/additions/` - Extras, one file per section (`HelloIntake`, `WhatsNew`, `CauseExhibition`, `WhoWeAre`, `JoinBoard`, `ContactCard`, `LearningStrip`, `PrivilegeToggle`) plus `index.tsx` barrel and `shared.ts` helpers (`img`, `areas`)
-- `src/pages/dashboard/Dashboard.tsx` - Client portal prototype ("Command Deck"): tenant workspace switcher, KPI cards with delta chips and skeleton loading, portfolio pulse (status + G0–G7 stage distribution), assignment ledger, activity rail
+- `src/pages/dashboard/Dashboard.tsx` - Client portal prototype ("Command Deck"): tenant scope switcher, KPI cards with delta chips and skeleton loading, portfolio pulse (status + G0–G7 stage distribution), assignment ledger, activity rail; loads live data via `useDashboard` and falls back to bundled sample data
 - `src/pages/NotFound.tsx` - Fallback for unknown routes
 - `src/components/motion/fx.tsx` - Animation primitives (SplitText, CountUp, Reveal, Magnetic, Contours, Logo, Emblem, Spotlight, GoldLine, Decrypt, useInView)
 - `src/components/ui/` - Shared UI primitives (`Badge`, `EmptyState`, `SegmentedControl`, `Dialog` with focus trap, `LiveStatus`) plus `index.tsx` barrel; imports via `@/components/ui`
-- `src/hooks/` - `useRoute` (history-based routing), `useHead` (per-route title/meta), and `useMetrics` (sessionStorage UX KPI counters: `tm.t3t`, `tm.priv.commits`, `tm.priv.undos`, `tm.priv.cancels`)
+- `src/hooks/` - `useRoute` (history-based routing), `useHead` (per-route title/meta), `useDashboard` (portal data plus `demo`/`live` source and sign-in helpers), and `useMetrics` (sessionStorage UX KPI counters: `tm.t3t`, `tm.priv.commits`, `tm.priv.undos`, `tm.priv.cancels`)
+- `src/lib/api.ts` - Typed API client for the Terramorph backend (auth, dashboard summary, assignments, activity); same-origin in dev via the `/api` proxy; `VITE_API_URL` overrides the base
 - `src/content/data.ts` - Content: audiences, method, cases, knowledge, footer
 - `src/styles/index.css` - Global CSS entrypoint and Tailwind CSS v4 theme (see Styling)
+- `.env.example` - Documents `VITE_API_URL` and `VITE_PROXY_TARGET`
 - `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
 - `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
 - `vite.config.ts` - Vite configuration with the React and Tailwind CSS v4 plugins plus the `@` alias for `src`
@@ -48,6 +50,10 @@ Barrels (`home/index.tsx`, `additions/index.tsx`) re-export section components s
 ## Routing
 
 Routes use `window.history` (`/hub/governments`, `/dashboard`, `/`) — no hash routing. In-page anchors are plain section links such as `/#evidence`.
+
+## API access
+
+The backend is a separate service (default `http://localhost:4000`). In development the Vite dev server proxies `/api` to it (`server.proxy` in `vite.config.ts`, target overridable with `VITE_PROXY_TARGET`), so requests are same-origin and the backend's httpOnly session cookie works without CORS. For deployments, set `VITE_API_URL` to the API origin. All endpoints require a session; `src/lib/api.ts` sends `credentials: 'include'`, and `useDashboard` treats a 401 as `needsAuth` and falls back to the bundled sample data so the dashboard always renders.
 
 ## Styling
 

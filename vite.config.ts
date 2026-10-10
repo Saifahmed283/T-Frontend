@@ -16,6 +16,14 @@ export default defineConfig({
   server: {
     port: 8443,
     strictPort: true,
+    proxy: {
+      // Same-origin /api in dev keeps the httpOnly session cookie working
+      // without CORS. Override the backend with VITE_PROXY_TARGET.
+      '/api': {
+        target: process.env.VITE_PROXY_TARGET ?? 'http://localhost:4000',
+        changeOrigin: true,
+      },
+    },
   },
   preview: {
     port: 8443,
