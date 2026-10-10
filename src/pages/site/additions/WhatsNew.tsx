@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { SplitText } from '@/components/motion/fx'
+import { Dialog } from '@/components/ui'
 import { img } from './shared'
 
 /* ——— What's new: swipeable picture banner → description, likes, four actions ——— */
@@ -62,7 +63,7 @@ export function WhatsNew() {
       </div>
 
       {n && open !== null && (
-        <div className="fixed inset-0 z-[60] flex justify-end bg-navy-3/60 backdrop-blur-sm" onClick={() => setOpen(null)}>
+        <Dialog open onClose={() => setOpen(null)} onBackdropClick={() => setOpen(null)} labelledBy={`whatsnew-title-${open}`} className="flex justify-end bg-navy-3/60 backdrop-blur-sm">
           <aside onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-ivory animate-[slidein_.5s_cubic-bezier(.2,.8,.2,1)]">
             <div className="relative h-72 shrink-0 bg-navy">
               <img src={img(n.id, 900)} alt={n.title} className="h-full w-full object-cover" />
@@ -70,7 +71,7 @@ export function WhatsNew() {
             </div>
             <div className="flex flex-1 flex-col p-8">
               <p className="eyebrow text-gold">{n.tag} · {n.date}</p>
-              <h3 className="mt-4 text-4xl leading-tight font-medium">{n.title}</h3>
+              <h3 id={`whatsnew-title-${open}`} className="mt-4 text-4xl leading-tight font-medium">{n.title}</h3>
               <p className="mt-5 text-lg leading-relaxed text-navy-2">{n.body}</p>
               <button onClick={() => setLiked({ ...liked, [open]: !liked[open] })} aria-pressed={!!liked[open]}
                 className={`mt-8 inline-flex w-max items-center gap-3 border px-4 py-2 transition ${liked[open] ? 'border-gold bg-gold/10 text-navy' : 'border-line hover:border-navy'}`}>
@@ -85,10 +86,10 @@ export function WhatsNew() {
                   </button>
                 ))}
               </div>
-              {toast && <p className="eyebrow mt-4 text-ok">✓ {toast}</p>}
+              {toast && <p role="status" className="eyebrow mt-4 text-ok">✓ {toast}</p>}
             </div>
           </aside>
-        </div>
+        </Dialog>
       )}
     </section>
   )

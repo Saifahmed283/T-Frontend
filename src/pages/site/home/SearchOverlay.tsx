@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { Dialog } from '@/components/ui'
 import { audiences, cases } from '@/content/data'
 import { ledger } from './Evidence'
 import { library } from './Knowledge'
@@ -10,10 +11,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   const ref = useRef<HTMLInputElement>(null)
   useEffect(() => {
     ref.current?.focus()
-    const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
-    window.addEventListener('keydown', k)
-    return () => window.removeEventListener('keydown', k)
-  }, [onClose])
+  }, [])
   const all = useMemo(() => [
     ...audiences.map((a) => ({ type: 'Audience', title: a.label, href: `/hub/${a.slug}` })),
     ...cases.map((c) => ({ type: 'Case', title: c.title, href: '/#evidence' })),
@@ -23,8 +21,9 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   ], [])
   const res = q.trim() ? all.filter((r) => (r.title + r.type).toLowerCase().includes(q.toLowerCase())) : []
   return (
-    <div className="fixed inset-0 z-[70] bg-navy-3/70 backdrop-blur-sm" onClick={onClose}>
+    <Dialog open onClose={onClose} onBackdropClick={onClose} labelledBy="search-overlay-title" className="bg-navy-3/70 backdrop-blur-sm">
       <div onClick={(e) => e.stopPropagation()} className="mx-auto mt-[10vh] w-[min(760px,92vw)] bg-ivory shadow-2xl" style={{ animation: 'fadeup .3s both' }}>
+        <h2 id="search-overlay-title" className="sr-only">Search</h2>
         <div className="flex items-center gap-4 border-b border-line px-6">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
           <input ref={ref} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search cases, briefs, courses, audiences…" className="w-full bg-transparent py-5 font-display text-2xl focus:outline-none" />
@@ -42,6 +41,6 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
           {!q.trim() && <li className="eyebrow px-6 py-6 text-slate">Search reaches every content type on the site</li>}
         </ul>
       </div>
-    </div>
+    </Dialog>
   )
 }
