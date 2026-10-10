@@ -42,7 +42,7 @@ Barrels (`home/index.tsx`, `additions/index.tsx`) re-export section components s
 - Runtime: React 19 and React DOM 19
 - Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
 - Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
-- Dev tooling: `@axe-core/react` (accessibility scan, loaded only when `import.meta.env.DEV`)
+- Dev tooling: `@axe-core/react` (accessibility scan, loaded only when `import.meta.env.DEV`) and `cross-env` (cross-platform `NODE_ENV` in the `build` script)
 - Formatting: oxfmt
 
 ## Routing
