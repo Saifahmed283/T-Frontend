@@ -107,7 +107,7 @@ export function PrivilegeToggle() {
       <LiveStatus message={announce} />
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow text-gold">Access tiers — feature &amp; privilege control</p>
+          <p className="eyebrow text-gold-strong">Access tiers — feature &amp; privilege control</p>
           <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-none font-medium"><SplitText text="Who can do what." /></h2>
         </div>
         <p className="max-w-md text-sm leading-relaxed text-slate">Every tenant workspace runs on the least-privilege runtime role: a tier change affects exactly the capabilities below, never the schema. Pointer — hold a tier for 600ms to arm. Keyboard — press once to arm, again (or wait) to confirm.</p>

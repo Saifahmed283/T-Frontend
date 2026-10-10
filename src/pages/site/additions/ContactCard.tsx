@@ -8,12 +8,12 @@ export function ContactCard() {
         <h2 className="text-[clamp(2.4rem,5vw,4.4rem)] leading-[1] font-medium"><SplitText text="Hello! We are TerraMorph," /><SplitText className="italic text-navy-2" text="and we are consultants." delay={300} /></h2>
         <Reveal>
           <div className="relative -rotate-2 border border-navy bg-ivory p-10 shadow-[16px_16px_0_0_var(--color-gold-light)] transition-transform duration-500 hover:rotate-0">
-            <p className="eyebrow text-gold">Contact us</p>
+            <p className="eyebrow text-gold-strong">Contact us</p>
             <ul className="mt-6 space-y-5">
               {[['Website', 'terramorph.com', 'https://terramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['Phone', '+20 100 000 0000', 'tel:+201000000000'], ['Email', 'hello@terramorph.com', 'mailto:hello@terramorph.com']].map(([l, v, h]) => (
                 <li key={l} className="flex items-baseline justify-between gap-4 border-b border-line pb-4">
                   <span className="eyebrow text-slate">{l}</span>
-                  <a href={h} className="font-display text-xl hover:text-gold md:text-2xl">{v}</a>
+                  <a href={h} className="font-display text-xl hover:text-gold-strong md:text-2xl">{v}</a>
                 </li>
               ))}
             </ul>

@@ -28,7 +28,7 @@ export function Evidence() {
           <Reveal key={i} delay={i * 120} className="bg-ivory">
             <Spotlight className="h-full" color="rgba(19,43,69,0.06)">
               <article className="flex h-full min-h-[340px] flex-col p-8">
-                <div className="flex justify-between"><span className="eyebrow text-gold">{c.sector}</span><span className="eyebrow text-slate">{c.year}</span></div>
+                <div className="flex justify-between"><span className="eyebrow text-gold-strong">{c.sector}</span><span className="eyebrow text-slate">{c.year}</span></div>
                 <div className="relative my-7 h-24 border-y border-line">
                   <svg viewBox="0 0 300 100" className="h-full w-full" preserveAspectRatio="none" aria-hidden>
                     <path d={['M0 80 Q60 75 100 60 T200 35 T300 10', 'M0 70 L50 66 L100 50 L150 52 L200 30 L250 26 L300 12', 'M0 85 C80 85 120 50 170 45 S260 20 300 18'][i]}
@@ -47,7 +47,7 @@ export function Evidence() {
 
       <div className="mt-px border border-line bg-ivory-2">
         <button onClick={() => setOpen(!open)} aria-expanded={open} className="flex w-full items-center justify-between gap-4 px-8 py-6 text-start transition hover:bg-ivory">
-          <span><span className="eyebrow text-gold">Assignment ledger</span><span className="ms-4 font-display text-2xl">{ledger.length} entries shown</span></span>
+          <span><span className="eyebrow text-gold-strong">Assignment ledger</span><span className="ms-4 font-display text-2xl">{ledger.length} entries shown</span></span>
           <span className={`grid h-10 w-10 place-items-center rounded-full border border-navy transition-transform duration-500 ${open ? 'rotate-45 bg-navy text-ivory' : ''}`}>+</span>
         </button>
         <div className={`grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] ${open ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}>
@@ -61,7 +61,7 @@ export function Evidence() {
                 <tbody>
                   {rows.map((r) => (
                     <tr key={r.title} className="border-t border-line transition hover:bg-ivory">
-                      <td className="py-3 pe-4 font-display text-lg text-gold">{r.y}</td>
+                      <td className="py-3 pe-4 font-display text-lg text-gold-strong">{r.y}</td>
                       <td className="py-3 pe-4"><p>{r.title}</p><p className="text-xs text-slate">{r.sector}</p></td>
                       <td className="py-3 pe-4 text-navy-2">{r.client}</td>
                       <td className="py-3 pe-4 text-slate">{r.geo}</td>

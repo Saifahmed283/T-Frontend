@@ -16,7 +16,7 @@ export function JoinBoard() {
   return (
     <section id="join-board" className="border-t border-line bg-ivory-2">
       <div className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">
-        <p className="eyebrow text-gold">Join the company</p>
+        <p className="eyebrow text-gold-strong">Join the company</p>
         <h2 className="mt-4 max-w-3xl text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] font-medium"><SplitText text="Careers, tenders, experts and open tools — in one place." /></h2>
         <div className="no-scrollbar mt-10 flex gap-1 overflow-x-auto border-b border-line">
           {tabs.map((x) => (
@@ -66,7 +66,7 @@ export function JoinBoard() {
               <li key={a}><a href="#" className="group grid items-center gap-2 py-6 transition hover:bg-ivory md:grid-cols-[1fr_260px_160px] md:px-4">
                 <span className="font-display text-2xl transition-transform duration-500 group-hover:translate-x-2">{a}</span>
                 <span className="text-sm text-slate">{b}</span>
-                <span className="eyebrow text-gold md:text-end">{c} →</span>
+                <span className="eyebrow text-gold-strong md:text-end">{c} →</span>
               </a></li>
             ))}
           </ul>

@@ -4,7 +4,7 @@ function SectionHead({ id, n, eyebrow, title, aside }: { id?: string; n: string;
   return (
     <div id={id} className="scroll-mt-40">
       <div className="flex items-center gap-4">
-        <span className="eyebrow text-gold">{n}</span>
+        <span className="eyebrow text-gold-strong">{n}</span>
         <span className="eyebrow text-slate">{eyebrow}</span>
       </div>
       <GoldLine className="mt-4" />

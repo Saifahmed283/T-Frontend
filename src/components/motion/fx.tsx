@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode, type MouseEvent, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, createElement, type ReactNode, type MouseEvent, type CSSProperties } from 'react'
 
 const reduced = () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
@@ -19,7 +19,7 @@ export function useInView<T extends Element>(threshold = 0.2) {
 export function SplitText({ text, className = '', delay = 0 }: { text: string; className?: string; delay?: number }) {
   const [ref, seen] = useInView<HTMLSpanElement>(0.1)
   return (
-    <span ref={ref} className={className} aria-label={text}>
+    <span ref={ref} className={className} role="img" aria-label={text}>
       {text.split(' ').map((w, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden align-bottom pb-[0.08em]">
           <span
@@ -34,17 +34,17 @@ export function SplitText({ text, className = '', delay = 0 }: { text: string; c
   )
 }
 
-export function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
-  const [ref, seen] = useInView<HTMLDivElement>(0.12)
+export function Reveal({ as = 'div', children, className = '', delay = 0 }: { as?: 'div' | 'li'; children: ReactNode; className?: string; delay?: number }) {
+  const [ref, seen] = useInView<HTMLElement>(0.12)
   const settle = seen || reduced()
-  return (
-    <div
-      ref={ref}
-      className={`transition-[transform,opacity,filter] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] ${className}`}
-      style={{ transform: settle ? 'none' : 'translateY(28px)', opacity: settle ? 1 : 0, filter: settle ? 'none' : 'blur(6px)', transitionDelay: `${delay}ms` }}
-    >
-      {children}
-    </div>
+  return createElement(
+    as,
+    {
+      ref,
+      className: `transition-[transform,opacity,filter] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] ${className}`,
+      style: { transform: settle ? 'none' : 'translateY(28px)', opacity: settle ? 1 : 0, filter: settle ? 'none' : 'blur(6px)', transitionDelay: `${delay}ms` } as CSSProperties,
+    },
+    children,
   )
 }
 
@@ -169,7 +169,7 @@ export function Logo({ tone = 'navy', className = '' }: { tone?: 'navy' | 'ivory
       <Emblem className="h-9 w-9 shrink-0" tone={tone} />
       <span className="leading-none">
         <span className={`block font-display text-xl font-semibold tracking-[0.22em] ${tone === 'navy' ? 'text-navy' : 'text-ivory'}`}>TERRAMORPH</span>
-        <span className="mt-1 block text-[0.55rem] font-medium tracking-[0.42em] text-gold">LEVERAGE FOR GOOD</span>
+        <span className={`mt-1 block text-[0.55rem] font-medium tracking-[0.42em] ${tone === 'navy' ? 'text-gold-strong' : 'text-gold-light'}`}>LEVERAGE FOR GOOD</span>
       </span>
     </span>
   )

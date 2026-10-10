@@ -13,7 +13,7 @@ function Footer() {
         <div className="mt-12 grid grid-cols-2 gap-10 md:grid-cols-3 lg:grid-cols-6">
           {Object.entries(footer).map(([h, ls]) => (
             <div key={h}>
-              <p className="eyebrow text-gold">{h}</p>
+              <p className="eyebrow text-gold-strong">{h}</p>
               <ul className="mt-5 space-y-2.5 text-sm text-navy-2">
                 {ls.map((l) => <li key={l}><a href="#" className="hover:text-navy hover:underline decoration-gold underline-offset-4">{l}</a></li>)}
               </ul>

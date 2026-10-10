@@ -59,7 +59,7 @@ function Header({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
     <>
       <header className={`sticky top-0 z-50 text-ivory transition-colors duration-500 ${scrolled ? 'bg-navy-3/85 shadow-[0_10px_40px_-20px_rgba(0,0,0,.6)] backdrop-blur-xl' : 'bg-navy-3'}`}>
         <div className={`mx-auto flex max-w-[1320px] items-center gap-6 px-5 transition-[padding] duration-500 md:px-10 ${scrolled ? 'py-3' : 'py-5'}`}>
-          <a href="/" aria-label="TerraMorph home" className="shrink-0"><Logo tone="ivory" /></a>
+          <a href="/" className="shrink-0"><Logo tone="ivory" /></a>
           <nav className="mx-auto hidden items-center gap-1 lg:flex" aria-label="Primary">
             {nav.map((n) => {
               const on = active === n.id
@@ -96,7 +96,7 @@ function Header({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
                   {ar ? a.ar : a.label}
                 </a>
               ))}
-              <a href="/dashboard" className="ms-auto shrink-0 ps-4 text-[0.72rem] tracking-[0.16em] text-ivory/50 uppercase hover:text-gold-light">{ar ? 'بوابة العملاء' : 'Client portal'} ↗</a>
+              <a href="/dashboard" className="ms-auto shrink-0 ps-4 text-[0.72rem] tracking-[0.16em] text-ivory/65 uppercase hover:text-gold-light">{ar ? 'بوابة العملاء' : 'Client portal'} ↗</a>
             </div>
           </div>
         </div>

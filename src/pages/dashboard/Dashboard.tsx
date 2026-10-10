@@ -267,7 +267,7 @@ export default function Dashboard() {
           ))}
         </nav>
         <div className="border-t border-ivory/10 p-4">
-          <button onClick={() => setCollapsed(!collapsed)} className="eyebrow w-full text-start text-ivory/50 hover:text-ivory">{collapsed ? '→' : '← Collapse'}</button>
+          <button onClick={() => setCollapsed(!collapsed)} className="eyebrow w-full text-start text-ivory/65 hover:text-ivory">{collapsed ? '→' : '← Collapse'}</button>
           {data && <button onClick={() => void logout()} className="eyebrow mt-4 block text-ivory/60 hover:text-ivory">Sign out</button>}
           {!collapsed && <a href="/" className="eyebrow mt-4 block text-gold-light hover:text-ivory">↖ Public site</a>}
         </div>
@@ -285,7 +285,7 @@ export default function Dashboard() {
       <main className={`w-full pb-24 transition-all duration-500 md:pb-10 ${collapsed ? 'md:ms-20' : 'md:ms-64'}`}>
         <header className="sticky top-0 z-30 flex h-20 items-center justify-between gap-4 border-b border-line bg-ivory-2/85 px-5 backdrop-blur md:px-10">
           <div>
-            <p className="eyebrow text-gold">Engagement portal · Q4 2026</p>
+            <p className="eyebrow text-gold-strong">Engagement portal · Q4 2026</p>
             <h1 className="text-2xl font-medium md:text-3xl">{view}</h1>
           </div>
           <div className="flex items-center gap-4">
@@ -405,10 +405,10 @@ export default function Dashboard() {
                     {method.map((mm, i) => (
                       <li key={mm.g} className="flex gap-4">
                         <div className="flex flex-col items-center">
-                          <span className={`grid h-6 w-6 place-items-center rounded-full border text-[0.6rem] ${i < sel.gate ? 'border-gold bg-gold text-navy' : i === sel.gate ? 'border-gold-light text-gold-light' : 'border-ivory/20 text-ivory/40'}`}>{i < sel.gate ? '✓' : mm.g}</span>
+                          <span className={`grid h-6 w-6 place-items-center rounded-full border text-[0.6rem] ${i < sel.gate ? 'border-gold bg-gold text-navy' : i === sel.gate ? 'border-gold-light text-gold-light' : 'border-ivory/20 text-ivory/65'}`}>{i < sel.gate ? '✓' : mm.g}</span>
                           {i < 7 && <span className={`h-5 w-px ${i < sel.gate ? 'bg-gold' : 'bg-ivory/15'}`} />}
                         </div>
-                        <div className={`text-sm ${i === sel.gate ? 'text-ivory' : 'text-ivory/50'}`}>
+                        <div className={`text-sm ${i === sel.gate ? 'text-ivory' : 'text-ivory/65'}`}>
                           {mm.name}{i === sel.gate && <span className="ms-2 text-xs text-gold-light">— in progress · {mm.out}</span>}
                         </div>
                       </li>
@@ -427,7 +427,7 @@ export default function Dashboard() {
                 <h2 className="text-xl font-medium">Dashboard of interests</h2>
                 <p className="text-xs text-slate">From the "Hello! I am…" intake — who is asking about what, last 30 days</p>
               </div>
-              <span className="eyebrow text-gold">{data ? `${data.summary.notesReceived} notes received` : '312 notes received'}</span>
+              <span className="eyebrow text-gold-strong">{data ? `${data.summary.notesReceived} notes received` : '312 notes received'}</span>
             </div>
             <div className="mt-6 overflow-x-auto">
               <table className="w-full min-w-[620px] text-sm">
@@ -436,11 +436,15 @@ export default function Dashboard() {
                   {([['Policy maker', [18, 34, 9, 22, 4]], ['Local entity', [41, 12, 15, 8, 10]], ['Development partner', [22, 19, 27, 14, 12]], ['INGO', [9, 8, 6, 3, 25]], ['Consultant', [14, 11, 7, 16, 5]], ['Cause enthusiast', [12, 3, 4, 2, 21]]] as [string, number[]][]).map(([r, vals]) => (
                     <tr key={r} className="border-t border-line">
                       <td className="py-2.5 pe-4">{r}</td>
-                      {vals.map((v, k) => (
-                        <td key={k} className="p-1">
-                          <div title={`${v} notes`} className="grid h-9 place-items-center text-xs font-mono tabular-nums transition hover:scale-105" style={{ background: `rgba(19,43,69,${0.06 + v / 48})`, color: v > 20 ? '#FBF8F1' : '#132B45' }}>{v}</div>
-                        </td>
-                      ))}
+                        {vals.map((v, k) => {
+                          const dark = v > 24
+                          const alpha = dark ? 0.72 + (Math.min(v, 48) - 25) / 23 * 0.22 : 0.06 + v / 24 * 0.2
+                          return (
+                            <td key={k} className="p-1">
+                              <div title={`${v} notes`} className="grid h-9 place-items-center text-xs font-mono tabular-nums transition hover:scale-105" style={{ background: `rgba(19,43,69,${alpha})`, color: dark ? '#FBF8F1' : '#132B45' }}>{v}</div>
+                            </td>
+                          )
+                        })}
                     </tr>
                   ))}
                 </tbody>

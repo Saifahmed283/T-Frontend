@@ -31,12 +31,12 @@ export function CauseExhibition() {
           </div>
           <p className="mt-4 text-sm text-ivory/60">{mode === 'exhibition' ? 'See the cause: a local community as it could be.' : 'See the intervention: where small, well-placed force lands.'}</p>
           <div className="mt-auto grid grid-cols-2 gap-6 pt-10">
-            <div><p className="font-display text-5xl">{lit}</p><p className="eyebrow mt-2 text-ivory/50">Contributors</p></div>
-            <div><p className="font-display text-5xl">{trust}%</p><p className="eyebrow mt-2 text-ivory/50">Trust index</p></div>
+            <div><p className="font-display text-5xl">{lit}</p><p className="eyebrow mt-2 text-ivory/65">Contributors</p></div>
+            <div><p className="font-display text-5xl">{trust}%</p><p className="eyebrow mt-2 text-ivory/65">Trust index</p></div>
           </div>
           <div className="mt-8 flex gap-3">
             <button onClick={() => setLit((l) => Math.min(nodes.length, l + 4))} className="bg-gold-light px-6 py-3 text-[0.72rem] font-medium tracking-[0.2em] text-navy uppercase transition hover:bg-ivory">Contribute to the picture +</button>
-            <button onClick={() => setLit(6)} className="eyebrow px-3 text-ivory/50 hover:text-ivory">Reset</button>
+            <button onClick={() => setLit(6)} className="eyebrow px-3 text-ivory/65 hover:text-ivory">Reset</button>
           </div>
         </div>
         <div className="relative border border-ivory/10 bg-navy-3/50">
@@ -56,7 +56,7 @@ export function CauseExhibition() {
               )
             })}
           </svg>
-          <p className="eyebrow absolute bottom-4 start-4 text-ivory/40">Simulation · click any household to join</p>
+          <p className="eyebrow absolute bottom-4 start-4 text-ivory/65">Simulation · click any household to join</p>
         </div>
       </div>
     </section>

@@ -24,7 +24,7 @@ function Pick({ value, options, onChange }: { value: string; options: string[]; 
       </button>
       {open && (
         <span className="absolute start-0 top-full z-30 mt-3 flex w-max max-w-[80vw] flex-col border border-line bg-ivory p-2 font-sans text-base not-italic text-navy shadow-[0_24px_60px_-20px_rgba(0,0,0,.5)]" style={{ animation: 'fadeup .25s both' }}>
-          {options.map((o) => <button type="button" key={o} onClick={() => { onChange(o); setOpen(false) }} className={`px-4 py-2 text-start transition hover:bg-ivory-2 ${o === value ? 'text-gold' : ''}`}>{o}</button>)}
+          {options.map((o) => <button type="button" key={o} onClick={() => { onChange(o); setOpen(false) }} className={`px-4 py-2 text-start transition hover:bg-ivory-2 ${o === value ? 'text-gold-strong' : ''}`}>{o}</button>)}
         </span>
       )}
     </span>
@@ -59,7 +59,7 @@ export function Conversation() {
                 Hello! I am a <Pick value={role} options={roles} onChange={pickRole} />, and I would like to <Pick value={intent} options={intents} onChange={setIntent} />. I'm looking forward to <Pick value={fw} options={forward} onChange={setFw} />.
               </p>
               <div className="mt-10">
-                <p className="eyebrow text-ivory/50">Also write to me on — pick only what you'd read</p>
+                <p className="eyebrow text-ivory/65">Also write to me on — pick only what you'd read</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   {lists.map((l) => {
                     const on = sel.includes(l)
@@ -80,7 +80,7 @@ export function Conversation() {
           <ul className="mt-6 space-y-4">
             {[['Phone', '+20 100 000 0000', 'tel:+201000000000'], ['Email', 'hello@terramorph.com', 'mailto:hello@terramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['Office', 'New Cairo, Egypt', '#']].map(([l, v, h]) => (
               <li key={l} className="flex items-baseline justify-between gap-4 border-b border-ivory/10 pb-4">
-                <span className="eyebrow text-ivory/45">{l}</span>
+                <span className="eyebrow text-ivory/65">{l}</span>
                 <a href={h} className="font-display text-xl transition hover:text-gold-light">{v}</a>
               </li>
             ))}

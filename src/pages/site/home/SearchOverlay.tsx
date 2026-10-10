@@ -31,7 +31,7 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
         </div>
         <ul className="max-h-[50vh] overflow-y-auto">
           {res.map((r) => (
-            <li key={r.type + r.title}><a href={r.href} onClick={onClose} className="flex items-center justify-between gap-4 px-6 py-4 transition hover:bg-ivory-2"><span>{r.title}</span><span className="eyebrow shrink-0 text-gold">{r.type}</span></a></li>
+            <li key={r.type + r.title}><a href={r.href} onClick={onClose} className="flex items-center justify-between gap-4 px-6 py-4 transition hover:bg-ivory-2"><span>{r.title}</span><span className="eyebrow shrink-0 text-gold-strong">{r.type}</span></a></li>
           ))}
           {q.trim() && !res.length && (
             <li className="px-6 py-8 text-slate">No results for "{q}". Try one of the audience hubs:

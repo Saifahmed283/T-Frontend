@@ -45,6 +45,7 @@ Barrels (`home/index.tsx`, `additions/index.tsx`) re-export section components s
 - Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
 - Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
 - Dev tooling: `@axe-core/react` (accessibility scan, loaded only when `import.meta.env.DEV`) and `cross-env` (cross-platform `NODE_ENV` in the `build` script)
+- Testing: `scripts/a11y.mjs` (`pnpm a11y`) runs a headless axe-core scan (`puppeteer-core` drives the local Chrome/Edge — set `CHROME_PATH` if not auto-detected) against a running dev server (`A11Y_BASE_URL`, default `http://localhost:8443`). It scans the home page (base, search overlay, WhatsNew drawer), the dashboard (demo and live states), a hub page, and the 404 page with `prefers-reduced-motion: reduce`, and exits non-zero on serious/critical violations
 - Formatting: oxfmt
 
 ## Routing
@@ -61,7 +62,7 @@ This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin con
 
 `src/main.tsx` imports `src/styles/index.css`, so global font wiring belongs in `src/styles/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
 
-The `@theme` block defines the color tokens (`navy`, `navy-2`, `navy-3`, `ivory`, `ivory-2`, `line`, `slate`, `gold`, `gold-light`), semantic tokens (`gold-strong` `#8a6d33`, `warn-strong` `#9a6700`, `risk-strong` `#8f1f1f`, `ok-strong` `#2f6b3a`, `error` `#b42318`), the color-blind-safe data ramp (`data-1`–`data-4`), and fonts (`display` Cormorant Garamond, `sans` Jost, `mono` JetBrains Mono). Use the `-strong` variants for text on `ivory` (they meet WCAG AA; the plain variants are decorative/on-navy only). Numeric cells use `font-mono tabular-nums`.
+The `@theme` block defines the color tokens (`navy`, `navy-2`, `navy-3`, `ivory`, `ivory-2`, `line`, `slate`, `gold`, `gold-light`), semantic tokens (`gold-strong` `#76602c`, `warn-strong` `#7a5200`, `risk-strong` `#8f1f1f`, `ok-strong` `#2f6b3a`, `error` `#b42318`), the color-blind-safe data ramp (`data-1`–`data-4`), and fonts (`display` Cormorant Garamond, `sans` Jost, `mono` JetBrains Mono). Use the `-strong` variants for text on `ivory`/`ivory-2` (they meet WCAG AA; the plain variants are decorative or for text on navy). `gold` is the on-light accent, `gold-light` the on-dark one. On navy surfaces use `text-ivory/65` or higher for secondary text (lower opacities fail AA). Numeric cells use `font-mono tabular-nums`.
 
 Keyframes include `grow` (arming/loading fills) and `shrink` (3s privilege undo countdown). Motion primitives are gated by `prefers-reduced-motion` (`reduced()` in `fx.tsx`, plus a CSS media block); keep new transforms/animations behind the same guard.
 

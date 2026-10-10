@@ -78,7 +78,7 @@ function Audiences({ lang }: { lang: Lang }) {
           {/* Detail */}
           <div key={a.slug} className="relative">
             <div className="flex items-center gap-4">
-              <span className="font-display text-7xl leading-none text-gold">0{active + 1}</span>
+              <span className="font-display text-7xl leading-none text-gold-strong">0{active + 1}</span>
               <span className="h-px flex-1 bg-line" />
               <span className="eyebrow text-slate">of 07</span>
             </div>
@@ -87,7 +87,7 @@ function Audiences({ lang }: { lang: Lang }) {
             <ul className="mt-8 space-y-3 border-s border-gold/50 ps-5">
               {a.q.map((q, k) => (
                 <li key={q} className="text-sm text-slate" style={{ animation: `fadeup .7s ${0.3 + k * 0.1}s both` }}>
-                  <span className="me-3 font-display text-gold">{k + 1}.</span>{q}
+                  <span className="me-3 font-display text-gold-strong">{k + 1}.</span>{q}
                 </li>
               ))}
             </ul>

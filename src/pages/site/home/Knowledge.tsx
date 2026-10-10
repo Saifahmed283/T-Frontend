@@ -33,7 +33,7 @@ export function Knowledge() {
             {list.map((k, i) => (
               <li key={k.title} onMouseEnter={() => setHover(i)}>
                 <a href="#" className={`group grid items-center gap-3 py-6 transition-colors md:grid-cols-[160px_1fr_32px] md:px-4 ${i === hover ? 'bg-ivory-2' : ''}`}>
-                  <span className="eyebrow text-gold">{k.type} · <span className="text-navy">{k.lang}</span>{k.free && <span className="ms-2 bg-ok px-1.5 py-0.5 text-ivory">Free</span>}</span>
+                  <span className="eyebrow text-gold-strong">{k.type} · <span className="text-navy">{k.lang}</span>{k.free && <span className="ms-2 bg-ok px-1.5 py-0.5 text-ivory">Free</span>}</span>
                   <span dir={k.lang === 'AR' ? 'rtl' : undefined} className="font-display text-2xl font-medium transition-transform duration-500 group-hover:translate-x-2">{k.title}</span>
                   <span className="hidden text-end transition-transform group-hover:-translate-y-0.5 md:block">↗</span>
                 </a>

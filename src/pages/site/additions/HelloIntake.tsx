@@ -13,13 +13,13 @@ function Pick({ value, options, onChange }: { value: string; options: string[]; 
     <span className="relative inline-block">
       <button type="button" onClick={() => setOpen(!open)} aria-expanded={open}
         className="group inline-flex items-baseline gap-2 border-b-2 border-gold px-1 italic text-navy-2 transition hover:text-navy">
-        {value}<span className="text-[0.4em] not-italic text-gold transition-transform group-aria-expanded:rotate-180">▼</span>
+        {value}<span className="text-[0.4em] not-italic text-gold-strong transition-transform group-aria-expanded:rotate-180">▼</span>
       </button>
       {open && (
         <span className="absolute start-0 top-full z-30 mt-3 flex w-max max-w-[80vw] flex-col border border-line bg-ivory p-2 font-sans text-base not-italic shadow-[0_24px_60px_-20px_rgba(19,43,69,.35)]">
           {options.map((o) => (
             <button type="button" key={o} onClick={() => { onChange(o); setOpen(false) }}
-              className={`px-4 py-2 text-start transition hover:bg-ivory-2 ${o === value ? 'text-gold' : 'text-navy'}`}>{o}</button>
+              className={`px-4 py-2 text-start transition hover:bg-ivory-2 ${o === value ? 'text-gold-strong' : 'text-navy'}`}>{o}</button>
           ))}
         </span>
       )}
@@ -36,7 +36,7 @@ export function HelloIntake() {
   return (
     <section id="hello" className="relative scroll-mt-40 border-y border-line bg-ivory-2">
       <div className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">
-        <p className="eyebrow text-gold">Start here — tell us who you are</p>
+        <p className="eyebrow text-gold-strong">Start here — tell us who you are</p>
         {sent ? (
           <Reveal className="mt-10">
             <Emblem className="h-14 w-14" />

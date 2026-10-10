@@ -8,7 +8,7 @@ export default function NotFound() {
     <main className="relative grid min-h-screen place-items-center overflow-hidden bg-navy-3 px-5 text-ivory">
       <Contours className="absolute inset-0 h-full w-full" stroke="#FBF8F1" opacity={0.06} />
       <div className="relative max-w-2xl text-center">
-        <a href="/" aria-label="TerraMorph home" className="inline-block"><Logo tone="ivory" /></a>
+        <a href="/" className="inline-block"><Logo tone="ivory" /></a>
         <p className="eyebrow mt-16 text-gold-light">Error 404</p>
         <h1 className="mt-4 text-[clamp(2.4rem,6vw,4.5rem)] leading-[1] font-medium">This ground hasn't been surveyed.</h1>
         <p className="mx-auto mt-6 max-w-md text-ivory/70">The page you asked for doesn't exist or has moved. Start from the homepage, or go straight to your reader hub.</p>

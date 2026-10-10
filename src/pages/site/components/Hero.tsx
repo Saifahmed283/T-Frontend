@@ -78,7 +78,7 @@ function Hero({ lang }: { lang: Lang }) {
             </Reveal>
           ))}
         </div>
-        <a href="/#for" aria-label="Scroll" className="absolute -top-14 start-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-ivory/40 transition hover:text-ivory md:flex rtl:translate-x-1/2">
+        <a href="/#for" aria-label="Scroll" className="absolute -top-14 start-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-ivory/65 transition hover:text-ivory md:flex rtl:translate-x-1/2">
           <span className="relative h-8 w-px overflow-hidden bg-ivory/15"><span className="scroll-cue absolute inset-0 bg-gold-light" /></span>
         </a>
       </div>

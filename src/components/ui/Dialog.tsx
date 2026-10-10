@@ -4,6 +4,24 @@ export function Dialog({ open, onClose, labelledBy, onBackdropClick, children, c
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     if (!open) return
+    const root = ref.current
+    if (!root) return
+    const restored: HTMLElement[] = []
+    let node: HTMLElement | null = root
+    while (node && node.parentElement) {
+      const parent: HTMLElement | null = node.parentElement
+      for (const child of Array.from(parent.children)) {
+        if (child === node || !(child instanceof HTMLElement) || child.inert) continue
+        child.inert = true
+        restored.push(child)
+      }
+      if (parent === document.body) break
+      node = parent
+    }
+    return () => { for (const el of restored) el.inert = false }
+  }, [open])
+  useEffect(() => {
+    if (!open) return
     const prev = document.activeElement as HTMLElement | null
     const root = ref.current
     if (!root) return

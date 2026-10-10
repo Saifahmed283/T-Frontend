@@ -18,15 +18,13 @@ export function Learning() {
           aside={<p className="max-w-xs text-sm text-slate">Every programme carries a price and a date — no "contact us for details".</p>} />
         <ul className="mt-12 border-t border-navy/20">
           {programmes.map((p, i) => (
-            <Reveal key={p.title} delay={i * 80}>
-              <li className="group grid items-center gap-4 border-b border-navy/10 py-6 transition-colors hover:bg-ivory md:grid-cols-[90px_1fr_180px_180px] md:px-4">
-                <div className="flex items-baseline gap-2 md:block"><span className="font-display text-5xl leading-none">{p.d}</span><span className="eyebrow text-gold md:mt-1 md:block">{p.m}</span></div>
-                <div><p className="font-display text-2xl font-medium">{p.title}</p><p className="mt-1 text-sm text-slate">{p.fmt}</p></div>
-                <div><p className="text-lg">{p.price}</p>{p.seats > 0 && <p className={`text-xs ${p.seats < 5 ? 'text-warn' : 'text-slate'}`}>{p.seats} seats left</p>}</div>
-                <button onClick={() => setBooked(p.title)} className={`justify-self-start border px-5 py-3 text-xs tracking-[0.18em] uppercase transition md:justify-self-end ${booked === p.title ? 'border-ok bg-ok text-ivory' : 'border-navy group-hover:bg-navy group-hover:text-ivory'}`}>
-                  {booked === p.title ? '✓ Reserved' : p.seats ? 'Reserve seat' : 'Start now'}
-                </button>
-              </li>
+            <Reveal as="li" key={p.title} delay={i * 80} className="group grid items-center gap-4 border-b border-navy/10 py-6 transition-colors hover:bg-ivory md:grid-cols-[90px_1fr_180px_180px] md:px-4">
+              <div className="flex items-baseline gap-2 md:block"><span className="font-display text-5xl leading-none">{p.d}</span><span className="eyebrow text-gold-strong md:mt-1 md:block">{p.m}</span></div>
+              <div><p className="font-display text-2xl font-medium">{p.title}</p><p className="mt-1 text-sm text-slate">{p.fmt}</p></div>
+              <div><p className="text-lg">{p.price}</p>{p.seats > 0 && <p className={`text-xs ${p.seats < 5 ? 'text-warn-strong' : 'text-slate'}`}>{p.seats} seats left</p>}</div>
+              <button onClick={() => setBooked(p.title)} className={`justify-self-start border px-5 py-3 text-xs tracking-[0.18em] uppercase transition md:justify-self-end ${booked === p.title ? 'border-ok bg-ok text-ivory' : 'border-navy group-hover:bg-navy group-hover:text-ivory'}`}>
+                {booked === p.title ? '✓ Reserved' : p.seats ? 'Reserve seat' : 'Start now'}
+              </button>
             </Reveal>
           ))}
         </ul>

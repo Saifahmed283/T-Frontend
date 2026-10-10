@@ -20,7 +20,7 @@ export function Join() {
         <Head dark n="07" eyebrow="Join" title="Experts, partners, people and tenders — one door each." />
         <div className="no-scrollbar mt-10 flex gap-1 overflow-x-auto border-b border-ivory/15">
           {tabs.map((x) => (
-            <button key={x} onClick={() => setTab(x)} className={`relative shrink-0 px-5 py-4 text-sm transition ${tab === x ? 'text-ivory' : 'text-ivory/50 hover:text-ivory'}`}>
+            <button key={x} onClick={() => setTab(x)} className={`relative shrink-0 px-5 py-4 text-sm transition ${tab === x ? 'text-ivory' : 'text-ivory/65 hover:text-ivory'}`}>
               {x}{tab === x && <span className="absolute inset-x-0 -bottom-px h-0.5 bg-gold-light" />}
             </button>
           ))}
@@ -33,7 +33,7 @@ export function Join() {
                 {steps.map((s, k) => (
                   <li key={s} className="flex-1">
                     <div className="h-0.5 bg-ivory/15"><div className="h-full bg-gold-light transition-all duration-700" style={{ width: k <= step ? '100%' : '0%' }} /></div>
-                    <p className={`eyebrow mt-3 ${k <= step ? 'text-gold-light' : 'text-ivory/40'}`}>{s}</p>
+                    <p className={`eyebrow mt-3 ${k <= step ? 'text-gold-light' : 'text-ivory/65'}`}>{s}</p>
                   </li>
                 ))}
               </ol>
@@ -48,7 +48,7 @@ export function Join() {
                     {step === 2 && <label className="grid h-36 cursor-pointer place-items-center border border-dashed border-ivory/30 text-ivory/60 transition hover:border-gold-light"><input type="file" className="sr-only" />Drop your CV or click to browse (PDF, DOCX)</label>}
                   </div>
                   <div className="mt-8 flex justify-between">
-                    <button disabled={!step} onClick={() => setStep(step - 1)} className="eyebrow text-ivory/50 disabled:opacity-30">← Back</button>
+                    <button disabled={!step} onClick={() => setStep(step - 1)} className="eyebrow text-ivory/65 disabled:opacity-30">← Back</button>
                     <button onClick={() => setStep(step + 1)} className="bg-gold-light px-6 py-3 text-xs tracking-[0.2em] text-navy uppercase transition hover:bg-ivory">{step === 2 ? 'Submit' : 'Continue'} →</button>
                   </div>
                 </>

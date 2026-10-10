@@ -13,7 +13,7 @@ function Hub({ slug, lang }: { slug: string; lang: Lang }) {
       <section className="relative overflow-hidden border-b border-line">
         <Contours className="absolute inset-0 h-full w-full" stroke="#132B45" opacity={0.06} />
         <div className="relative mx-auto max-w-[1320px] px-5 py-20 md:px-10">
-          <p className="eyebrow text-slate"><a href="/" className="hover:text-navy">Home</a> › <span className="text-gold">{a.label}</span></p>
+          <p className="eyebrow text-slate"><a href="/" className="hover:text-navy">Home</a> › <span className="text-gold-strong">{a.label}</span></p>
           <h1 className="mt-8 max-w-4xl text-[clamp(2.6rem,6vw,5rem)] leading-[1] font-medium"><SplitText text={lang === 'ar' ? a.ar : a.line} /></h1>
           <Reveal delay={500}><Magnetic className="mt-10 bg-navy px-7 py-4 text-[0.75rem] font-medium tracking-[0.22em] text-ivory uppercase">{a.action} <span>↓</span></Magnetic></Reveal>
         </div>
@@ -23,7 +23,7 @@ function Hub({ slug, lang }: { slug: string; lang: Lang }) {
         <div className="mt-12 grid gap-px bg-line md:grid-cols-3">
           {a.q.map((q, i) => (
             <Reveal key={q} delay={i * 100} className="bg-ivory p-8">
-              <span className="font-display text-6xl text-gold">{i + 1}</span>
+              <span className="font-display text-6xl text-gold-strong">{i + 1}</span>
               <h3 className="mt-6 text-2xl font-medium">{q}</h3>
               <p className="mt-3 text-sm text-slate">Answered with evidence from the ledger, filtered to {a.label.replace('For ', '').toLowerCase()} — no duplicate content, just a different lens.</p>
             </Reveal>

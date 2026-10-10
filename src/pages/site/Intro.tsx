@@ -35,7 +35,7 @@ export default function Intro({ onDone, onLift }: { onDone: () => void; onLift: 
         </p>
         <p className={`mt-4 text-[0.65rem] font-medium tracking-[0.6em] text-gold-light transition-all delay-500 duration-700 ${phase === 'draw' ? 'tracking-[1.2em] opacity-0' : ''}`}>LEVERAGE FOR GOOD</p>
       </div>
-      <button onClick={(e) => { e.stopPropagation(); skip() }} className="eyebrow absolute right-6 bottom-6 text-ivory/40 transition hover:text-ivory">Skip intro</button>
+      <button onClick={(e) => { e.stopPropagation(); skip() }} className="eyebrow absolute right-6 bottom-6 text-ivory/65 transition hover:text-ivory">Skip intro</button>
     </div>
   )
 }

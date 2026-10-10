@@ -29,7 +29,7 @@ export function WhatsNew() {
     <section id="new" className="mx-auto max-w-[1320px] scroll-mt-40 px-5 py-24 md:px-10">
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow text-gold">What's new — what we're up to</p>
+          <p className="eyebrow text-gold-strong">What's new — what we're up to</p>
           <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-none font-medium"><SplitText text="A whole lot is happening." /></h2>
         </div>
         <div className="flex gap-2">
@@ -70,18 +70,18 @@ export function WhatsNew() {
               <button onClick={() => setOpen(null)} aria-label="Close" className="absolute top-4 end-4 grid h-10 w-10 place-items-center bg-ivory text-navy">✕</button>
             </div>
             <div className="flex flex-1 flex-col p-8">
-              <p className="eyebrow text-gold">{n.tag} · {n.date}</p>
+              <p className="eyebrow text-gold-strong">{n.tag} · {n.date}</p>
               <h3 id={`whatsnew-title-${open}`} className="mt-4 text-4xl leading-tight font-medium">{n.title}</h3>
               <p className="mt-5 text-lg leading-relaxed text-navy-2">{n.body}</p>
               <button onClick={() => setLiked({ ...liked, [open]: !liked[open] })} aria-pressed={!!liked[open]}
                 className={`mt-8 inline-flex w-max items-center gap-3 border px-4 py-2 transition ${liked[open] ? 'border-gold bg-gold/10 text-navy' : 'border-line hover:border-navy'}`}>
-                <span className={`transition-transform ${liked[open] ? 'scale-125 text-gold' : ''}`}>{liked[open] ? '♥' : '♡'}</span>
+                <span className={`transition-transform ${liked[open] ? 'scale-125 text-gold-strong' : ''}`}>{liked[open] ? '♥' : '♡'}</span>
                 <span className="tabular-nums">{n.likes + (liked[open] ? 1 : 0)}</span> people like this
               </button>
               <div className="mt-auto grid grid-cols-2 gap-px bg-line pt-px">
                 {[['Suggest', 'Your suggestion has been noted'], ['Join the cause', 'Welcome — you have joined the cause'], ['Reserve a seat', 'Seat reserved — check your inbox'], ['Pay / contribute', 'Opening secure payment link…']].map(([a, msg], k) => (
                   <button key={a} onClick={() => act(msg)} className={`p-5 text-start transition ${k === 1 ? 'bg-navy text-ivory hover:bg-navy-2' : 'bg-ivory hover:bg-ivory-2'}`}>
-                    <span className="eyebrow block text-gold">0{k + 1}</span>
+                    <span className={`eyebrow block ${k === 1 ? 'text-gold-light' : 'text-gold-strong'}`}>0{k + 1}</span>
                     <span className="mt-2 block font-display text-xl">{a}</span>
                   </button>
                 ))}
