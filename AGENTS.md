@@ -15,20 +15,21 @@ This is the canonical project structure. Start with task-relevant files below. O
 
 Source lives under `src/`, organised feature-first. Imports use the `@` alias (mapped to `src/` in `tsconfig.json` and `vite.config.ts`), e.g. `@/pages/site/home`.
 
-- `src/main.tsx` - React entrypoint; imports `src/styles/index.css` and mounts `src/app/App.tsx` into the `#root` element
+- `src/main.tsx` - React entrypoint; imports `src/styles/index.css` and mounts `src/app/App.tsx` into the `#root` element; in dev it also loads the `@axe-core/react` accessibility scan
 - `src/app/App.tsx` - App shell and history-based router (`/`, `/hub/<slug>`, `/dashboard`, else 404); uses the `useRoute` hook
 - `src/pages/site/Site.tsx` - Marketing site shell: hero hold, section order, footer; renders `src/pages/site/components/*`
 - `src/pages/site/types.ts` - Shared `Lang` type (`'en' | 'ar'`), re-exported by `Site.tsx`
 - `src/pages/site/components/` - Site shell internals: `Header` (nav + mobile menu + search trigger), `Hero`, `Audiences` (orbit picker), `SectionHead`, `Globe`, `Footer`, `Hub` (per-audience pages)
 - `src/pages/site/Intro.tsx` - Introductory splash shown once per browser
 - `src/pages/site/home/` - Homepage sections, one file per section (`Head`, `Evidence`, `Knowledge`, `Learning`, `Join`, `Conversation`, `SearchOverlay`) plus `index.tsx` as the barrel that re-exports them
-- `src/pages/site/additions/` - Extras, one file per section (`HelloIntake`, `WhatsNew`, `CauseExhibition`, `WhoWeAre`, `JoinBoard`, `ContactCard`, `LearningStrip`) plus `index.tsx` barrel and `shared.ts` helpers (`img`, `areas`)
-- `src/pages/dashboard/Dashboard.tsx` - Client portal prototype
+- `src/pages/site/additions/` - Extras, one file per section (`HelloIntake`, `WhatsNew`, `CauseExhibition`, `WhoWeAre`, `JoinBoard`, `ContactCard`, `LearningStrip`, `PrivilegeToggle`) plus `index.tsx` barrel and `shared.ts` helpers (`img`, `areas`)
+- `src/pages/dashboard/Dashboard.tsx` - Client portal prototype ("Command Deck"): tenant workspace switcher, KPI cards with delta chips and skeleton loading, portfolio pulse (status + G0–G7 stage distribution), assignment ledger, activity rail
 - `src/pages/NotFound.tsx` - Fallback for unknown routes
 - `src/components/motion/fx.tsx` - Animation primitives (SplitText, CountUp, Reveal, Magnetic, Contours, Logo, Emblem, Spotlight, GoldLine, Decrypt, useInView)
-- `src/hooks/` - `useRoute` (history-based routing) and `useHead` (per-route title/meta)
+- `src/components/ui/` - Shared UI primitives (`Badge`, `EmptyState`, `SegmentedControl`, `Dialog` with focus trap, `LiveStatus`) plus `index.tsx` barrel; imports via `@/components/ui`
+- `src/hooks/` - `useRoute` (history-based routing), `useHead` (per-route title/meta), and `useMetrics` (sessionStorage UX KPI counters: `tm.t3t`, `tm.priv.commits`, `tm.priv.undos`, `tm.priv.cancels`)
 - `src/content/data.ts` - Content: audiences, method, cases, knowledge, footer
-- `src/styles/index.css` - Global CSS entrypoint and Tailwind CSS v4 theme
+- `src/styles/index.css` - Global CSS entrypoint and Tailwind CSS v4 theme (see Styling)
 - `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
 - `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
 - `vite.config.ts` - Vite configuration with the React and Tailwind CSS v4 plugins plus the `@` alias for `src`
@@ -41,6 +42,7 @@ Barrels (`home/index.tsx`, `additions/index.tsx`) re-export section components s
 - Runtime: React 19 and React DOM 19
 - Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
 - Build tooling: Vite 8, TypeScript 5.7, and `@vitejs/plugin-react`
+- Dev tooling: `@axe-core/react` (accessibility scan, loaded only when `import.meta.env.DEV`)
 - Formatting: oxfmt
 
 ## Routing
@@ -52,6 +54,10 @@ Routes use `window.history` (`/hub/governments`, `/dashboard`, `/`) — no hash 
 This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/styles/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/styles/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
 
 `src/main.tsx` imports `src/styles/index.css`, so global font wiring belongs in `src/styles/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
+
+The `@theme` block defines the color tokens (`navy`, `navy-2`, `navy-3`, `ivory`, `ivory-2`, `line`, `slate`, `gold`, `gold-light`), semantic tokens (`gold-strong` `#8a6d33`, `warn-strong` `#9a6700`, `risk-strong` `#8f1f1f`, `ok-strong` `#2f6b3a`, `error` `#b42318`), the color-blind-safe data ramp (`data-1`–`data-4`), and fonts (`display` Cormorant Garamond, `sans` Jost, `mono` JetBrains Mono). Use the `-strong` variants for text on `ivory` (they meet WCAG AA; the plain variants are decorative/on-navy only). Numeric cells use `font-mono tabular-nums`.
+
+Keyframes include `grow` (arming/loading fills) and `shrink` (3s privilege undo countdown). Motion primitives are gated by `prefers-reduced-motion` (`reduced()` in `fx.tsx`, plus a CSS media block); keep new transforms/animations behind the same guard.
 
 ## Code quality
 

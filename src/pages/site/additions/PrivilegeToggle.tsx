@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { SplitText } from '@/components/motion/fx'
 import { Badge, LiveStatus } from '@/components/ui'
+import { useMetrics } from '@/hooks/useMetrics'
 
 /* ——— Access tiers: hold/arm → impact preview → 3s undo ——— */
 const levels = ['Viewer', 'Editor', 'Admin'] as const
@@ -37,14 +38,20 @@ export function PrivilegeToggle() {
   const undoTimeout = useRef<number | null>(null)
   const prevLevel = useRef<Level>('Viewer')
   const held = useRef(false)
+  const armedRef = useRef<Level | null>(null)
+  const m = useMetrics()
 
   const notify = (m: string) => { setAnnounce(m); window.setTimeout(() => setAnnounce(''), 3000) }
   const clearArm = () => { if (commitTimer.current !== null) { clearTimeout(commitTimer.current); commitTimer.current = null } }
 
   const commit = (l: Level) => {
     clearArm()
-    if (armed === l) setArmed(null)
+    armedRef.current = null
+    setArmed(null)
+    held.current = false
     prevLevel.current = level
+    m.bump('priv.commits')
+    if (import.meta.env.DEV) console.debug(`[tm] privilege commit: ${l}`)
     setUndoKey((k) => k + 1)
     setUndoActive(true)
     setLevel(l)
@@ -54,19 +61,32 @@ export function PrivilegeToggle() {
   }
 
   const beginArm = (l: Level, hold: boolean) => {
-    if (level === l) { setArmed(null); return }
-    if (armed === l) { commit(l); return }
+    if (level === l) { armedRef.current = null; setArmed(null); return }
+    if (armedRef.current === l) { commit(l); return }
     clearArm()
     held.current = hold
+    armedRef.current = l
     setArmed(l)
     commitTimer.current = window.setTimeout(() => commit(l), 600)
   }
 
-  const cancel = () => { clearArm(); setArmed(null) }
-  const release = () => { if (held.current) cancel() }
+  const doCancel = () => {
+    const wasArming = armedRef.current !== null
+    if (!wasArming) return
+    clearArm()
+    armedRef.current = null
+    setArmed(null)
+    held.current = false
+    m.bump('priv.cancels')
+    if (import.meta.env.DEV) console.debug('[tm] privilege arm cancelled before commit')
+  }
+  const release = () => { if (held.current) doCancel() }
 
   const undo = () => {
     if (undoTimeout.current !== null) clearTimeout(undoTimeout.current)
+    m.bump('priv.undos')
+    if (import.meta.env.DEV) console.debug(`[tm] privilege undo back to ${prevLevel.current}`)
+    armedRef.current = null
     setArmed(null)
     setUndoActive(false)
     setLevel(prevLevel.current)
@@ -75,7 +95,7 @@ export function PrivilegeToggle() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && armed) { e.preventDefault(); cancel() }
+      if (e.key === 'Escape' && armed) { e.preventDefault(); doCancel() }
     }
     window.addEventListener('keydown', onKey)
     return () => { window.removeEventListener('keydown', onKey); clearArm() }
@@ -119,7 +139,7 @@ export function PrivilegeToggle() {
                 onKeyDown={(e) => {
                   if (e.key !== 'Enter' && e.key !== ' ') return
                   e.preventDefault()
-                  armed === l ? commit(l) : beginArm(l, false)
+                  beginArm(l, false)
                 }}
                 className={`relative overflow-hidden p-6 text-start transition select-none ${isCommitted ? 'bg-navy text-ivory' : 'bg-ivory hover:bg-ivory-2'} ${isArming ? 'ring-2 ring-inset ring-gold' : ''}`}>
                 <span className={`absolute inset-x-0 top-0 h-0.5 ${isCommitted ? 'bg-gold-light' : 'bg-line'}`} />

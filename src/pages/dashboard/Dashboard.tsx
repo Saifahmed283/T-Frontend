@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useHead } from '@/hooks/useHead'
+import { useMetrics } from '@/hooks/useMetrics'
 import { CountUp, Logo, Emblem, Reveal } from '@/components/motion/fx'
 import { Badge, EmptyState, LiveStatus, SegmentedControl } from '@/components/ui'
 import { method } from '@/content/data'
@@ -132,10 +133,30 @@ export default function Dashboard() {
   const [workspace, setWorkspace] = useState('All tenants')
   const [ready, setReady] = useState(false)
   const [announce, setAnnounce] = useState('')
+  const m = useMetrics()
+  const t0 = useRef(0)
+  const pending = useRef(false)
+  const kpisRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const t = setTimeout(() => setReady(true), 450)
     return () => clearTimeout(t)
+  }, [])
+
+  useEffect(() => {
+    const el = kpisRef.current
+    if (!el) return
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting && pending.current) {
+        pending.current = false
+        const t3t = performance.now() - t0.current
+        m.push('t3t', t3t)
+        if (import.meta.env.DEV) console.debug(`[tm] time-to-task after tenant switch: ${Math.round(t3t)}ms`)
+      }
+    }, { threshold: 0.5 })
+    io.observe(el)
+    return () => io.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const notify = (msg: string) => { setAnnounce(msg); setTimeout(() => setAnnounce(''), 3000) }
@@ -193,7 +214,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             <label className="hidden items-center gap-2 text-xs text-slate sm:flex">
               <span className="sr-only">Tenant workspace</span>
-              <select value={workspace} onChange={(e) => { setWorkspace(e.target.value); notify(`Switched to ${e.target.value}`) }} aria-label="Switch tenant workspace"
+              <select value={workspace} onChange={(e) => { const w = e.target.value; setWorkspace(w); notify(`Switched to ${w}`); t0.current = performance.now(); pending.current = true; if (import.meta.env.DEV) console.debug(`[tm] tenant switch to ${w}`) }} aria-label="Switch tenant workspace"
                 className="max-w-44 border border-line bg-transparent px-3 py-2 text-sm text-navy focus-visible:outline-gold-strong">
                 {workspaces.map((w) => <option key={w} value={w}>{w}</option>)}
               </select>
@@ -206,7 +227,7 @@ export default function Dashboard() {
 
         <div className="space-y-6 px-5 pt-8 md:px-10">
           {/* KPIs */}
-          <div className="grid grid-cols-2 gap-px bg-line xl:grid-cols-4" aria-busy={!ready}>
+          <div ref={kpisRef} className="grid grid-cols-2 gap-px bg-line xl:grid-cols-4" aria-busy={!ready}>
             {kpis.map((k, i) => (
               <Reveal key={k.l} delay={i * 80} className="bg-ivory p-6">
                 {ready ? (
