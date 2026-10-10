@@ -36,11 +36,12 @@ export function SplitText({ text, className = '', delay = 0 }: { text: string; c
 
 export function Reveal({ children, className = '', delay = 0 }: { children: ReactNode; className?: string; delay?: number }) {
   const [ref, seen] = useInView<HTMLDivElement>(0.12)
+  const settle = seen || reduced()
   return (
     <div
       ref={ref}
       className={`transition-[transform,opacity,filter] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] ${className}`}
-      style={{ transform: seen ? 'none' : 'translateY(28px)', opacity: seen ? 1 : 0, filter: seen ? 'none' : 'blur(6px)', transitionDelay: `${delay}ms` }}
+      style={{ transform: settle ? 'none' : 'translateY(28px)', opacity: settle ? 1 : 0, filter: settle ? 'none' : 'blur(6px)', transitionDelay: `${delay}ms` }}
     >
       {children}
     </div>
