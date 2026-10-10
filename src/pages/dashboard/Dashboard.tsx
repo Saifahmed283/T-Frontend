@@ -1,7 +1,7 @@
-import { useHead } from './seo'
+import { useHead } from '@/hooks/useHead'
 import { useMemo, useState } from 'react'
-import { CountUp, Logo, Emblem, Reveal } from './fx'
-import { method } from './data'
+import { CountUp, Logo, Emblem, Reveal } from '@/components/motion/fx'
+import { method } from '@/content/data'
 
 type Status = 'On track' | 'At risk' | 'Blocked'
 const assignments: { id: string; name: string; client: string; sector: string; gate: number; status: Status; lead: string; value: number }[] = [

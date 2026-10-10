@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Intro from './Intro'
-import { useHead } from './seo'
-import { WhatsNew, CauseExhibition } from './Additions'
-import { Evidence, Knowledge, Learning, Join, Conversation, SearchOverlay } from './Home'
-import { audiences, method, cases, knowledge, footer } from './data'
-import { SplitText, Reveal, CountUp, Spotlight, Magnetic, GoldLine, Decrypt, Contours, Logo, Emblem } from './fx'
+import { useHead } from '@/hooks/useHead'
+import { WhatsNew, CauseExhibition } from '@/pages/site/additions'
+import { Evidence, Knowledge, Learning, Join, Conversation, SearchOverlay } from '@/pages/site/home'
+import { audiences, method, cases, knowledge, footer } from '@/content/data'
+import { SplitText, Reveal, CountUp, Spotlight, Magnetic, GoldLine, Decrypt, Contours, Logo, Emblem } from '@/components/motion/fx'
 
 export type Lang = 'en' | 'ar'
 type Props = { lang: Lang; setLang: (l: Lang) => void; hub?: string }

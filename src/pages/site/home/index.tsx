@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { audiences, cases, knowledge } from './data'
-import { SplitText, Reveal, Spotlight, GoldLine, Contours, Emblem } from './fx'
+import { audiences, cases, knowledge } from '@/content/data'
+import { SplitText, Reveal, Spotlight, GoldLine, Contours, Emblem } from '@/components/motion/fx'
 
 export function Head({ id, n, eyebrow, title, aside, dark }: { id?: string; n: string; eyebrow: string; title: string; aside?: React.ReactNode; dark?: boolean }) {
   return (

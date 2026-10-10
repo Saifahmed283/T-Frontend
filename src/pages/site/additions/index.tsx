@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Reveal, SplitText, GoldLine, Spotlight, Contours, Emblem, CountUp } from './fx'
+import { Reveal, SplitText, GoldLine, Spotlight, Contours, Emblem, CountUp } from '@/components/motion/fx'
 
 const img = (id: string, w = 1400) => `https://images.unsplash.com/${id}?w=${w}&q=75&auto=format&fit=crop`
 

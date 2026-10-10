@@ -1,6 +1,6 @@
-import { audiences } from './data'
-import { Contours, Logo } from './fx'
-import { useHead } from './seo'
+import { audiences } from '@/content/data'
+import { Contours, Logo } from '@/components/motion/fx'
+import { useHead } from '@/hooks/useHead'
 
 export default function NotFound() {
   useHead('Page not found', 'This TerraMorph page does not exist. Find evidence, knowledge and audience hubs from here.')
