@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Reveal } from '@/components/motion/fx'
 import { Head } from './Head'
+import { RequestDialog, type RequestConfig } from '@/pages/site/components/RequestDialog'
 
 /* ——— 06 Learning: price-bearing, bookable programmes ——— */
 export const programmes = [
@@ -10,7 +11,7 @@ export const programmes = [
   { d: '—', m: 'Open', title: 'Welcome method — onboarding for new teams', fmt: 'Self-paced · AR/EN', price: 'Free for NGOs', seats: 0 },
 ]
 export function Learning() {
-  const [booked, setBooked] = useState<string | null>(null)
+  const [req, setReq] = useState<RequestConfig | null>(null)
   return (
     <section id="learning" className="scroll-mt-40 bg-ivory-2">
       <div className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">
@@ -22,13 +23,15 @@ export function Learning() {
               <div className="flex items-baseline gap-2 md:block"><span className="font-display text-5xl leading-none">{p.d}</span><span className="eyebrow text-gold-strong md:mt-1 md:block">{p.m}</span></div>
               <div><p className="font-display text-2xl font-medium">{p.title}</p><p className="mt-1 text-sm text-slate">{p.fmt}</p></div>
               <div><p className="text-lg">{p.price}</p>{p.seats > 0 && <p className={`text-xs ${p.seats < 5 ? 'text-warn-strong' : 'text-slate'}`}>{p.seats} seats left</p>}</div>
-              <button onClick={() => setBooked(p.title)} className={`justify-self-start border px-5 py-3 text-xs tracking-[0.18em] uppercase transition md:justify-self-end ${booked === p.title ? 'border-ok bg-ok text-ivory' : 'border-navy group-hover:bg-navy group-hover:text-ivory'}`}>
-                {booked === p.title ? '✓ Reserved' : p.seats ? 'Reserve seat' : 'Start now'}
+              <button onClick={() => setReq({ kind: 'SEAT_RESERVATION', title: `Reserve a seat — ${p.title}`, intro: `${p.d} ${p.m} · ${p.fmt} · ${p.price}`, context: { programme: p.title, date: `${p.d} ${p.m}`, format: p.fmt, price: p.price, seatsLeft: p.seats }, submitLabel: 'Confirm reservation' })}
+                className="cursor-pointer justify-self-start border border-navy px-5 py-3 text-xs tracking-[0.18em] uppercase transition md:justify-self-end group-hover:bg-navy group-hover:text-ivory">
+                {p.seats ? 'Reserve seat' : 'Start now'}
               </button>
             </Reveal>
           ))}
         </ul>
       </div>
+      <RequestDialog request={req} onClose={() => setReq(null)} />
     </section>
   )
 }

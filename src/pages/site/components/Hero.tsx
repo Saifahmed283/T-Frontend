@@ -26,7 +26,7 @@ function Hero({ lang }: { lang: Lang }) {
   ]
   return (
     <section ref={sec} onPointerMove={light}
-      className="relative isolate flex min-h-[calc(100svh-108px)] flex-col overflow-hidden bg-navy-3 text-ivory [--mx:70%] [--my:30%]">
+      className="relative isolate flex min-h-[calc(100svh-110px)] flex-col overflow-hidden bg-navy-3 text-ivory [--mx:70%] [--my:30%]">
       {/* light that follows the pointer */}
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(600px_circle_at_var(--mx)_var(--my),rgba(196,168,104,.12),transparent_60%)] transition-[background] duration-300" />
       <Contours className="absolute inset-0 -z-10 h-full w-full" stroke="#FBF8F1" opacity={0.05} />
@@ -78,7 +78,7 @@ function Hero({ lang }: { lang: Lang }) {
             </Reveal>
           ))}
         </div>
-        <a href="/#for" aria-label="Scroll" className="absolute -top-14 start-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-ivory/65 transition hover:text-ivory md:flex rtl:translate-x-1/2">
+        <a href="/for" aria-label="Scroll" className="absolute -top-14 start-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 text-ivory/65 transition hover:text-ivory md:flex rtl:translate-x-1/2">
           <span className="relative h-8 w-px overflow-hidden bg-ivory/15"><span className="scroll-cue absolute inset-0 bg-gold-light" /></span>
         </a>
       </div>

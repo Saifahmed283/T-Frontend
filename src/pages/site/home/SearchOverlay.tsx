@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Dialog } from '@/components/ui'
 import { audiences, cases } from '@/content/data'
+import { pathForSection } from '@/lib/routes'
 import { ledger } from './Evidence'
 import { library } from './Knowledge'
 import { programmes } from './Learning'
@@ -14,10 +15,10 @@ export function SearchOverlay({ onClose }: { onClose: () => void }) {
   }, [])
   const all = useMemo(() => [
     ...audiences.map((a) => ({ type: 'Audience', title: a.label, href: `/hub/${a.slug}` })),
-    ...cases.map((c) => ({ type: 'Case', title: c.title, href: '/#evidence' })),
-    ...ledger.map((c) => ({ type: 'Ledger', title: c.title, href: '/#evidence' })),
-    ...library.map((k) => ({ type: k.type, title: k.title, href: '/#knowledge' })),
-    ...programmes.map((p) => ({ type: 'Course', title: p.title, href: '/#learning' })),
+    ...cases.map((c) => ({ type: 'Case', title: c.title, href: pathForSection('evidence') })),
+    ...ledger.map((c) => ({ type: 'Ledger', title: c.title, href: pathForSection('evidence') })),
+    ...library.map((k) => ({ type: k.type, title: k.title, href: pathForSection('knowledge') })),
+    ...programmes.map((p) => ({ type: 'Course', title: p.title, href: pathForSection('learning') })),
   ], [])
   const res = q.trim() ? all.filter((r) => (r.title + r.type).toLowerCase().includes(q.toLowerCase())) : []
   return (

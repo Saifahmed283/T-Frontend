@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Contours, Emblem } from '@/components/motion/fx'
+import { api, ApiError } from '@/lib/api'
 
 /* ——— 09 Conversation: one front door — "Hello! I am…" + which lists + contact ——— */
 const roles = ['policy maker', 'government official', 'local entity', 'development partner', 'INGO', 'consultant', 'business owner', 'change agent', 'cause enthusiast']
@@ -39,7 +40,29 @@ export function Conversation() {
   const [fw, setFw] = useState(forward[0])
   const [sel, setSel] = useState<string[]>([lists[0]])
   const [sent, setSent] = useState(false)
+  const [email, setEmail] = useState('')
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
   const pickRole = (r: string) => { setRole(r); setSel([roleToList[r]]) }
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    setError('')
+    setSending(true)
+    try {
+      await api.submit({
+        kind: 'CONTACT',
+        email,
+        source: 'site',
+        message: `I am a ${role}, and I would like to ${intent}. I'm looking forward to ${fw}.`,
+        payload: { role, intent, forward: fw, lists: sel },
+      })
+      setSent(true)
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong. Please try again.')
+    } finally {
+      setSending(false)
+    }
+  }
   return (
     <section id="contact" className="relative scroll-mt-40 overflow-hidden bg-navy-3 text-ivory">
       <Contours className="absolute inset-0 h-full w-full" opacity={0.1} />
@@ -51,10 +74,10 @@ export function Conversation() {
               <Emblem className="h-14 w-14" tone="ivory" />
               <p className="mt-6 max-w-2xl font-display text-[clamp(2rem,4vw,3.2rem)] leading-tight">Thank you. A partner will reach out within two working days to set up {fw}.</p>
               {!!sel.length && <p className="mt-4 text-ivory/60">You'll also receive: {sel.join(' · ')}.</p>}
-              <button onClick={() => setSent(false)} className="eyebrow mt-8 border-b border-gold-light pb-1">Write another note</button>
+              <button onClick={() => { setSent(false); setEmail('') }} className="eyebrow mt-8 border-b border-gold-light pb-1">Write another note</button>
             </div>
           ) : (
-            <form onSubmit={(e) => { e.preventDefault(); setSent(true) }}>
+            <form onSubmit={submit}>
               <p className="mt-8 font-display text-[clamp(1.9rem,4vw,3.4rem)] leading-[1.35] font-medium">
                 Hello! I am a <Pick value={role} options={roles} onChange={pickRole} />, and I would like to <Pick value={intent} options={intents} onChange={setIntent} />. I'm looking forward to <Pick value={fw} options={forward} onChange={setFw} />.
               </p>
@@ -69,16 +92,17 @@ export function Conversation() {
                 </div>
               </div>
               <div className="mt-10 flex flex-wrap items-center gap-4 border-b border-ivory/30 focus-within:border-gold-light">
-                <input required type="email" placeholder="you@organisation.org" className="min-w-0 flex-1 bg-transparent py-4 text-lg placeholder:text-ivory/30 focus:outline-none" />
-                <button className="eyebrow py-4 text-gold-light transition hover:text-ivory">Let's collaborate →</button>
+                <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@organisation.org" className="min-w-0 flex-1 bg-transparent py-4 text-lg placeholder:text-ivory/30 focus:outline-none" />
+                <button type="submit" disabled={sending} className="cursor-pointer eyebrow py-4 text-gold-light transition hover:text-ivory disabled:opacity-60">{sending ? 'Sending…' : "Let's collaborate →"}</button>
               </div>
+              {error && <p role="alert" className="eyebrow mt-4 text-gold-light">{error}</p>}
             </form>
           )}
         </div>
         <aside className="self-end border border-ivory/15 p-8">
           <p className="eyebrow text-gold-light">Or reach us directly</p>
           <ul className="mt-6 space-y-4">
-            {[['Phone', '+20 100 000 0000', 'tel:+201000000000'], ['Email', 'hello@terramorph.com', 'mailto:hello@terramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['Office', 'New Cairo, Egypt', '#']].map(([l, v, h]) => (
+            {[['Phone', '+20 100 000 0000', 'tel:+201000000000'], ['Email', 'hello@terramorph.com', 'mailto:hello@terramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['Office', 'New Cairo, Egypt', 'https://www.google.com/maps/search/New+Cairo,+Egypt']].map(([l, v, h]) => (
               <li key={l} className="flex items-baseline justify-between gap-4 border-b border-ivory/10 pb-4">
                 <span className="eyebrow text-ivory/65">{l}</span>
                 <a href={h} className="font-display text-xl transition hover:text-gold-light">{v}</a>

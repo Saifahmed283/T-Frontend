@@ -51,6 +51,31 @@ export type ActivityItem = {
 
 export type ActivityFeed = { items: ActivityItem[]; nextCursor: string | null }
 
+export const submissionKinds = [
+  'CONTACT',
+  'EXPERT_REGISTRATION',
+  'SEAT_RESERVATION',
+  'TENDER_INTEREST',
+  'TEAM_PROPOSAL',
+  'JOB_APPLICATION',
+  'PUBLICATION_REQUEST',
+  'NEWSLETTER',
+  'CONTRIBUTION',
+] as const
+
+export type SubmissionKind = (typeof submissionKinds)[number]
+
+export type SubmissionInput = {
+  kind: SubmissionKind
+  email?: string
+  name?: string
+  message?: string
+  source?: string
+  payload?: Record<string, unknown>
+}
+
+export type SubmissionReceipt = { id: string; kind: SubmissionKind; status: string; createdAt: string }
+
 export type SessionInfo = {
   user: { id: string; name: string; email: string }
   workspace: { id: string; slug: string }
@@ -111,4 +136,5 @@ export const api = {
     return request<Paginated<Assignment>>(`/api/v1/assignments${qs ? `?${qs}` : ''}`)
   },
   activity: (limit = 20) => request<ActivityFeed>(`/api/v1/activity?limit=${limit}`),
+  submit: (input: SubmissionInput) => request<SubmissionReceipt>('/api/v1/submissions', { method: 'POST', body: JSON.stringify(input) }),
 }

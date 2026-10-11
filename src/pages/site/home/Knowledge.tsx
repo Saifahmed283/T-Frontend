@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { knowledge } from '@/content/data'
 import { Contours } from '@/components/motion/fx'
 import { Head } from './Head'
+import { RequestDialog, type RequestConfig } from '@/pages/site/components/RequestDialog'
 
 /* ——— 05 Knowledge: mixed types, type + language named, free toolkit folded in ——— */
 export const library = [
@@ -15,6 +16,7 @@ export function Knowledge() {
   const [lang, setLang] = useState<'All' | 'AR' | 'EN'>('All')
   const list = library.filter((k) => (f === 'All' || k.type === f) && (lang === 'All' || k.lang.includes(lang)))
   const [hover, setHover] = useState(0)
+  const [req, setReq] = useState<RequestConfig | null>(null)
   const feat = list[hover] ?? list[0]
   return (
     <section className="border-t border-line">
@@ -32,11 +34,12 @@ export function Knowledge() {
           <ul className="divide-y divide-line border-y border-line">
             {list.map((k, i) => (
               <li key={k.title} onMouseEnter={() => setHover(i)}>
-                <a href="#" className={`group grid items-center gap-3 py-6 transition-colors md:grid-cols-[160px_1fr_32px] md:px-4 ${i === hover ? 'bg-ivory-2' : ''}`}>
+                <button type="button" onClick={() => setReq({ kind: 'PUBLICATION_REQUEST', title: `Request: ${k.title}`, context: { asset: k.title, free: k.free }, submitLabel: k.free ? 'Send a download link' : 'Request a copy' })}
+                  className={`group grid w-full cursor-pointer items-center gap-3 py-6 text-start transition-colors md:grid-cols-[160px_1fr_32px] md:px-4 ${i === hover ? 'bg-ivory-2' : ''}`}>
                   <span className="eyebrow text-gold-strong">{k.type} · <span className="text-navy">{k.lang}</span>{k.free && <span className="ms-2 bg-ok px-1.5 py-0.5 text-ivory">Free</span>}</span>
                   <span dir={k.lang === 'AR' ? 'rtl' : undefined} className="font-display text-2xl font-medium transition-transform duration-500 group-hover:translate-x-2">{k.title}</span>
                   <span className="hidden text-end transition-transform group-hover:-translate-y-0.5 md:block">↗</span>
-                </a>
+                </button>
               </li>
             ))}
             {!list.length && <li className="py-10 text-center text-slate">Nothing in this combination yet — try another language.</li>}
@@ -47,11 +50,13 @@ export function Knowledge() {
               <p className="eyebrow relative text-gold-light">{feat.type} · {feat.lang}</p>
               <p key={feat.title} dir={feat.lang === 'AR' ? 'rtl' : undefined} className="relative mt-6 font-display text-3xl leading-snug" style={{ animation: 'fadeup .5s both' }}>{feat.title}</p>
               <p className="relative mt-auto pt-10 text-sm text-ivory/60">{feat.meta}</p>
-              <a href="#" className="eyebrow relative mt-4 border-b border-gold-light pb-1 self-start">{feat.free ? 'Download free' : 'Read'} →</a>
+              <button type="button" onClick={() => setReq({ kind: 'PUBLICATION_REQUEST', title: `Request: ${feat.title}`, context: { asset: feat.title, free: feat.free }, submitLabel: feat.free ? 'Send a download link' : 'Request a copy' })}
+                className="eyebrow relative mt-4 self-start cursor-pointer border-b border-gold-light pb-1">{feat.free ? 'Download free' : 'Read'} →</button>
             </aside>
           )}
         </div>
       </div>
+      <RequestDialog request={req} onClose={() => setReq(null)} />
     </section>
   )
 }

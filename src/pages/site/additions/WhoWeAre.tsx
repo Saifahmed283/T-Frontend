@@ -11,7 +11,7 @@ export function WhoWeAre() {
   const [t, setT] = useState(0)
   useEffect(() => { const id = setInterval(() => setT((x) => (x + 1) % testimonials.length), 5500); return () => clearInterval(id) }, [])
   return (
-    <section id="who" className="mx-auto max-w-[1320px] scroll-mt-40 px-5 py-24 md:px-10">
+    <section id="about" className="mx-auto max-w-[1320px] scroll-mt-40 px-5 py-24 md:px-10">
       <div className="grid gap-14 lg:grid-cols-[1fr_1.2fr]">
         <Reveal>
           <Emblem className="h-20 w-20" />
