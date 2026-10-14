@@ -18,13 +18,28 @@ export function useInView<T extends Element>(threshold = 0.2) {
 /* Word-by-word rise, masked — after ReactBits SplitText */
 export function SplitText({ text, className = '', delay = 0 }: { text: string; className?: string; delay?: number }) {
   const [ref, seen] = useInView<HTMLSpanElement>(0.1)
+  const settle = seen || reduced()
+  /* Arabic is connected script — per-word overflow masks clip glyphs and the
+     `&nbsp;` padding breaks joining. Fade the whole line instead. */
+  if (/[\u0600-\u06FF]/.test(text)) {
+    return (
+      <span ref={ref} className={className} role="img" aria-label={text}>
+        <span
+          className="inline-block transition-[transform,opacity] duration-[900ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+          style={{ transform: settle ? 'none' : 'translateY(16px)', opacity: settle ? 1 : 0, transitionDelay: `${delay}ms` }}
+        >
+          {text}
+        </span>
+      </span>
+    )
+  }
   return (
     <span ref={ref} className={className} role="img" aria-label={text}>
       {text.split(' ').map((w, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden align-bottom pb-[0.08em]">
           <span
             className="inline-block transition-[transform,opacity] duration-[1100ms] ease-[cubic-bezier(.2,.8,.2,1)]"
-            style={{ transform: seen ? 'none' : 'translateY(105%)', opacity: seen ? 1 : 0, transitionDelay: `${delay + i * 55}ms` }}
+            style={{ transform: settle ? 'none' : 'translateY(105%)', opacity: settle ? 1 : 0, transitionDelay: `${delay + i * 55}ms` }}
           >
             {w}&nbsp;
           </span>

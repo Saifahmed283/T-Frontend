@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { SplitText } from '@/components/motion/fx'
 import { Badge, LiveStatus } from '@/components/ui'
 import { useMetrics } from '@/hooks/useMetrics'
+import type { Lang } from '../types'
 
 /* ——— Access tiers: hold/arm → impact preview → 3s undo ——— */
 const levels = ['Viewer', 'Editor', 'Admin'] as const
@@ -28,7 +29,26 @@ const Tier: Record<Level, { blurb: string; tone: 'neutral' | 'ok' | 'gold'; can:
   },
 }
 
-export function PrivilegeToggle() {
+const TierAr: Record<Level, { blurb: string; can: string[]; cannot: string[] }> = {
+  Viewer: {
+    blurb: 'للقراءة فقط — لوحات وتقارير وسجل.',
+    can: ['قراءة المهام والمؤشرات الحية', 'تنزيل التقارير المنشورة', 'تصفّح سجل الخبراء'],
+    cannot: ['تعديل المهام أو الحالات', 'تغيير وصول المستخدمين الآخرين', 'اعتماد مدفوعات الموردين'],
+  },
+  Editor: {
+    blurb: 'يشغّل المهام والمراحل والسجل.',
+    can: ['تعديل المهام والبوابات والحالات', 'إدارة سجل الخبراء', 'التعليق على سجل النشاط'],
+    cannot: ['تغيير صلاحيات المستخدمين', 'دعوة أو إزالة المساحات', 'تشغيل الترحيلات / أوامر المخطط'],
+  },
+  Admin: {
+    blurb: 'تحكّم كامل بالمساحة — مع أقل صلاحيات.',
+    can: ['كل ما يستطيعه المحرّرون', 'تغيير صلاحيات المستخدمين', 'دعوة مساحات وإزالتها'],
+    cannot: ['دور التشغيل بأقل صلاحيات — بلا DDL أو CREATEDB'],
+  },
+}
+
+export function PrivilegeToggle({ lang }: { lang: Lang }) {
+  const ar = lang === 'ar'
   const [level, setLevel] = useState<Level>('Viewer')
   const [armed, setArmed] = useState<Level | null>(null)
   const [undoActive, setUndoActive] = useState(false)
@@ -55,9 +75,9 @@ export function PrivilegeToggle() {
     setUndoKey((k) => k + 1)
     setUndoActive(true)
     setLevel(l)
-    notify(`Access set to ${l} — undo available for 3 seconds`)
+    notify(ar ? `ضُبط الوصول إلى ${l} — التراجع متاح 3 ثوانٍ` : `Access set to ${l} — undo available for 3 seconds`)
     if (undoTimeout.current !== null) clearTimeout(undoTimeout.current)
-    undoTimeout.current = window.setTimeout(() => { setUndoActive(false); notify(`Access change to ${l} is locked in`) }, 3000)
+    undoTimeout.current = window.setTimeout(() => { setUndoActive(false); notify(ar ? `تم تثبيت تغيير الوصول إلى ${l}` : `Access change to ${l} is locked in`) }, 3000)
   }
 
   const beginArm = (l: Level, hold: boolean) => {
@@ -90,7 +110,7 @@ export function PrivilegeToggle() {
     setArmed(null)
     setUndoActive(false)
     setLevel(prevLevel.current)
-    notify(`Reverted to ${prevLevel.current}`)
+    notify(ar ? `تمت الاستعادة إلى ${prevLevel.current}` : `Reverted to ${prevLevel.current}`)
   }
 
   useEffect(() => {
@@ -107,16 +127,16 @@ export function PrivilegeToggle() {
       <LiveStatus message={announce} />
       <div className="flex flex-wrap items-end justify-between gap-6">
         <div>
-          <p className="eyebrow text-gold-strong">Access tiers — feature &amp; privilege control</p>
-          <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-none font-medium"><SplitText text="Who can do what." /></h2>
+          <p className="eyebrow text-gold-strong">{ar ? 'مستويات الوصول — التحكم في الميزات والصلاحيات' : 'Access tiers — feature & privilege control'}</p>
+          <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-none font-medium"><SplitText text={ar ? 'من يستطيع فعل ماذا.' : 'Who can do what.'} /></h2>
         </div>
-        <p className="max-w-md text-sm leading-relaxed text-slate">Every tenant workspace runs on the least-privilege runtime role: a tier change affects exactly the capabilities below, never the schema. Pointer — hold a tier for 600ms to arm. Keyboard — press once to arm, again (or wait) to confirm.</p>
+        <p className="max-w-md text-sm leading-relaxed text-slate">{ar ? 'يعمل كل مساحة عمل على دور تشغيل بأقل صلاحيات: تغيير المستوى يؤثر على القدرات أدناه فقط، ولا يمسّ المخطط. بالمؤشر — اضغط مطوّلًا على المستوى 600 م.س للتهيئة. بلوحة المفاتيح — اضغط مرة للتهيئة، ومرة أخرى (أو انتظر) للتأكيد.' : 'Every tenant workspace runs on the least-privilege runtime role: a tier change affects exactly the capabilities below, never the schema. Pointer — hold a tier for 600ms to arm. Keyboard — press once to arm, again (or wait) to confirm.'}</p>
       </div>
 
       <div className="mt-10 border border-line bg-ivory">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line p-5">
           <div className="flex items-center gap-3">
-            <span className="eyebrow text-slate">Current access</span>
+            <span className="eyebrow text-slate">{ar ? 'الوصول الحالي' : 'Current access'}</span>
             <Badge pulse tone={Tier[level].tone}>{level}</Badge>
           </div>
           {undoActive && (
@@ -124,12 +144,12 @@ export function PrivilegeToggle() {
               <span className="hidden w-24 overflow-hidden bg-ivory-2 sm:block">
                 <span key={undoKey} className="block h-1 bg-gold-strong" style={{ animation: 'shrink 3s linear both' }} />
               </span>
-              <button onClick={undo} className="eyebrow border border-line px-3 py-2 text-slate transition hover:border-navy hover:text-navy">↩ Undo</button>
+              <button onClick={undo} className="eyebrow border border-line px-3 py-2 text-slate transition hover:border-navy hover:text-navy">{ar ? '↩ تراجع' : '↩ Undo'}</button>
             </div>
           )}
         </div>
 
-        <div role="radiogroup" aria-label="Access tier" className="grid gap-px bg-line md:grid-cols-3">
+        <div role="radiogroup" aria-label={ar ? 'مستوى الوصول' : 'Access tier'} className="grid gap-px bg-line md:grid-cols-3">
           {levels.map((l) => {
             const isCommitted = level === l
             const isArming = armed === l
@@ -147,7 +167,7 @@ export function PrivilegeToggle() {
                   <span className="font-display text-2xl font-medium">{l}</span>
                   <span aria-hidden className={`text-sm ${isCommitted ? 'text-gold-light' : 'text-gold-strong'}`}>{isCommitted ? '✓' : isArming ? '…' : '⏻'}</span>
                 </span>
-                <span className={`mt-2 block text-xs leading-relaxed ${isCommitted ? 'text-ivory/70' : 'text-slate'}`}>{Tier[l].blurb}</span>
+                <span className={`mt-2 block text-xs leading-relaxed ${isCommitted ? 'text-ivory/70' : 'text-slate'}`}>{(ar ? TierAr : Tier)[l].blurb}</span>
                 {isArming && (
                   <span aria-hidden className="absolute inset-x-0 bottom-0 h-0.5 bg-gold">
                     <span className="block h-full bg-gold-strong" style={{ animation: 'grow 600ms linear both' }} />
@@ -162,15 +182,15 @@ export function PrivilegeToggle() {
           <div className="min-h-0 overflow-hidden">
             <div id="privilege-impact" className="grid gap-6 border-t border-line p-6 sm:grid-cols-2" aria-hidden={!armed}>
               <div>
-                <p className="eyebrow text-ok-strong">Can</p>
+                <p className="eyebrow text-ok-strong">{ar ? 'يستطيع' : 'Can'}</p>
                 <ul className="mt-3 space-y-2 text-sm">
-                  {Tier[shown].can.map((c) => <li key={c} className="flex gap-2"><span aria-hidden className="text-ok">✓</span>{c}</li>)}
+                  {(ar ? TierAr : Tier)[shown].can.map((c) => <li key={c} className="flex gap-2"><span aria-hidden className="text-ok">✓</span>{c}</li>)}
                 </ul>
               </div>
               <div>
-                <p className="eyebrow text-risk-strong">Cannot</p>
+                <p className="eyebrow text-risk-strong">{ar ? 'لا يستطيع' : 'Cannot'}</p>
                 <ul className="mt-3 space-y-2 text-sm text-slate">
-                  {Tier[shown].cannot.map((c) => <li key={c} className="flex gap-2"><span aria-hidden className="text-slate">—</span>{c}</li>)}
+                  {(ar ? TierAr : Tier)[shown].cannot.map((c) => <li key={c} className="flex gap-2"><span aria-hidden className="text-slate">—</span>{c}</li>)}
                 </ul>
               </div>
             </div>

@@ -6,6 +6,7 @@ import { Globe } from './Globe'
 import { SectionHead } from './SectionHead'
 
 function Audiences({ lang }: { lang: Lang }) {
+  const ar = lang === 'ar'
   const [active, setActive] = useState(0)
   const [auto, setAuto] = useState(true)
   useEffect(() => {
@@ -21,7 +22,7 @@ function Audiences({ lang }: { lang: Lang }) {
     <section className="relative overflow-hidden">
       <Contours className="absolute inset-0 h-full w-full" stroke="#132B45" opacity={0.05} />
       <div className="relative mx-auto max-w-[1320px] px-5 py-24 md:px-10">
-        <SectionHead id="for" n="01" eyebrow="Who this is for" title="Seven readers. One question each. One next step." />
+        <SectionHead id="for" n="01" eyebrow={ar ? 'لمن هذا' : 'Who this is for'} title={ar ? 'سبعة قرّاء. سؤال واحد لكلٍّ منهم. وخطوة تالية واحدة.' : 'Seven readers. One question each. One next step.'} />
 
         <div className="mt-14 grid items-center gap-14 lg:grid-cols-[1.15fr_1fr]">
           {/* Orbit */}
@@ -80,22 +81,24 @@ function Audiences({ lang }: { lang: Lang }) {
             <div className="flex items-center gap-4">
               <span className="font-display text-7xl leading-none text-gold-strong">0{active + 1}</span>
               <span className="h-px flex-1 bg-line" />
-              <span className="eyebrow text-slate">of 07</span>
+              <span className="eyebrow text-slate">{ar ? 'من 07' : 'of 07'}</span>
             </div>
             <h3 className="mt-6 text-[clamp(2.2rem,4vw,3.6rem)] leading-[1] font-medium"><SplitText text={lang === 'ar' ? a.ar : a.label} /></h3>
-            <p className="mt-5 max-w-md text-lg leading-relaxed text-navy-2 animate-[fadeup_.8s_.2s_both]">{a.line}</p>
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-navy-2 animate-[fadeup_.8s_.2s_both]">{lang === 'ar' ? a.lineAr : a.line}</p>
             <ul className="mt-8 space-y-3 border-s border-gold/50 ps-5">
-              {a.q.map((q, k) => (
+              {(lang === 'ar' ? a.qAr : a.q).map((q, k) => (
                 <li key={q} className="text-sm text-slate" style={{ animation: `fadeup .7s ${0.3 + k * 0.1}s both` }}>
                   <span className="me-3 font-display text-gold-strong">{k + 1}.</span>{q}
                 </li>
               ))}
             </ul>
             <div className="mt-10 flex flex-wrap items-center gap-6" style={{ animation: 'fadeup .7s .6s both' }}>
-              <Magnetic href={`/hub/${a.slug}`} className="group bg-navy px-7 py-4 text-[0.75rem] font-medium tracking-[0.22em] text-ivory uppercase">
-                {a.action}<span className="inline-block h-px w-6 bg-gold-light transition-all group-hover:w-10" />
+              <Magnetic href={`/hub/${a.slug}`} className="group bg-navy px-7 py-4 text-[0.75rem] font-medium tracking-[0.22em] text-ivory uppercase rtl:normal-case rtl:tracking-normal">
+                {lang === 'ar' ? a.actionAr : a.action}<span className="inline-block h-px w-6 bg-gold-light transition-all group-hover:w-10" />
               </Magnetic>
-              <button onClick={() => pick((active + 1) % n)} className="eyebrow text-slate hover:text-navy">Next reader →</button>
+              <button onClick={() => pick((active + 1) % n)} className="eyebrow text-slate hover:text-navy">
+                {ar ? 'القارئ التالي ←' : 'Next reader →'}
+              </button>
             </div>
             {auto && <div className="mt-8 h-px w-full bg-line"><div key={active} className="h-full bg-gold" style={{ animation: 'grow 4.2s linear both' }} /></div>}
           </div>

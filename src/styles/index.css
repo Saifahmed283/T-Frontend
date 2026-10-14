@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&family=JetBrains+Mono:wght@400;500;600&family=Noto+Naskh+Arabic:wght@400;500&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600&family=Cairo:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
 @theme {
@@ -26,10 +26,12 @@
   --font-display: 'Cormorant Garamond', 'Noto Naskh Arabic', serif;
   --font-sans: 'Jost', 'Noto Naskh Arabic', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-arabic: 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
+  --font-arabic-display: 'Cairo', 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
 }
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  html { scroll-behavior: smooth; --tm-header-h: 115px; }
   body { @apply bg-ivory text-navy font-sans font-light antialiased; }
   ::selection { background: var(--color-gold-light); color: var(--color-navy); }
   h1, h2, h3 { @apply font-display; }
@@ -37,6 +39,23 @@
   :focus-visible { outline: 2px solid var(--color-gold-strong); outline-offset: 2px; }
   .tabular-nums { font-variant-numeric: tabular-nums; }
 }
+
+/* In-page anchors must clear the sticky header exactly. This is unlayered, so it
+   beats any Tailwind `scroll-mt-*` utility regardless of layer order. The height
+   is kept in `--tm-header-h`, measured live by the Header via ResizeObserver. */
+:where([id]) { scroll-margin-top: calc(var(--tm-header-h, 115px) + 14px); }
+
+/* ——— Arabic / RTL ———
+   Arabic is connected script: letter-spacing and `uppercase` distort it, and the
+   Latin display serif has no Arabic coverage. Swap in Arabic families and drop the
+   Latin tracking/transform treatments whenever the document is RTL. */
+[dir='rtl'] { font-family: var(--font-arabic); line-height: 1.75; }
+[dir='rtl'] h1, [dir='rtl'] h2, [dir='rtl'] h3, [dir='rtl'] .font-display { font-family: var(--font-arabic-display); }
+[dir='rtl'] h1, [dir='rtl'] h2, [dir='rtl'] h3 { line-height: 1.35; letter-spacing: 0; }
+[dir='rtl'] .eyebrow { letter-spacing: 0; text-transform: none; font-size: 0.78rem; }
+[dir='rtl'] [class*='tracking-'] { letter-spacing: 0 !important; }
+[dir='rtl'] [class*='uppercase'] { text-transform: none; }
+[dir='rtl'] .font-mono { font-family: var(--font-arabic); }
 
 @utility eyebrow {
   font-family: var(--font-sans);
@@ -90,4 +109,17 @@
 .scroll-cue { animation: scroll-cue 2.4s cubic-bezier(.65,0,.35,1) infinite; }
 @media (prefers-reduced-motion: reduce) {
   .intro-draw, .intro-rise, .intro-col, .meridian, .meridian-slow, .scroll-cue { animation: none; }
+}
+
+/* Catch-all: inline keyframe animations (e.g. fadeup/grow/shrink on sections) must
+   also settle immediately under reduced motion, otherwise elements can be captured
+   mid-fade at low opacity and fail WCAG contrast. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
