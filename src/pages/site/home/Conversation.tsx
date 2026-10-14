@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+﻿import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Contours, Emblem } from '@/components/motion/fx'
 import { api, ApiError } from '@/lib/api'
 import type { Lang } from '../types'
@@ -120,8 +120,8 @@ export function Conversation({ lang }: { lang: Lang }) {
           <p className="eyebrow text-gold-light">{ar ? 'أو تواصل معنا مباشرة' : 'Or reach us directly'}</p>
           <ul className="mt-6 space-y-4">
             {(ar
-              ? [['هاتف', '+20 100 000 0000', 'tel:+201000000000'], ['البريد', 'hello@terramorph.com', 'mailto:hello@terramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['المكتب', 'القاهرة الجديدة، مصر', 'https://www.google.com/maps/search/New+Cairo,+Egypt']]
-              : [['Phone', '+20 100 000 0000', 'tel:+201000000000'], ['Email', 'hello@terramorph.com', 'mailto:hello@terramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['Office', 'New Cairo, Egypt', 'https://www.google.com/maps/search/New+Cairo,+Egypt']]
+              ? [['هاتف', '+20 100 000 0000', 'tel:+201000000000'], ['البريد', 'hello@askterramorph.com', 'mailto:hello@askterramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['المكتب', 'القاهرة الجديدة، مصر', 'https://www.google.com/maps/search/New+Cairo,+Egypt']]
+              : [['Phone', '+20 100 000 0000', 'tel:+201000000000'], ['Email', 'hello@askterramorph.com', 'mailto:hello@askterramorph.com'], ['LinkedIn', '/company/terramorph', 'https://linkedin.com'], ['Office', 'New Cairo, Egypt', 'https://www.google.com/maps/search/New+Cairo,+Egypt']]
             ).map(([l, v, h]) => (
               <li key={l} className="flex items-baseline justify-between gap-4 border-b border-ivory/10 pb-4">
                 <span className="eyebrow text-ivory/65">{l}</span>

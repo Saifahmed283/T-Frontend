@@ -1,4 +1,4 @@
-import type { SectionId } from '@/lib/routes'
+﻿import type { SectionId } from '@/lib/routes'
 
 /* ——— Dedicated footer pages ——————————————————————————————————————————————
    Every footer link resolves to a real, dated page. Content is data-driven so a
@@ -1392,8 +1392,8 @@ export const PAGES: PageDef[] = [
         kind: 'links',
         heading: 'Reach us directly',
         items: [
-          { label: 'hello@terramorph.com', meta: 'New engagements & general enquiries', href: 'mailto:hello@terramorph.com' },
-          { label: 'tenders@terramorph.com', meta: 'Procurement & tender documents', href: 'mailto:tenders@terramorph.com' },
+          { label: 'hello@askterramorph.com', meta: 'New engagements & general enquiries', href: 'mailto:hello@askterramorph.com' },
+          { label: 'tenders@askterramorph.com', meta: 'Procurement & tender documents', href: 'mailto:tenders@askterramorph.com' },
           { label: '+20 100 000 0000', meta: 'Switchboard · Sun–Thu, 09:00–17:00 EET', href: 'tel:+201000000000' },
           { label: 'linkedin.com/company/terramorph', meta: 'Company updates', href: 'https://www.linkedin.com/' },
         ],

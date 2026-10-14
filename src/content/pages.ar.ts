@@ -1,4 +1,4 @@
-import type { Block } from '@/content/pages'
+﻿import type { Block } from '@/content/pages'
 
 export type PageAr = {
   label: string
@@ -1272,8 +1272,8 @@ export const PAGES_AR: Record<string, PageAr> = {
         kind: 'links',
         heading: 'تواصل معنا مباشرة',
         items: [
-          { label: 'hello@terramorph.com', meta: 'الارتباطات الجديدة والاستفسارات العامة', href: 'mailto:hello@terramorph.com' },
-          { label: 'tenders@terramorph.com', meta: 'المشتريات ووثائق المناقصات', href: 'mailto:tenders@terramorph.com' },
+          { label: 'hello@askterramorph.com', meta: 'الارتباطات الجديدة والاستفسارات العامة', href: 'mailto:hello@askterramorph.com' },
+          { label: 'tenders@askterramorph.com', meta: 'المشتريات ووثائق المناقصات', href: 'mailto:tenders@askterramorph.com' },
           { label: '+20 100 000 0000', meta: 'السنترال · الأحد–الخميس، 09:00–17:00 بتوقيت شرق أوروبا', href: 'tel:+201000000000' },
           { label: 'linkedin.com/company/terramorph', meta: 'أخبار الشركة', href: 'https://www.linkedin.com/' },
         ],
