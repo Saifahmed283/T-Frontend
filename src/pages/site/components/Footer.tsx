@@ -50,7 +50,10 @@ function Footer() {
             <div key={l}><p className="eyebrow text-navy">{l}</p><p className="mt-2">{v}</p></div>
           ))}
         </div>
-        <p className="eyebrow mt-10 text-slate">© 2026 TerraMorph · Leverage for good</p>
+        <div className="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-8">
+          <p className="eyebrow text-slate">© 2026 TerraMorph · Leverage for good</p>
+          <a href="/dashboard" className="eyebrow text-slate transition hover:text-navy">Client portal ↗</a>
+        </div>
       </div>
     </footer>
   )

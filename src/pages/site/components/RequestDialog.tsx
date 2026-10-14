@@ -88,7 +88,7 @@ export function RequestDialog({ request, onClose }: { request: RequestConfig | n
                     className="mt-2 w-full resize-none border-b border-navy/30 bg-transparent py-2 focus:border-gold focus:outline-none" />
                 </label>
               </div>
-              {phase === 'error' && <p role="alert" className="eyebrow mt-5 text-ok">{error}</p>}
+              {phase === 'error' && <p role="alert" className="eyebrow mt-5 text-error">{error}</p>}
               <button type="submit" disabled={phase === 'sending'}
                 className="mt-8 w-full bg-navy px-6 py-4 text-xs tracking-[0.2em] text-ivory uppercase transition hover:bg-navy-2 disabled:opacity-60">
                 {phase === 'sending' ? 'Sending…' : (request?.submitLabel ?? 'Request')} →

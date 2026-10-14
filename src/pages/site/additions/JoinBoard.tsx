@@ -63,7 +63,7 @@ export function JoinBoard() {
         ) : (
           <ul className="mt-6 divide-y divide-line">
             {rows[tab].map(([a, b, c]) => (
-              <li key={a}><a href="#" className="group grid items-center gap-2 py-6 transition hover:bg-ivory md:grid-cols-[1fr_260px_160px] md:px-4">
+              <li key={a}><a href="/contact" className="group grid items-center gap-2 py-6 transition hover:bg-ivory md:grid-cols-[1fr_260px_160px] md:px-4">
                 <span className="font-display text-2xl transition-transform duration-500 group-hover:translate-x-2">{a}</span>
                 <span className="text-sm text-slate">{b}</span>
                 <span className="eyebrow text-gold-strong md:text-end">{c} →</span>

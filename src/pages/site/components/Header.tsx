@@ -99,7 +99,6 @@ function Header({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
                 {ar ? a.ar : a.label}
               </a>
             ))}
-            <a href="/dashboard" className="ms-auto shrink-0 ps-4 text-[0.72rem] tracking-[0.16em] text-ivory/65 uppercase hover:text-gold-light">{ar ? 'بوابة العملاء' : 'Client portal'} ↗</a>
           </div>
         </div>
       </header>
