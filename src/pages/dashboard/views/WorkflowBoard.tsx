@@ -1,1 +1,0 @@
-export function WorkflowBoard(){return <div className=\p-6 border border-line bg-ivory\><h2 className=\text-lg font-medium\>WorkflowBoard</h2></div>}

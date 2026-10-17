@@ -1,1 +1,0 @@
-export function Settings(){return <div className=\p-6 border border-line bg-ivory\><h2 className=\text-lg font-medium\>Settings</h2></div>}
