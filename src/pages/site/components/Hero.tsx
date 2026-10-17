@@ -16,7 +16,15 @@ function Hero({ lang }: { lang: Lang }) {
   const [req, setReq] = useState<RequestConfig | null>(null)
   useEffect(() => {
     let raf = 0
-    const on = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => setP(Math.min(1, window.scrollY / (sec.current?.offsetHeight || 800)))) }
+    let ticking = false
+    const on = () => {
+      if (ticking) return
+      ticking = true
+      raf = requestAnimationFrame(() => {
+        setP(Math.min(1, window.scrollY / (sec.current?.offsetHeight || 800)))
+        ticking = false
+      })
+    }
     window.addEventListener('scroll', on, { passive: true })
     return () => { window.removeEventListener('scroll', on); cancelAnimationFrame(raf) }
   }, [])

@@ -49,16 +49,16 @@ export default function Site(props: Props) {
         {props.page ? <DetailPage slug={props.page} lang={props.lang} /> : props.hub ? <Hub slug={props.hub} lang={props.lang} /> : (
           <>
             {!heroReady ? <div className="min-h-[calc(100svh-110px)]" /> : <Hero lang={props.lang} />}
-            <Audiences lang={props.lang} />
-            <WhatsNew lang={props.lang} />
-            <Evidence lang={props.lang} />
-            <CauseExhibition lang={props.lang} />
-            <Knowledge lang={props.lang} />
-            <Learning lang={props.lang} />
-            <WhoWeAre lang={props.lang} />
-            <Join lang={props.lang} />
-            <Conversation lang={props.lang} />
-            <PrivilegeToggle lang={props.lang} />
+            <div className="tm-section"><Audiences lang={props.lang} /></div>
+            <div className="tm-section"><WhatsNew lang={props.lang} /></div>
+            <div className="tm-section"><Evidence lang={props.lang} /></div>
+            <div className="tm-section"><CauseExhibition lang={props.lang} /></div>
+            <div className="tm-section"><Knowledge lang={props.lang} /></div>
+            <div className="tm-section"><Learning lang={props.lang} /></div>
+            <div className="tm-section"><WhoWeAre lang={props.lang} /></div>
+            <div className="tm-section"><Join lang={props.lang} /></div>
+            <div className="tm-section"><Conversation lang={props.lang} /></div>
+            <div className="tm-section"><PrivilegeToggle lang={props.lang} /></div>
           </>
         )}
       </main>

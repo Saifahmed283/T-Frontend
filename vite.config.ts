@@ -28,4 +28,20 @@ export default defineConfig({
   preview: {
     port: 8443,
   },
+  build: {
+    chunkSizeWarningLimit: 800,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor'
+            return 'vendor'
+          }
+          if (id.includes('/pages/dashboard/')) return 'dashboard'
+          if (id.includes('/pages/site/')) return 'site'
+          if (id.includes('/content/')) return 'content'
+        },
+      },
+    },
+  },
 })

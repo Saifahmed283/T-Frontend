@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { SplitText } from '@/components/motion/fx'
 import { Dialog } from '@/components/ui'
+import { api, type SubmissionKind } from '@/lib/api'
 import { img } from './shared'
 import type { Lang } from '../types'
 
@@ -12,12 +13,16 @@ const news = [
   { id: 'photo-1709234052084-750ab82a0f26', tag: 'Tender', tagAr: 'مناقصة', title: 'Urban mobility diagnostic — expressions of interest', titleAr: 'تشخيص التنقل الحضري — إبداء الاهتمام', body: 'We are teaming for a regional urban mobility diagnostic and seeking transport economists and GIS specialists.', bodyAr: 'نتحالف من أجل تشخيص إقليمي للتنقل الحضري ونبحث عن خبراء اقتصاديات النقل ومتخصصي نظم المعلومات الجغرافية.', date: 'Closes 30 Oct', dateAr: 'يُغلق 30 أكتوبر', likes: 41 },
 ]
 
+type Action = { key: string; kind: SubmissionKind; action: string; needsEmail: boolean; label: string; labelAr: string; done: string; doneAr: string }
+
 export function WhatsNew({ lang }: { lang: Lang }) {
   const ar = lang === 'ar'
   const [i, setI] = useState(0)
   const [open, setOpen] = useState<number | null>(null)
   const [liked, setLiked] = useState<Record<number, boolean>>({})
-  const [toast, setToast] = useState('')
+  const [email, setEmail] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ tone: 'ok' | 'risk'; text: string } | null>(null)
   const startX = useRef<number | null>(null)
   useEffect(() => {
     if (open !== null) return
@@ -25,11 +30,27 @@ export function WhatsNew({ lang }: { lang: Lang }) {
     return () => clearInterval(t)
   }, [open])
   const go = (d: number) => setI((x) => (x + d + news.length) % news.length)
-  const act = (a: string) => { setToast(a); setTimeout(() => setToast(''), 2200) }
   const n = open !== null ? news[open] : null
-  const actions: [string, string][] = ar
-    ? [['اقترح', 'تم تسجيل اقتراحك'], ['انضم إلى القضية', 'مرحبًا — لقد انضممت إلى القضية'], ['احجز مقعدًا', 'تم حجز المقعد — تحقّق من بريدك'], ['ادفع / ساهم', 'جارٍ فتح رابط دفع آمن…']]
-    : [['Suggest', 'Your suggestion has been noted'], ['Join the cause', 'Welcome — you have joined the cause'], ['Reserve a seat', 'Seat reserved — check your inbox'], ['Pay / contribute', 'Opening secure payment link…']]
+  const actions: Action[] = [
+    { key: 'suggest', kind: 'CONTRIBUTION', action: 'suggest', needsEmail: false, label: 'Suggest', labelAr: 'اقترح', done: 'Your suggestion has been noted', doneAr: 'تم تسجيل اقتراحك' },
+    { key: 'join', kind: 'CONTRIBUTION', action: 'join', needsEmail: false, label: 'Join the cause', labelAr: 'انضم إلى القضية', done: 'Welcome — you have joined the cause', doneAr: 'مرحبًا — لقد انضممت إلى القضية' },
+    { key: 'reserve', kind: 'SEAT_RESERVATION', action: 'reserve', needsEmail: true, label: 'Reserve a seat', labelAr: 'احجز مقعدًا', done: 'Seat reserved — check your inbox', doneAr: 'تم حجز المقعد — تحقّق من بريدك' },
+    { key: 'contribute', kind: 'CONTRIBUTION', action: 'contribute', needsEmail: true, label: 'Request a payment link', labelAr: 'اطلب رابط دفع', done: 'A partner will send you a secure link', doneAr: 'سيرسل لك أحد الشركاء رابطًا آمنًا' },
+  ]
+  const submit = async (a: Action) => {
+    if (a.needsEmail && !email.trim()) { setToast({ tone: 'risk', text: ar ? 'يرجى إدخال بريدك الإلكتروني أولًا' : 'Please add your email first' }); return }
+    setBusy(a.key)
+    setToast(null)
+    try {
+      await api.submit({ kind: a.kind, email: email.trim() || undefined, source: 'whatsnew', message: `What's new · ${n?.title ?? ''}`, payload: { action: a.action, itemId: n?.id } })
+      setToast({ tone: 'ok', text: ar ? a.doneAr : a.done })
+      setEmail('')
+    } catch {
+      setToast({ tone: 'risk', text: ar ? 'تعذّر الإرسال — حاول لاحقًا' : 'Could not send — please try again' })
+    } finally {
+      setBusy(null)
+    }
+  }
   return (
     <section id="new" className="mx-auto max-w-[1320px] scroll-mt-40 px-5 py-24 md:px-10">
       <div className="flex flex-wrap items-end justify-between gap-6">
@@ -49,7 +70,14 @@ export function WhatsNew({ lang }: { lang: Lang }) {
           <button key={s.id} onClick={() => setOpen(k)} aria-hidden={k !== i} tabIndex={k === i ? 0 : -1}
             className="absolute inset-0 text-start transition-[opacity,transform] duration-[1200ms] ease-[cubic-bezier(.2,.8,.2,1)]"
             style={{ opacity: k === i ? 1 : 0, transform: k === i ? 'scale(1)' : 'scale(1.06)' }}>
-            <img src={img(s.id)} alt={ar ? s.titleAr : s.title} draggable={false} className="h-full w-full object-cover" />
+            <img
+              src={img(s.id)}
+              alt={ar ? s.titleAr : s.title}
+              draggable={false}
+              className="h-full w-full object-cover"
+              loading={i === 0 ? 'eager' : 'lazy'}
+              decoding="async"
+            />
             <div className="absolute inset-0 bg-gradient-to-t from-navy-3 via-navy/40 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 p-8 text-ivory md:p-12">
               <p className="eyebrow text-gold-light">{ar ? s.tagAr : s.tag} · {ar ? s.dateAr : s.date}</p>
@@ -71,7 +99,13 @@ export function WhatsNew({ lang }: { lang: Lang }) {
         <Dialog open onClose={() => setOpen(null)} onBackdropClick={() => setOpen(null)} labelledBy={`whatsnew-title-${open}`} className="flex justify-end bg-navy-3/60 backdrop-blur-sm">
           <aside onClick={(e) => e.stopPropagation()} className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-ivory animate-[slidein_.5s_cubic-bezier(.2,.8,.2,1)]">
             <div className="relative h-72 shrink-0 bg-navy">
-              <img src={img(n.id, 900)} alt={ar ? n.titleAr : n.title} className="h-full w-full object-cover" />
+              <img
+                src={img(n.id, 900)}
+                alt={ar ? n.titleAr : n.title}
+                className="h-full w-full object-cover"
+                loading="lazy"
+                decoding="async"
+              />
               <button onClick={() => setOpen(null)} aria-label={ar ? 'إغلاق' : 'Close'} className="absolute top-4 end-4 grid h-10 w-10 place-items-center bg-ivory text-navy">✕</button>
             </div>
             <div className="flex flex-1 flex-col p-8">
@@ -83,15 +117,22 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                 <span className={`transition-transform ${liked[open] ? 'scale-125 text-gold-strong' : ''}`}>{liked[open] ? '♥' : '♡'}</span>
                 <span className="tabular-nums">{n.likes + (liked[open] ? 1 : 0)}</span> {ar ? 'أعجبهم هذا' : 'people like this'}
               </button>
-              <div className="mt-auto grid grid-cols-2 gap-px bg-line pt-px">
-                {actions.map(([a, msg], k) => (
-                  <button key={a} onClick={() => act(msg)} className={`p-5 text-start transition ${k === 1 ? 'bg-navy text-ivory hover:bg-navy-2' : 'bg-ivory hover:bg-ivory-2'}`}>
-                    <span className={`eyebrow block ${k === 1 ? 'text-gold-light' : 'text-gold-strong'}`}>0{k + 1}</span>
-                    <span className="mt-2 block font-display text-xl">{a}</span>
-                  </button>
-                ))}
+              <div className="mt-auto pt-6">
+                <label className="block">
+                  <span className="eyebrow text-slate">{ar ? 'بريدك الإلكتروني (للرد)' : 'Your email (so we can reply)'}</span>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com"
+                    className="mt-2 w-full border-b border-navy/20 bg-transparent py-2 text-sm focus:border-gold-strong focus:outline-none" />
+                </label>
+                <div className="mt-5 grid grid-cols-2 gap-px bg-line">
+                  {actions.map((a, k) => (
+                    <button key={a.key} onClick={() => void submit(a)} disabled={busy === a.key} className={`p-5 text-start transition disabled:opacity-60 ${k === 1 ? 'bg-navy text-ivory hover:bg-navy-2' : 'bg-ivory hover:bg-ivory-2'}`}>
+                      <span className={`eyebrow block ${k === 1 ? 'text-gold-light' : 'text-gold-strong'}`}>0{k + 1}</span>
+                      <span className="mt-2 block font-display text-xl">{ar ? a.labelAr : a.label}</span>
+                    </button>
+                  ))}
+                </div>
+                {toast && <p role="status" className={`eyebrow mt-4 ${toast.tone === 'ok' ? 'text-ok' : 'text-error'}`}>{toast.tone === 'ok' ? '✓ ' : '✕ '}{toast.text}</p>}
               </div>
-              {toast && <p role="status" className="eyebrow mt-4 text-ok">✓ {toast}</p>}
             </div>
           </aside>
         </Dialog>

@@ -1,0 +1,1 @@
+export function Website(){return <div className=\p-6 border border-line bg-ivory\><h2 className=\text-lg font-medium\>Website</h2></div>}

@@ -38,7 +38,7 @@ export function SplitText({ text, className = '', delay = 0 }: { text: string; c
       {text.split(' ').map((w, i) => (
         <span key={i} aria-hidden className="inline-block overflow-hidden align-bottom pb-[0.08em]">
           <span
-            className="inline-block transition-[transform,opacity] duration-[1100ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+            className="inline-block transition-[transform,opacity] duration-[1100ms] ease-[cubic-bezier(.2,.8,.2,1)] will-change-transform"
             style={{ transform: settle ? 'none' : 'translateY(105%)', opacity: settle ? 1 : 0, transitionDelay: `${delay + i * 55}ms` }}
           >
             {w}&nbsp;
@@ -56,8 +56,8 @@ export function Reveal({ as = 'div', children, className = '', delay = 0 }: { as
     as,
     {
       ref,
-      className: `transition-[transform,opacity,filter] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] ${className}`,
-      style: { transform: settle ? 'none' : 'translateY(28px)', opacity: settle ? 1 : 0, filter: settle ? 'none' : 'blur(6px)', transitionDelay: `${delay}ms` } as CSSProperties,
+      className: `transition-[transform,opacity] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] will-change-[transform,opacity] ${className}`,
+      style: { transform: settle ? 'none' : 'translateY(28px)', opacity: settle ? 1 : 0, transitionDelay: `${delay}ms` } as CSSProperties,
     },
     children,
   )
@@ -155,7 +155,9 @@ export function Contours({ className = '', stroke = '#C4A868', opacity = 0.18 }:
   return (
     <svg className={`pointer-events-none ${className}`} viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice" aria-hidden>
       <g className="contour-bg" fill="none" stroke={stroke} strokeWidth="0.8" opacity={opacity}>
-        {paths.map((d, i) => <path key={i} d={d} transform={`rotate(${i * 7} 600 400)`} />)}
+        {paths.map((d, i) => (
+          <path key={i} d={d} transform={`rotate(${i * 7} 600 400)`} style={{ willChange: 'opacity' }} />
+        ))}
       </g>
     </svg>
   )
@@ -171,7 +173,9 @@ export function Emblem({ className = '', tone = 'navy' }: { className?: string; 
       <line x1="6" y1="32" x2="58" y2="32" stroke="#A98A4B" strokeWidth="0.5" opacity=".7" />
       <rect x="22" y="16" width="20" height="3" fill={main} />
       <rect x="24" y="19.5" width="16" height="1.5" fill={main} />
-      {[25.5, 29.5, 33.5, 37.5].map((x) => <rect key={x} x={x} y="22" width="1.6" height="22" fill={main} />)}
+      {[25.5, 29.5, 33.5, 37.5].map((x) => (
+        <rect key={x} x={x} y="22" width="1.6" height="22" fill={main} style={{ willChange: 'opacity' }} />
+      ))}
       <rect x="23" y="44.5" width="18" height="1.5" fill={main} />
       <rect x="21" y="46.5" width="22" height="3" fill={main} />
     </svg>

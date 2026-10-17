@@ -1,8 +1,4 @@
-export { HelloIntake } from './HelloIntake'
 export { WhatsNew } from './WhatsNew'
 export { CauseExhibition } from './CauseExhibition'
 export { WhoWeAre } from './WhoWeAre'
-export { JoinBoard } from './JoinBoard'
-export { ContactCard } from './ContactCard'
-export { LearningStrip } from './LearningStrip'
 export { PrivilegeToggle } from './PrivilegeToggle'
