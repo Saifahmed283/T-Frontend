@@ -1,8 +1,8 @@
 ﻿import { useState, useEffect } from 'react'
-import { supabase } from './utils/supabase'
+import { supabase } from '../utils/supabase'
 
 export default function App() {
-  const [todos, setTodos] = useState([])
+  const [todos, setTodos] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
