@@ -207,12 +207,12 @@ function Empty({
   )
 }
 
-function SignInForm({
+function SignInPage({
   onLogin,
-  onDone,
+  checking,
 }: {
   onLogin: (email: string, password: string) => Promise<void>
-  onDone: () => void
+  checking: boolean
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -224,63 +224,84 @@ function SignInForm({
     setErr("")
     try {
       await onLogin(email, password)
-      onDone()
     } catch (ex) {
       setErr(ex instanceof ApiError ? ex.message : "Sign-in failed")
-    } finally {
       setBusy(false)
     }
   }
   return (
-    <form className="modal-body" onSubmit={submit}>
-      <p>
-        Sign in to load live content, save drafts and publish. Access is scoped
-        to your workspace and role.
-      </p>
-      <Field label="Email" required>
-        <Input
-          type="email"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          placeholder="you@terramorph.com"
-        />
-      </Field>
-      <Field label="Password" required>
-        <Input
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-      </Field>
-      {err && (
-        <p role="alert" style={{ color: "var(--color-danger)" }}>
-          {err}
-        </p>
-      )}
-      <div className="modal-foot">
-        <Button variant="primary" type="submit" disabled={busy}>
-          {busy ? "Signing in…" : "Sign in"}
-        </Button>
+    <div className="tm-workspace">
+      <div className="auth-screen">
+        <div className="auth-card">
+          <div className="auth-brand">
+            <div className="wordmark">
+              TERRAMORPH<span className="brand-period">.</span>
+            </div>
+            <div className="brand-subline">CONTENT WORKSPACE</div>
+          </div>
+          <Heading level={2}>Sign in</Heading>
+          <p className="auth-lead">
+            This workspace is private. Sign in with your TerraMorph account to
+            manage content, media and submissions.
+          </p>
+          <form onSubmit={submit}>
+            <Field label="Email" required>
+              <Input
+                type="email"
+                autoComplete="username"
+                autoFocus
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                placeholder="you@askterramorph.com"
+              />
+            </Field>
+            <Field label="Password" required>
+              <Input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </Field>
+            {err && (
+              <p
+                role="alert"
+                className="auth-error"
+                style={{ color: "var(--color-danger)" }}
+              >
+                {err}
+              </p>
+            )}
+            <Button
+              variant="primary"
+              type="submit"
+              className="auth-submit"
+              disabled={busy || checking}
+            >
+              <LockKeyhole size={15} />
+              {busy ? "Signing in…" : checking ? "Checking session…" : "Sign in"}
+            </Button>
+          </form>
+          <p className="auth-foot">
+            TerraMorph <span className="footer-dot">·</span> Leverage for Good.
+          </p>
+        </div>
       </div>
-    </form>
+    </div>
   )
 }
 
 export function Workspace() {
-  const { data, source, loading, error, needsAuth, reload, login, logout } =
+  const { data, loading, error, needsAuth, reload, login, logout } =
     useWorkspace()
 
   const [page, setPage] = useState("overview")
   const [contentOpen, setContentOpen] = useState(false)
   const [mobileNav, setMobileNav] = useState(false)
   const [modal, setModal] =
-    useState<"search" | "help" | "notifications" | "create" | "signin" | null>(
-      null,
-    )
+    useState<"search" | "help" | "notifications" | "create" | null>(null)
   const [editor, setEditor] = useState<{
     collectionId: string
     itemId?: string
@@ -360,6 +381,10 @@ export function Workspace() {
           body: "Manage your website in one thoughtfully organised workspace.",
         }
 
+  if (needsAuth || (loading && !data)) {
+    return <SignInPage onLogin={login} checking={loading && !needsAuth} />
+  }
+
   return (
     <div className="tm-workspace">
       <div className="app-shell">
@@ -378,9 +403,7 @@ export function Workspace() {
             <span className="workspace-monogram">T</span>
             <div>
               <strong>TerraMorph Advisory</strong>
-              <span>
-                {source === "live" ? "Live workspace" : "Website management"}
-              </span>
+              <span>Live workspace</span>
             </div>
             <LockKeyhole size={14} />
           </div>
@@ -452,38 +475,18 @@ export function Workspace() {
                 <LockKeyhole size={18} />
               </span>
               <div>
-                <strong>
-                  {data?.session?.user.name ?? "Preview workspace"}
-                </strong>
-                <span>
-                  {source === "live"
-                    ? (data?.session?.role ?? "member")
-                    : needsAuth
-                      ? "Not signed in"
-                      : "Sample data"}
-                </span>
+                <strong>{data?.session?.user.name ?? "Workspace"}</strong>
+                <span>{data?.session?.role ?? "member"}</span>
               </div>
-              {source === "live" ? (
-                <Button
-                  variant="ghost"
-                  className="icon-button"
-                  aria-label="Sign out"
-                  title="Sign out"
-                  onClick={() => void logout()}
-                >
-                  <X size={16} />
-                </Button>
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="icon-button"
-                  aria-label="Sign in"
-                  title="Sign in"
-                  onClick={() => setModal("signin")}
-                >
-                  <ArrowRight size={16} />
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                className="icon-button"
+                aria-label="Sign out"
+                title="Sign out"
+                onClick={() => void logout()}
+              >
+                <X size={16} />
+              </Button>
             </div>
           </div>
         </aside>
@@ -533,10 +536,7 @@ export function Workspace() {
               >
                 <Bell size={19} />
               </Button>
-              <span
-                className="preview-avatar"
-                title={source === "live" ? "Signed in" : "Preview"}
-              >
+              <span className="preview-avatar" title="Signed in">
                 <LockKeyhole size={15} />
               </span>
             </div>
@@ -571,8 +571,7 @@ export function Workspace() {
               <div className="connection-notice" role="alert">
                 <Database size={16} />
                 <p>
-                  <strong>Could not load live data.</strong> {error}. Showing
-                  sample data.
+                  <strong>Could not load workspace data.</strong> {error}
                 </p>
                 <Button variant="ghost" onClick={() => void reload()}>
                   Retry
@@ -594,8 +593,6 @@ export function Workspace() {
               <OverviewPage
                 counts={counts}
                 activity={data?.activity.items ?? []}
-                source={source}
-                onSignIn={() => setModal("signin")}
                 onNavigate={navigate}
                 onOpenEditor={openEditor}
               />
@@ -615,7 +612,6 @@ export function Workspace() {
             ) : isCollectionPage && currentCollection ? (
               <CollectionPage
                 collection={currentCollection}
-                source={source}
                 counts={counts}
                 onOpenItem={(itemId) =>
                   openEditor(currentCollection.id, itemId)
@@ -628,23 +624,23 @@ export function Workspace() {
                 onOpenItem={openEditor}
               />
             ) : page === "media" ? (
-              <MediaPage source={source} />
+              <MediaPage />
             ) : page === "website" ? (
-              <WebsitePage source={source} canEdit={data?.isAdmin ?? false} />
+              <WebsitePage canEdit={data?.isAdmin ?? false} />
             ) : page === "submissions" ? (
               <SubmissionsPage
                 submissions={data?.submissions ?? null}
                 isAdmin={data?.isAdmin ?? false}
               />
             ) : page === "users" ? (
-              <UsersPage source={source} canEdit={data?.isAdmin ?? false} />
+              <UsersPage canEdit={data?.isAdmin ?? false} />
             ) : page === "activity" ? (
               <ActivityPage
                 items={data?.activity.items ?? []}
                 loading={loading}
               />
             ) : (
-              <SettingsPage session={data?.session ?? null} source={source} />
+              <SettingsPage session={data?.session ?? null} />
             )}
 
             <footer className="main-footer">
@@ -654,22 +650,11 @@ export function Workspace() {
               </span>
               <span>
                 <LockKeyhole size={12} />
-                {source === "live" ? "Live workspace" : "Sample data"}{" "}
-                <span className="footer-dot">·</span>{" "}
-                {source === "live" ? "Signed in" : "Sign in to save"}
+                Live workspace <span className="footer-dot">·</span> Signed in
               </span>
             </footer>
           </main>
         </div>
-
-        {modal === "signin" && (
-          <Modal
-            title="Sign in to the workspace"
-            onClose={() => setModal(null)}
-          >
-            <SignInForm onLogin={login} onDone={() => setModal(null)} />
-          </Modal>
-        )}
 
         {modal === "create" && (
           <Modal
@@ -811,7 +796,6 @@ export function Workspace() {
             collections.find((c) => c.id === editor.collectionId) as Collection
           }
           itemId={editor.itemId}
-          source={source}
           isApprover={data?.isApprover ?? false}
           onClose={closeEditor}
           onSaved={afterSave}
@@ -824,15 +808,11 @@ export function Workspace() {
 function OverviewPage({
   counts,
   activity,
-  source,
-  onSignIn,
   onNavigate,
   onOpenEditor,
 }: {
   counts: ContentCounts | null
   activity: ActivityItem[]
-  source: "live" | "demo"
-  onSignIn: () => void
   onNavigate: (id: string) => void
   onOpenEditor: (collectionId: string) => void
 }) {
@@ -922,30 +902,17 @@ function OverviewPage({
         <span className="notice-mark">
           <Database size={16} />
         </span>
-        {source === "live" ? (
-          <p>
-            <strong>Live workspace connected.</strong> Edits you save here are
-            written to the content API and become available to the public site.
-          </p>
-        ) : (
-          <p>
-            <strong>This is preview data.</strong> Sign in to load live content,
-            save drafts and publish.
-          </p>
-        )}
-        {source !== "live" && (
-          <Button variant="ghost" onClick={onSignIn}>
-            Sign in
-            <ArrowRight size={15} />
-          </Button>
-        )}
+        <p>
+          <strong>Live workspace connected.</strong> Edits you save here are
+          written to the content API and become available to the public site.
+        </p>
       </div>
 
       <div className="section-label">
         <span>CONTENT AT A GLANCE</span>
         <span className="live-label">
-          <span className={source === "live" ? "complete-dot" : "muted-dot"} />
-          {source === "live" ? "Live" : "Sample data"}
+          <span className="complete-dot" />
+          Live
         </span>
       </div>
 
@@ -1021,11 +988,7 @@ function OverviewPage({
             </div>
             <div className="panel-foot">
               <LockKeyhole size={13} />
-              <span>
-                {source === "live"
-                  ? "Records are read from the content API."
-                  : "Sign in to load records and translation status."}
-              </span>
+              <span>Records are read from the content API.</span>
             </div>
           </section>
 
@@ -1251,13 +1214,11 @@ function ContentPage({
 
 function CollectionPage({
   collection,
-  source,
   counts,
   onOpenItem,
   onCreate,
 }: {
   collection: Collection
-  source: "live" | "demo"
   counts: ContentCounts | null
   onOpenItem: (itemId: string) => void
   onCreate: () => void
@@ -1272,7 +1233,7 @@ function CollectionPage({
     page,
     setPage,
     totalPages,
-  } = useCollection(collection.id, source)
+  } = useCollection(collection.id)
   const [filters, setFilters] = useState(false)
   const byStatus = counts?.byKind?.[collection.id]?.byStatus
 
@@ -1369,15 +1330,11 @@ function CollectionPage({
           action={
             <Button className="mt-4" onClick={onCreate}>
               <Plus size={16} />
-              {source === "live"
-                ? `Add ${collection.singular.toLowerCase()}`
-                : "Preview the editor"}
+              Add {collection.singular.toLowerCase()}
             </Button>
           }
         >
-          {source === "live"
-            ? "Create your first record to see it here."
-            : "Sign in to load and create records."}
+          Create your first record to see it here.
         </Empty>
       ) : (
         <div>
@@ -1501,7 +1458,7 @@ function WorkflowPage({
   )
 }
 
-function MediaPage({ source }: { source: "live" | "demo" }) {
+function MediaPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -1511,12 +1468,6 @@ function MediaPage({ source }: { source: "live" | "demo" }) {
   const inputRef = useRef<HTMLInputElement>(null)
 
   const load = async () => {
-    if (source === "demo") {
-      setAssets([])
-      setStorageEnabled(false)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     setError(null)
     try {
@@ -1536,7 +1487,7 @@ function MediaPage({ source }: { source: "live" | "demo" }) {
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source, search])
+  }, [search])
 
   const upload = async (file: File) => {
     setBusy(true)
@@ -1596,14 +1547,14 @@ function MediaPage({ source }: { source: "live" | "demo" }) {
         />
         <Button
           variant="primary"
-          disabled={busy || source === "demo"}
+          disabled={busy || !storageEnabled}
           onClick={() => inputRef.current?.click()}
         >
           <Plus size={16} /> Upload
         </Button>
       </div>
 
-      {!storageEnabled && source !== "demo" && (
+      {!storageEnabled && (
         <p className="panel-foot" style={{ color: "var(--color-danger)" }}>
           Storage is not configured on this environment, so uploads stay
           disabled.
@@ -1617,9 +1568,6 @@ function MediaPage({ source }: { source: "live" | "demo" }) {
         >
           {error}
         </p>
-      )}
-      {source === "demo" && (
-        <p className="panel-foot">Sign in to upload and manage media.</p>
       )}
 
       {loading ? (
@@ -1680,24 +1628,7 @@ function MediaPage({ source }: { source: "live" | "demo" }) {
   )
 }
 
-function WebsitePage({
-  source,
-  canEdit,
-}: {
-  source: "live" | "demo"
-  canEdit: boolean
-}) {
-  const template = JSON.stringify(
-    {
-      contact: { email: "", phone: "" },
-      legal: { companyName: "" },
-      social: { linkedin: "", x: "" },
-      seo: { defaultTitle: "", defaultDescription: "" },
-      navigation: [],
-    },
-    null,
-    2,
-  )
+function WebsitePage({ canEdit }: { canEdit: boolean }) {
   const [text, setText] = useState("")
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1706,11 +1637,6 @@ function WebsitePage({
   const [saved, setSaved] = useState(false)
 
   const load = async () => {
-    if (source === "demo") {
-      setText(template)
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       const res = await api.siteSettings()
@@ -1725,7 +1651,7 @@ function WebsitePage({
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source])
+  }, [])
 
   const save = async () => {
     let parsed: Record<string, unknown>
@@ -1761,18 +1687,13 @@ function WebsitePage({
         </div>
         <Button
           variant="primary"
-          disabled={busy || !canEdit || source === "demo"}
+          disabled={busy || !canEdit}
           onClick={() => void save()}
         >
           {busy ? "Saving…" : "Save settings"}
         </Button>
       </div>
-      {source === "demo" && (
-        <p className="panel-foot">
-          Sign in as an admin to edit website settings.
-        </p>
-      )}
-      {!canEdit && source === "live" && (
+      {!canEdit && (
         <p className="panel-foot">
           Only workspace admins can edit website settings.
         </p>
@@ -1807,7 +1728,7 @@ function WebsitePage({
               setText(e.target.value)
               setSaved(false)
             }}
-            disabled={!canEdit || source === "demo"}
+            disabled={!canEdit}
             spellCheck={false}
             rows={22}
             style={{
@@ -1898,22 +1819,12 @@ function SubmissionsPage({
   )
 }
 
-function UsersPage({
-  source,
-  canEdit,
-}: {
-  source: "live" | "demo"
-  canEdit: boolean
-}) {
+function UsersPage({ canEdit }: { canEdit: boolean }) {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   const load = async () => {
-    if (source === "demo") {
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
       const res = await api.members()
@@ -1927,7 +1838,7 @@ function UsersPage({
   useEffect(() => {
     void load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source])
+  }, [])
 
   const setRole = async (m: Member, role: MemberRole) => {
     setMembers((list) =>
@@ -1956,12 +1867,7 @@ function UsersPage({
         </div>
         <ShieldCheck size={19} strokeWidth={1.5} />
       </div>
-      {source === "demo" ? (
-        <Empty icon={Users} title="Member management needs a live workspace">
-          Sign in as an admin to manage teammates and assign admin, lead or
-          member roles.
-        </Empty>
-      ) : error ? (
+      {error ? (
         <p
           className="panel-foot"
           role="alert"
@@ -2068,7 +1974,6 @@ function ActivityPage({
 
 function SettingsPage({
   session,
-  source,
 }: {
   session: {
     user: {
@@ -2078,7 +1983,6 @@ function SettingsPage({
     workspace: { slug: string }
     role: string
   } | null
-  source: "live" | "demo"
 }) {
   const [current, setCurrent] = useState("")
   const [next, setNext] = useState("")
@@ -2118,14 +2022,10 @@ function SettingsPage({
         </div>
         <dl className="modal-body">
           {[
-            ["Workspace", session?.workspace.slug ?? "demo"],
-            ["Signed in as", session?.user.name ?? "Guest (sample data)"],
+            ["Workspace", session?.workspace.slug ?? "—"],
+            ["Signed in as", session?.user.name ?? "—"],
             ["Email", session?.user.email ?? "—"],
             ["Role", session?.role ?? "member"],
-            [
-              "Data source",
-              source === "live" ? "Live API" : "Bundled sample data",
-            ],
           ].map(([k, v]) => (
             <div
               key={k}
@@ -2146,55 +2046,45 @@ function SettingsPage({
           </div>
         </div>
         <div className="modal-body">
-          {source === "demo" ? (
-            <p>Sign in to a live workspace to change your password.</p>
-          ) : (
-            <>
-              <Field label="Current password" required>
-                <Input
-                  type="password"
-                  autoComplete="current-password"
-                  value={current}
-                  onChange={(e) => setCurrent(e.target.value)}
-                />
-              </Field>
-              <Field
-                label="New password"
-                required
-                hint="At least 8 characters."
-              >
-                <Input
-                  type="password"
-                  autoComplete="new-password"
-                  value={next}
-                  onChange={(e) => setNext(e.target.value)}
-                />
-              </Field>
-              <Field label="Confirm new password" required>
-                <Input
-                  type="password"
-                  autoComplete="new-password"
-                  value={confirm}
-                  onChange={(e) => setConfirm(e.target.value)}
-                />
-              </Field>
-              {error && (
-                <p role="alert" style={{ color: "var(--color-danger)" }}>
-                  {error}
-                </p>
-              )}
-              {done && (
-                <p style={{ color: "var(--color-ok)" }}>Password updated.</p>
-              )}
-              <Button
-                variant="primary"
-                disabled={busy}
-                onClick={() => void changePassword()}
-              >
-                {busy ? "Updating…" : "Update password"}
-              </Button>
-            </>
+          <Field label="Current password" required>
+            <Input
+              type="password"
+              autoComplete="current-password"
+              value={current}
+              onChange={(e) => setCurrent(e.target.value)}
+            />
+          </Field>
+          <Field label="New password" required hint="At least 8 characters.">
+            <Input
+              type="password"
+              autoComplete="new-password"
+              value={next}
+              onChange={(e) => setNext(e.target.value)}
+            />
+          </Field>
+          <Field label="Confirm new password" required>
+            <Input
+              type="password"
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
+          </Field>
+          {error && (
+            <p role="alert" style={{ color: "var(--color-danger)" }}>
+              {error}
+            </p>
           )}
+          {done && (
+            <p style={{ color: "var(--color-ok)" }}>Password updated.</p>
+          )}
+          <Button
+            variant="primary"
+            disabled={busy}
+            onClick={() => void changePassword()}
+          >
+            {busy ? "Updating…" : "Update password"}
+          </Button>
         </div>
       </section>
     </div>

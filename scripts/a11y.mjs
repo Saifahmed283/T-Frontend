@@ -73,7 +73,7 @@ const scenarios = [
   {
     name: "dashboard",
     path: "/dashboard",
-    steps: [{ name: "dashboard (base, demo state)" }],
+    steps: [{ name: "dashboard (signed out — auth gate)" }],
   },
   {
     name: "dashboard-live",
@@ -88,15 +88,15 @@ const scenarios = [
               headers: { "Content-Type": "application/json" },
               credentials: "include",
               body: JSON.stringify({
-                email: "portal@terramorph.local",
-                password: "Terramorph!2026",
+                email: "mbaraka@askterramorph.com",
+                password: "MB@terramorph2026",
               }),
             })
             return r.status
           })
           if (res === 429) {
             console.warn(
-              "  ! login rate-limited (429); scanning demo state instead",
+              "  ! login rate-limited (429); scanning auth gate instead",
             )
             return
           }

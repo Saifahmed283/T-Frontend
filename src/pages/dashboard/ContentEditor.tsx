@@ -17,7 +17,6 @@ import {
   type ContentStatus,
 } from "@/lib/api"
 import type { Collection, FieldDefinition } from "./content-model"
-import { makeDemoItems } from "./data/demo"
 import {
   Badge,
   Button,
@@ -66,20 +65,17 @@ function asSeo(v: unknown): Record<string, unknown> {
 export function ContentEditor({
   collection,
   itemId,
-  source,
   isApprover,
   onClose,
   onSaved,
 }: {
   collection: Collection
   itemId?: string
-  source: "live" | "demo"
   isApprover: boolean
   onClose: () => void
   onSaved: () => void
 }) {
   const isEdit = Boolean(itemId)
-  const readOnly = source === "demo"
 
   const [detail, setDetail] = useState<ContentItemDetail | null>(null)
   const [data, setData] = useState<Record<string, unknown>>(() =>
@@ -108,15 +104,10 @@ export function ContentEditor({
     setLoading(true)
     const run = async () => {
       try {
-        let item: ContentItemDetail | null = null
-        if (source === "demo") {
-          const found = makeDemoItems(collection.id, 12).find(
-            (x) => x.id === itemId,
-          )
-          item = found ? { ...found, activities: [] } : null
-        } else {
-          item = await api.contentGet(collection.id, itemId)
-        }
+        const item: ContentItemDetail | null = await api.contentGet(
+          collection.id,
+          itemId,
+        )
         if (!active) return
         setDetail(item)
         setData(
@@ -140,7 +131,7 @@ export function ContentEditor({
     return () => {
       active = false
     }
-  }, [collection, itemId, source])
+  }, [collection, itemId])
 
   const localizedRequired = collection.fields.filter(
     (f) => f.localized && f.required,
@@ -244,20 +235,12 @@ export function ContentEditor({
       onClose={onClose}
     >
       <div className="editor-topline">
-        <Badge tone={readOnly ? "warning" : "success"}>
-          {readOnly
-            ? "Preview — not saved"
-            : isEdit && detail
-              ? detail.status
-              : "New record"}
+        <Badge tone="success">
+          {isEdit && detail ? detail.status : "New record"}
         </Badge>
         <span>
           <LockKeyhole size={13} />
-          {readOnly
-            ? "Sign in to save and publish"
-            : isEdit && detail
-              ? `slug /${detail.slug}`
-              : "Not saved yet"}
+          {isEdit && detail ? `slug /${detail.slug}` : "Not saved yet"}
         </span>
       </div>
 
@@ -518,9 +501,7 @@ export function ContentEditor({
                     <Button
                       key={to}
                       variant={to === "PUBLISHED" ? "primary" : "secondary"}
-                      disabled={
-                        busy || readOnly || (needsApprover && !isApprover)
-                      }
+                      disabled={busy || (needsApprover && !isApprover)}
                       title={
                         needsApprover && !isApprover
                           ? "Approver action"
@@ -575,9 +556,7 @@ export function ContentEditor({
       <div className="editor-footer">
         <span>
           <LockKeyhole size={13} />
-          {readOnly
-            ? "Preview only"
-            : "Changes are saved to the live workspace"}
+          Changes are saved to the live workspace
         </span>
         <div>
           <Button onClick={() => setPreview(!preview)}>
@@ -587,7 +566,7 @@ export function ContentEditor({
           {isEdit && (
             <Button
               variant="ghost"
-              disabled={busy || readOnly}
+              disabled={busy}
               onClick={() => void remove()}
             >
               <Trash2 size={15} /> Delete
@@ -595,8 +574,7 @@ export function ContentEditor({
           )}
           <Button
             variant="primary"
-            disabled={busy || loading || readOnly}
-            title={readOnly ? "Sign in to enable saving" : undefined}
+            disabled={busy || loading}
             onClick={() => void save()}
           >
             {busy ? (
@@ -631,7 +609,7 @@ export function ContentEditor({
           </ul>
         </div>
       )}
-      {!preview && !isEdit && !readOnly && (
+      {!preview && !isEdit && (
         <div className="modal-foot">
           <Button variant="primary" disabled={busy} onClick={() => void save()}>
             Create {collection.singular.toLowerCase()} <Check size={16} />

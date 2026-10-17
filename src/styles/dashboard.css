@@ -451,3 +451,13 @@
 .tm-workspace .nav-submenu .sub-active,
 .tm-workspace .publishing-card-title,
 .tm-workspace .checklist > div > span { color: #76602c; }
+/* Auth gate: full-page sign-in rendered before the workspace shell mounts. */
+.tm-workspace .auth-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 32px 20px; background: radial-gradient(120% 90% at 50% -10%, #f6f1e5 0%, var(--color-ivory) 45%, #efe8d9 100%); }
+.tm-workspace .auth-card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--radius) + 2px); padding: 38px 34px 26px; box-shadow: 0 24px 60px -32px rgba(19, 43, 69, .35); }
+.tm-workspace .auth-brand { margin-bottom: 26px; }
+.tm-workspace .auth-lead { color: var(--muted); font-size: 14px; margin: 10px 0 24px; }
+.tm-workspace .auth-card form .field:last-of-type { margin-bottom: 6px; }
+.tm-workspace .auth-error { font-size: 13px; margin: 4px 0 14px; }
+.tm-workspace .auth-submit { width: 100%; min-height: 42px; }
+.tm-workspace .auth-foot { text-align: center; color: var(--muted); font-size: 12px; margin-top: 22px; }
+.tm-workspace .auth-foot .footer-dot { color: var(--color-brass); }
