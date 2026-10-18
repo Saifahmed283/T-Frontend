@@ -100,7 +100,7 @@ function Hero({ lang }: { lang: Lang }) {
         {/* the rising globe */}
         <div
           aria-hidden
-          className="pointer-events-none absolute start-1/2 top-[62%] -z-10 aspect-square w-[min(1150px,160vw)]"
+          className="pointer-events-none absolute start-1/2 top-[calc(62svh_-_68px)] -z-10 aspect-square w-[min(1150px,160vw)]"
           style={{ transform: `translate(${ar ? "50%" : "-50%"}, ${p * 18}%)` }}
         >
           <svg viewBox="0 0 400 400" className="h-full w-full">
@@ -180,7 +180,7 @@ function Hero({ lang }: { lang: Lang }) {
         />
 
         <div className="relative mx-auto flex w-full max-w-[1320px] flex-1 flex-col items-center justify-center px-5 pt-[10vh] text-center md:px-10">
-          <Reveal delay={80}>
+          <Reveal immediate>
             <p className="eyebrow text-gold-light">
               {ar
                 ? "الاستراتيجية · السياسات · التحوّل"
@@ -197,23 +197,23 @@ function Hero({ lang }: { lang: Lang }) {
             {ar ? (
               <SplitText
                 text="نُعيد تشكيل الأرض التي تقوم عليها الاقتصادات."
-                delay={200}
+                immediate
               />
             ) : (
               <>
-                <SplitText text="We reshape the ground" delay={200} />{" "}
+                <SplitText text="We reshape the ground" immediate />{" "}
                 <span className="block">
-                  <SplitText text="on which" delay={420} />{" "}
+                  <SplitText text="on which" immediate />{" "}
                   <SplitText
                     className="italic text-gold-light"
                     text="economies stand."
-                    delay={560}
+                    immediate
                   />
                 </span>
               </>
             )}
           </h1>
-          <Reveal delay={900}>
+          <Reveal immediate>
             <p className="mx-auto mt-8 max-w-xl text-base leading-relaxed text-ivory/80 md:text-lg">
               {ar
                 ? "استشارات في الاستراتيجية والسياسات والتحول للحكومات والمؤسسات والمشاريع الاجتماعية."
@@ -222,7 +222,7 @@ function Hero({ lang }: { lang: Lang }) {
           </Reveal>
 
           {/* Two buttons — the diagnostic for people exploring, the evidence for people checking */}
-          <Reveal delay={1050}>
+          <Reveal immediate>
             <div className="mt-10 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <button
                 type="button"
@@ -273,7 +273,7 @@ function Hero({ lang }: { lang: Lang }) {
             {proof.map((x, i) => (
               <Reveal
                 key={x.to}
-                delay={1200 + i * 100}
+                immediate
                 className={`border-ivory/15 ${i % 2 ? "border-s" : ""} ${
                   i === 2 ? "sm:border-s" : ""
                 }`}

@@ -314,7 +314,7 @@ export function PrivilegeToggle({ lang }: { lang: Lang }) {
                 </span>
                 <span
                   className={`mt-2 block text-xs leading-relaxed ${
-                    isCommitted ? "text-ivory/70" : "text-slate"
+                    isCommitted ? "text-ivory/85" : "text-slate"
                   }`}
                 >
                   {(ar ? TierAr : Tier)[l].blurb}

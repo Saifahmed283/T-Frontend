@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import './fonts.css';
 @import './dashboard.css';
 
 @theme {
@@ -75,6 +76,10 @@
 @keyframes slidein { from { transform: translateX(100%); } to { transform: none; } }
 @keyframes spin360 { to { transform: rotate(360deg); } }
 @keyframes fadeup { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+/* Transform-only variant for content that re-animates on a timer (the Audiences
+   auto-rotate). Fading opacity over text on a light ground dips below AA for a
+   frame, which contrast checkers sample. */
+@keyframes slideup { from { transform: translateY(14px); } to { transform: none; } }
 @keyframes grow { from { width: 0; } to { width: 100%; } }
 @keyframes shrink { from { width: 100%; } to { width: 0; } }
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
@@ -94,12 +99,6 @@
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* Performance: skip layout/paint for offscreen sections until they approach the
-   viewport. The intrinsic-size placeholder keeps scrollbars honest. */
-@media (prefers-reduced-motion: no-preference) {
-  .tm-section { content-visibility: auto; contain-intrinsic-size: auto 720px; }
-}
-
 /* Intro + hero globe */
 @keyframes draw { from { stroke-dasharray: 1; stroke-dashoffset: 1; } to { stroke-dasharray: 1; stroke-dashoffset: 0; } }
 @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -107,8 +106,8 @@
 @keyframes meridian { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
 @keyframes orbit-dot { to { offset-distance: 100%; } }
 @keyframes scroll-cue { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
-.intro-draw { animation: draw 1.2s cubic-bezier(.65,0,.35,1) both; }
-.intro-rise { animation: rise .6s cubic-bezier(.2,.8,.2,1) both; }
+.intro-draw { animation: draw .7s cubic-bezier(.65,0,.35,1) both; }
+.intro-rise { animation: rise .35s cubic-bezier(.2,.8,.2,1) both; }
 .intro-col { transform-box: fill-box; transform-origin: bottom; animation: col .7s cubic-bezier(.2,.8,.2,1) both; }
 .meridian { transform-box: fill-box; transform-origin: center; animation: meridian 3.9s linear infinite; }
 .meridian-slow { transform-box: fill-box; transform-origin: center; animation: meridian 14s linear infinite; }

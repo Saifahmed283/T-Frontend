@@ -81,7 +81,7 @@ function PageBody({
           </div>
           <GoldLine className="mt-4" />
           <h1 className="mt-8 max-w-4xl text-[clamp(2.4rem,5.5vw,4.4rem)] leading-[1.02] font-medium">
-            <SplitText text={page.title} />
+            <SplitText text={page.title} immediate />
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-2">
             {page.lede}

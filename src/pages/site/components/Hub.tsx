@@ -59,7 +59,7 @@ function Hub({
             <div>
               <p className="eyebrow text-gold-strong">{hub.kicker}</p>
               <h1 className="mt-5 max-w-4xl text-[clamp(2.4rem,5.4vw,4.6rem)] leading-[1.02] font-medium">
-                <SplitText text={lang === "ar" ? hub.ar : hub.line} />
+                <SplitText text={lang === "ar" ? hub.ar : hub.line} immediate />
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-relaxed text-slate">
                 {hub.intro}
@@ -93,7 +93,7 @@ function Hub({
                 )}
               </div>
             </div>
-            <Reveal delay={200}>
+            <Reveal immediate>
               <Figure
                 alt={hub.figure.alt}
                 eyebrow={hub.figure.eyebrow}

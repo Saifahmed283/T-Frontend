@@ -175,7 +175,7 @@ function Audiences({ lang }: { lang: Lang }) {
             <h3 className="mt-6 text-[clamp(2.2rem,4vw,3.6rem)] leading-[1] font-medium">
               <SplitText text={lang === "ar" ? a.ar : a.label} />
             </h3>
-            <p className="mt-5 max-w-md text-lg leading-relaxed text-navy-2 animate-[fadeup_.8s_.2s_both]">
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-navy-2 animate-[slideup_.8s_.2s_both]">
               {lang === "ar" ? a.lineAr : a.line}
             </p>
             <ul className="mt-8 space-y-3 border-s border-gold/50 ps-5">
@@ -183,7 +183,7 @@ function Audiences({ lang }: { lang: Lang }) {
                 <li
                   key={q}
                   className="text-sm text-slate"
-                  style={{ animation: `fadeup .7s ${0.3 + k * 0.1}s both` }}
+                  style={{ animation: `slideup .7s ${0.3 + k * 0.1}s both` }}
                 >
                   <span className="me-3 font-display text-gold-strong">
                     {k + 1}.
@@ -194,7 +194,7 @@ function Audiences({ lang }: { lang: Lang }) {
             </ul>
             <div
               className="mt-10 flex flex-wrap items-center gap-6"
-              style={{ animation: "fadeup .7s .6s both" }}
+              style={{ animation: "slideup .7s .6s both" }}
             >
               <Magnetic
                 href={`/hub/${a.slug}`}

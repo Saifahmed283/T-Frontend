@@ -12,24 +12,47 @@ const reduced = () =>
   typeof window !== "undefined" &&
   window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-export function useInView<T extends Element>(threshold = 0.2) {
-  const ref = useRef<T>(null)
-  const [seen, setSeen] = useState(false)
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) {
-          setSeen(true)
-          io.disconnect()
+/* One shared IntersectionObserver per distinct threshold instead of one per
+   element. The homepage mounts hundreds of reveals, so a single observer per
+   threshold keeps observer count constant and trims main-thread work. */
+type SeenCallback = () => void
+const observers = new Map<number, IntersectionObserver>()
+const seenCallbacks = new WeakMap<Element, SeenCallback>()
+
+function observeOnce(el: Element, threshold: number, cb: SeenCallback) {
+  let io = observers.get(threshold)
+  if (!io) {
+    io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue
+          const fn = seenCallbacks.get(entry.target)
+          if (!fn) continue
+          seenCallbacks.delete(entry.target)
+          io!.unobserve(entry.target)
+          fn()
         }
       },
       { threshold },
     )
-    io.observe(el)
-    return () => io.disconnect()
-  }, [threshold])
+    observers.set(threshold, io)
+  }
+  seenCallbacks.set(el, cb)
+  io.observe(el)
+  return () => {
+    seenCallbacks.delete(el)
+    io?.unobserve(el)
+  }
+}
+
+export function useInView<T extends Element>(threshold = 0.2, enabled = true) {
+  const ref = useRef<T>(null)
+  const [seen, setSeen] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!enabled || !el || reduced()) return
+    return observeOnce(el, threshold, () => setSeen(true))
+  }, [threshold, enabled])
   return [ref, seen] as const
 }
 
@@ -38,13 +61,18 @@ export function SplitText({
   text,
   className = "",
   delay = 0,
+  immediate = false,
 }: {
   text: string
   className?: string
   delay?: number
+  immediate?: boolean
 }) {
-  const [ref, seen] = useInView<HTMLSpanElement>(0.1)
-  const settle = seen || reduced()
+  const [ref, seen] = useInView<HTMLSpanElement>(0.1, !immediate)
+  /* `immediate` renders the final state in the prerendered HTML so
+     above-the-fold text (the LCP candidate) is painted without waiting for
+     hydration + IntersectionObserver. */
+  const settle = immediate || seen || reduced()
   /* Arabic is connected script — per-word overflow masks clip glyphs and the
      `&nbsp;` padding breaks joining. Fade the whole line instead. */
   if (/[\u0600-\u06FF]/.test(text)) {
@@ -72,11 +100,12 @@ export function SplitText({
           className="inline-block overflow-hidden align-bottom pb-[0.08em]"
         >
           <span
-            className="inline-block transition-[transform,opacity] duration-[1100ms] ease-[cubic-bezier(.2,.8,.2,1)] will-change-transform"
+            className="inline-block transition-[transform,opacity] duration-[1100ms] ease-[cubic-bezier(.2,.8,.2,1)]"
             style={{
               transform: settle ? "none" : "translateY(105%)",
               opacity: settle ? 1 : 0,
               transitionDelay: `${delay + i * 55}ms`,
+              willChange: settle ? "auto" : "transform, opacity",
             }}
           >
             {w}&nbsp;
@@ -92,23 +121,26 @@ export function Reveal({
   children,
   className = "",
   delay = 0,
+  immediate = false,
 }: {
   as?: "div" | "li"
   children: ReactNode
   className?: string
   delay?: number
+  immediate?: boolean
 }) {
-  const [ref, seen] = useInView<HTMLElement>(0.12)
-  const settle = seen || reduced()
+  const [ref, seen] = useInView<HTMLElement>(0.12, !immediate)
+  const settle = immediate || seen || reduced()
   return createElement(
     as,
     {
       ref,
-      className: `transition-[transform,opacity] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] will-change-[transform,opacity] ${className}`,
+      className: `transition-[transform,opacity] duration-1000 ease-[cubic-bezier(.2,.8,.2,1)] ${className}`,
       style: {
         transform: settle ? "none" : "translateY(28px)",
         opacity: settle ? 1 : 0,
         transitionDelay: `${delay}ms`,
+        willChange: settle ? "auto" : "transform, opacity",
       } as CSSProperties,
     },
     children,

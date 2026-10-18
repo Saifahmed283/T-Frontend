@@ -141,7 +141,7 @@ export function WhoWeAre({ lang }: { lang: Lang }) {
           {testimonials.map((x, k) => (
             <blockquote
               key={k}
-              className="absolute inset-x-0 top-10 transition-all duration-700"
+              className="absolute inset-x-0 top-10 transition-transform duration-700"
               style={{
                 opacity: k === t ? 1 : 0,
                 transform: k === t ? "none" : "translateY(12px)",

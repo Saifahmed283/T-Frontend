@@ -89,7 +89,7 @@ function LangSwitch({
                 : "text-slate hover:text-navy"
           }`}
         >
-          {l === "en" ? "EN" : "عربي"}
+          {l === "en" ? "EN" : "AR"}
         </button>
       ))}
     </div>

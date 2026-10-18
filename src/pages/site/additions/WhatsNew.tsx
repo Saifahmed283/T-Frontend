@@ -223,10 +223,12 @@ export function WhatsNew({ lang }: { lang: Lang }) {
           >
             <img
               src={img(s.id)}
+              srcSet={`${img(s.id, 700)} 700w, ${img(s.id, 1400)} 1400w`}
+              sizes="(max-width: 768px) 100vw, 1320px"
               alt={ar ? s.titleAr : s.title}
               draggable={false}
               className="h-full w-full object-cover"
-              loading={i === 0 ? "eager" : "lazy"}
+              loading="lazy"
               decoding="async"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-navy-3 via-navy/40 to-transparent" />

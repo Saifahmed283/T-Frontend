@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import Site, { type Lang } from "./Site"
+import { ensureArabicFonts } from "@/lib/fonts"
 import type { SectionId } from "@/lib/routes"
 
 type Props = {
@@ -16,6 +17,7 @@ export default function SitePage(props: Props) {
     const el = document.documentElement
     el.lang = lang
     el.dir = lang === "ar" ? "rtl" : "ltr"
+    if (lang === "ar") ensureArabicFonts()
   }, [lang])
   return <Site lang={lang} setLang={setLang} {...props} />
 }
