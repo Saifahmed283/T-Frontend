@@ -1,0 +1,35 @@
+# TerraMorph
+
+> TerraMorph is a strategy, policy and transformation advisory firm based in New Cairo, Egypt. We work with governments, development partners, businesses, NGOs and consultancies across Egypt and the wider Middle East and North Africa. Every claim on this site is backed by a dated, named assignment ledger.
+
+## Key pages
+
+- [Home](https://askterramorph.com/): Firm overview, evidence, knowledge, learning and how to start a conversation
+- [Who we serve](https://askterramorph.com/for): How we work with each audience type
+- [Evidence](https://askterramorph.com/evidence): The dated, named assignment ledger, case studies and client references
+- [Method](https://askterramorph.com/method): Local diagnosis, assignment lifecycle, instruments and glossary
+- [Knowledge](https://askterramorph.com/knowledge): Publications, practice notes, policy briefs and the podcast
+- [Learning](https://askterramorph.com/learning): Courses, academies and train-the-trainer programmes
+- [About](https://askterramorph.com/about): Team, philosophy and compliance file
+- [Join](https://askterramorph.com/join): Careers, expert register, opportunities and internships
+- [Contact](https://askterramorph.com/contact): Request a proposal or start a conversation
+
+## Audience hubs
+
+- [Governments](https://askterramorph.com/hub/governments)
+- [Development partners](https://askterramorph.com/hub/development-partners)
+- [Business](https://askterramorph.com/hub/business)
+- [NGOs](https://askterramorph.com/hub/ngos)
+- [Consultancies](https://askterramorph.com/hub/consultancies)
+- [Careers](https://askterramorph.com/hub/careers)
+- [Experts](https://askterramorph.com/hub/experts)
+
+## Optional
+
+- [Client portal](https://askterramorph.com/dashboard): Authenticated workspace for clients and editors (not for indexing)
+- [Sitemap](https://askterramorph.com/sitemap.xml)
+
+## Contact
+
+- Email: hello@askterramorph.com
+- LinkedIn: https://www.linkedin.com/company/terramorph

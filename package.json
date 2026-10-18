@@ -4,17 +4,20 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "cross-env NODE_ENV=production vite build",
-    "preview": "vite preview",
+    "dev": "vike dev",
+    "build": "node scripts/gen-sitemap.mjs && cross-env NODE_ENV=production vike build",
+    "sitemap": "node scripts/gen-sitemap.mjs",
+    "og-image": "node scripts/gen-og-image.mjs",
+    "preview": "vike preview",
     "format": "oxfmt",
     "a11y": "node scripts/a11y.mjs"
   },
   "dependencies": {
-    "@supabase/supabase-js": "2.74.0",
     "lucide-react": "1.57.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "vike": "^0.4.268",
+    "vike-react": "^0.6.29"
   },
   "devDependencies": {
     "@axe-core/react": "^4.13.0",

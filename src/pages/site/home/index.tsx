@@ -1,7 +1,7 @@
-export { Head } from './Head'
-export { Evidence } from './Evidence'
-export { Knowledge } from './Knowledge'
-export { Learning } from './Learning'
-export { Join } from './Join'
-export { Conversation } from './Conversation'
-export { SearchOverlay } from './SearchOverlay'
+export { Head } from "./Head"
+export { Evidence } from "./Evidence"
+export { Knowledge } from "./Knowledge"
+export { Learning } from "./Learning"
+export { Join } from "./Join"
+export { Conversation } from "./Conversation"
+export { SearchOverlay } from "./SearchOverlay"

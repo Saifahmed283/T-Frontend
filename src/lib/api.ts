@@ -7,29 +7,46 @@
  * target a different origin (for example, a deployed API).
  */
 
-export type ApiStatus = 'ON_TRACK' | 'AT_RISK' | 'BLOCKED'
-export type ApiStage = 'G0' | 'G1' | 'G2' | 'G3' | 'G4' | 'G5' | 'G6' | 'G7'
+export type ApiStatus = "ON_TRACK" | "AT_RISK" | "BLOCKED"
+export type ApiStage = "G0" | "G1" | "G2" | "G3" | "G4" | "G5" | "G6" | "G7"
 
 /* ——— Content workspace ——— */
 
-export const contentStatuses = ['DRAFT', 'REVIEW', 'APPROVED', 'SCHEDULED', 'PUBLISHED', 'UNPUBLISHED', 'ARCHIVED'] as const
-export type ContentStatus = (typeof contentStatuses)[number]
+export const contentStatuses = [
+  "DRAFT",
+  "REVIEW",
+  "APPROVED",
+  "SCHEDULED",
+  "PUBLISHED",
+  "UNPUBLISHED",
+  "ARCHIVED",
+] as const
+export type ContentStatus = typeof contentStatuses[number]
 
 // Mirrors the server's TRANSITIONS map; the server remains authoritative.
 export const contentTransitions: Record<ContentStatus, ContentStatus[]> = {
-  DRAFT: ['REVIEW', 'PUBLISHED', 'ARCHIVED'],
-  REVIEW: ['APPROVED', 'DRAFT', 'ARCHIVED'],
-  APPROVED: ['PUBLISHED', 'SCHEDULED', 'DRAFT', 'ARCHIVED'],
-  SCHEDULED: ['PUBLISHED', 'DRAFT', 'ARCHIVED'],
-  PUBLISHED: ['UNPUBLISHED', 'ARCHIVED'],
-  UNPUBLISHED: ['PUBLISHED', 'DRAFT', 'ARCHIVED'],
-  ARCHIVED: ['DRAFT'],
+  DRAFT: ["REVIEW", "PUBLISHED", "ARCHIVED"],
+  REVIEW: ["APPROVED", "DRAFT", "ARCHIVED"],
+  APPROVED: ["PUBLISHED", "SCHEDULED", "DRAFT", "ARCHIVED"],
+  SCHEDULED: ["PUBLISHED", "DRAFT", "ARCHIVED"],
+  PUBLISHED: ["UNPUBLISHED", "ARCHIVED"],
+  UNPUBLISHED: ["PUBLISHED", "DRAFT", "ARCHIVED"],
+  ARCHIVED: ["DRAFT"],
 }
 
 // Moving a record into any of these states is an approver action (admin/lead).
-export const approverTargets: ContentStatus[] = ['APPROVED', 'SCHEDULED', 'PUBLISHED', 'UNPUBLISHED', 'ARCHIVED']
+export const approverTargets: ContentStatus[] = [
+  "APPROVED",
+  "SCHEDULED",
+  "PUBLISHED",
+  "UNPUBLISHED",
+  "ARCHIVED",
+]
 
-export type LocalizedValue = { en?: string; ar?: string }
+export type LocalizedValue = {
+  en?: string
+  ar?: string
+}
 
 export type ContentItem = {
   id: string
@@ -56,7 +73,10 @@ export type ContentActivity = {
   message: string
   metadata: unknown
   createdAt: string
-  user: { id: string; name: string } | null
+  user: {
+    id: string
+    name: string
+  } | null
 }
 
 export type ContentItemDetail = ContentItem & { activities: ContentActivity[] }
@@ -64,11 +84,20 @@ export type ContentItemDetail = ContentItem & { activities: ContentActivity[] }
 export type ContentCounts = {
   total: number
   byStatus: Record<string, number>
-  byKind: Record<string, { total: number; byStatus: Record<string, number> }>
+  byKind: Record<
+    string,
+    {
+      total: number
+      byStatus: Record<string, number>
+    }
+  >
   generatedAt: string
 }
 
-export type WorkflowBoardPayload = { columns: Record<string, ContentItem[]>; generatedAt: string }
+export type WorkflowBoardPayload = {
+  columns: Record<string, ContentItem[]>
+  generatedAt: string
+}
 
 export type ContentInput = {
   data: Record<string, unknown>
@@ -97,11 +126,20 @@ export type Asset = {
 
 /* ——— Site settings & members ——— */
 
-export type SiteSettingsPayload = { data: Record<string, unknown>; updatedAt: string | null }
+export type SiteSettingsPayload = {
+  data: Record<string, unknown>
+  updatedAt: string | null
+}
 
-export type MemberRole = 'admin' | 'lead' | 'member'
+export type MemberRole = "admin" | "lead" | "member"
 
-export type Member = { userId: string; name: string; email: string; joinedAt: string; role: MemberRole }
+export type Member = {
+  userId: string
+  name: string
+  email: string
+  joinedAt: string
+  role: MemberRole
+}
 
 export type DashboardSummary = {
   activeAssignments: number
@@ -122,14 +160,22 @@ export type Assignment = {
   value: number
   status: ApiStatus
   stage: ApiStage
-  lead: { id: string; name: string } | null
+  lead: {
+    id: string
+    name: string
+  } | null
   createdAt: string
   updatedAt: string
 }
 
 export type Paginated<T> = {
   items: T[]
-  pagination: { page: number; pageSize: number; total: number; totalPages: number }
+  pagination: {
+    page: number
+    pageSize: number
+    total: number
+    totalPages: number
+  }
 }
 
 export type ActivityItem = {
@@ -138,25 +184,34 @@ export type ActivityItem = {
   message: string
   metadata: unknown
   createdAt: string
-  user: { id: string; name: string } | null
-  assignment: { id: string; name: string } | null
+  user: {
+    id: string
+    name: string
+  } | null
+  assignment: {
+    id: string
+    name: string
+  } | null
 }
 
-export type ActivityFeed = { items: ActivityItem[]; nextCursor: string | null }
+export type ActivityFeed = {
+  items: ActivityItem[]
+  nextCursor: string | null
+}
 
 export const submissionKinds = [
-  'CONTACT',
-  'EXPERT_REGISTRATION',
-  'SEAT_RESERVATION',
-  'TENDER_INTEREST',
-  'TEAM_PROPOSAL',
-  'JOB_APPLICATION',
-  'PUBLICATION_REQUEST',
-  'NEWSLETTER',
-  'CONTRIBUTION',
+  "CONTACT",
+  "EXPERT_REGISTRATION",
+  "SEAT_RESERVATION",
+  "TENDER_INTEREST",
+  "TEAM_PROPOSAL",
+  "JOB_APPLICATION",
+  "PUBLICATION_REQUEST",
+  "NEWSLETTER",
+  "CONTRIBUTION",
 ] as const
 
-export type SubmissionKind = (typeof submissionKinds)[number]
+export type SubmissionKind = typeof submissionKinds[number]
 
 export type SubmissionInput = {
   kind: SubmissionKind
@@ -167,15 +222,27 @@ export type SubmissionInput = {
   payload?: Record<string, unknown>
 }
 
-export type SubmissionReceipt = { id: string; kind: SubmissionKind; status: string; createdAt: string }
+export type SubmissionReceipt = {
+  id: string
+  kind: SubmissionKind
+  status: string
+  createdAt: string
+}
 
 export type SessionInfo = {
-  user: { id: string; name: string; email: string }
-  workspace: { id: string; slug: string }
+  user: {
+    id: string
+    name: string
+    email: string
+  }
+  workspace: {
+    id: string
+    slug: string
+  }
   role: string
 }
 
-export type ExpertStatus = 'REGISTERED' | 'PROFILE_COMPLETE' | 'VETTED' | 'MATCHED' | 'DEPLOYED' | 'REJECTED'
+export type ExpertStatus = "REGISTERED" | "PROFILE_COMPLETE" | "VETTED" | "MATCHED" | "DEPLOYED" | "REJECTED"
 
 export type Expert = {
   id: string
@@ -189,7 +256,7 @@ export type Expert = {
   vettedAt: string | null
 }
 
-export type SubmissionStatus = 'NEW' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'ARCHIVED'
+export type SubmissionStatus = "NEW" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "ARCHIVED"
 
 export type Submission = {
   id: string
@@ -209,7 +276,10 @@ export type AssignmentActivity = {
   message: string
   metadata: unknown
   createdAt: string
-  user: { id: string; name: string } | null
+  user: {
+    id: string
+    name: string
+  } | null
 }
 
 export type AssignmentDetail = Assignment & { activities: AssignmentActivity[] }
@@ -219,132 +289,249 @@ export class ApiError extends Error {
   code?: string
   constructor(status: number, message: string, code?: string) {
     super(message)
-    this.name = 'ApiError'
+    this.name = "ApiError"
     this.status = status
     this.code = code
   }
 }
 
-const BASE = import.meta.env.VITE_API_URL ?? ''
+const BASE = import.meta.env.VITE_API_URL ?? ""
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   let res: Response
-  const isForm = typeof FormData !== 'undefined' && init.body instanceof FormData
+  const isForm =
+    typeof FormData !== "undefined" && init.body instanceof FormData
   try {
     res = await fetch(`${BASE}${path}`, {
-      credentials: 'include',
+      credentials: "include",
       // FormData bodies must let the browser set the multipart boundary.
-      ...(isForm ? {} : { headers: { 'Content-Type': 'application/json' } }),
+      ...(isForm ? {} : { headers: { "Content-Type": "application/json" } }),
       ...init,
-      headers: { ...(isForm ? {} : { 'Content-Type': 'application/json' }), ...(init.headers ?? {}) },
+      headers: {
+        ...(isForm ? {} : { "Content-Type": "application/json" }),
+        ...(init.headers ?? {}),
+      },
     })
   } catch {
-    throw new ApiError(0, 'Cannot reach the API', 'NETWORK_ERROR')
+    throw new ApiError(0, "Cannot reach the API", "NETWORK_ERROR")
   }
   if (res.status === 204) return undefined as T
   const text = await res.text()
   let payload: unknown = null
   if (text) {
-    try { payload = JSON.parse(text) } catch { payload = null }
+    try {
+      payload = JSON.parse(text)
+    } catch {
+      payload = null
+    }
   }
   if (!res.ok) {
-    const env = (payload ?? {}) as { error?: { code?: string; message?: string } }
-    throw new ApiError(res.status, env.error?.message ?? res.statusText, env.error?.code)
+    const env = (payload ?? {}) as {
+      error?: {
+        code?: string
+        message?: string
+      }
+    }
+    throw new ApiError(
+      res.status,
+      env.error?.message ?? res.statusText,
+      env.error?.code,
+    )
   }
   return payload as T
 }
 
 export const api = {
-  baseUrl: BASE || '(same origin)',
+  baseUrl: BASE || "(same origin)",
   login: (email: string, password: string) =>
-    request<SessionInfo>('/api/v1/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
-  logout: () => request<void>('/api/v1/auth/logout', { method: 'POST' }),
-  me: () => request<SessionInfo>('/api/v1/auth/me'),
+    request<SessionInfo>("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    }),
+  logout: () => request<void>("/api/v1/auth/logout", { method: "POST" }),
+  me: () => request<SessionInfo>("/api/v1/auth/me"),
   changePassword: (currentPassword: string, newPassword: string) =>
-    request<void>('/api/v1/auth/password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
-  summary: () => request<DashboardSummary>('/api/v1/dashboard/summary'),
-  assignments: (params: { status?: ApiStatus; search?: string; page?: number; pageSize?: number } = {}) => {
+    request<void>("/api/v1/auth/password", {
+      method: "POST",
+      body: JSON.stringify({ currentPassword, newPassword }),
+    }),
+  summary: () => request<DashboardSummary>("/api/v1/dashboard/summary"),
+  assignments: (
+    params: {
+      status?: ApiStatus
+      search?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) => {
     const q = new URLSearchParams()
-    if (params.status) q.set('status', params.status)
-    if (params.search) q.set('search', params.search)
-    if (params.page) q.set('page', String(params.page))
-    if (params.pageSize) q.set('pageSize', String(params.pageSize))
+    if (params.status) q.set("status", params.status)
+    if (params.search) q.set("search", params.search)
+    if (params.page) q.set("page", String(params.page))
+    if (params.pageSize) q.set("pageSize", String(params.pageSize))
     const qs = q.toString()
-    return request<Paginated<Assignment>>(`/api/v1/assignments${qs ? `?${qs}` : ''}`)
+    return request<Paginated<Assignment>>(
+      `/api/v1/assignments${qs ? `?${qs}` : ""}`,
+    )
   },
-  assignment: (id: string) => request<AssignmentDetail>(`/api/v1/assignments/${encodeURIComponent(id)}`),
-  experts: (params: { status?: ExpertStatus; search?: string; page?: number; pageSize?: number } = {}) => {
+  assignment: (id: string) =>
+    request<AssignmentDetail>(`/api/v1/assignments/${encodeURIComponent(id)}`),
+  experts: (
+    params: {
+      status?: ExpertStatus
+      search?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) => {
     const q = new URLSearchParams()
-    if (params.status) q.set('status', params.status)
-    if (params.search) q.set('search', params.search)
-    if (params.page) q.set('page', String(params.page))
-    if (params.pageSize) q.set('pageSize', String(params.pageSize))
+    if (params.status) q.set("status", params.status)
+    if (params.search) q.set("search", params.search)
+    if (params.page) q.set("page", String(params.page))
+    if (params.pageSize) q.set("pageSize", String(params.pageSize))
     const qs = q.toString()
-    return request<Paginated<Expert>>(`/api/v1/experts${qs ? `?${qs}` : ''}`)
+    return request<Paginated<Expert>>(`/api/v1/experts${qs ? `?${qs}` : ""}`)
   },
-  submissions: (params: { kind?: SubmissionKind; page?: number; pageSize?: number } = {}) => {
+  submissions: (
+    params: {
+      kind?: SubmissionKind
+      page?: number
+      pageSize?: number
+    } = {},
+  ) => {
     const q = new URLSearchParams()
-    if (params.kind) q.set('kind', params.kind)
-    if (params.page) q.set('page', String(params.page))
-    if (params.pageSize) q.set('pageSize', String(params.pageSize))
+    if (params.kind) q.set("kind", params.kind)
+    if (params.page) q.set("page", String(params.page))
+    if (params.pageSize) q.set("pageSize", String(params.pageSize))
     const qs = q.toString()
-    return request<Paginated<Submission>>(`/api/v1/submissions${qs ? `?${qs}` : ''}`)
+    return request<Paginated<Submission>>(
+      `/api/v1/submissions${qs ? `?${qs}` : ""}`,
+    )
   },
-  activity: (limit = 20) => request<ActivityFeed>(`/api/v1/activity?limit=${limit}`),
-  submit: (input: SubmissionInput) => request<SubmissionReceipt>('/api/v1/submissions', { method: 'POST', body: JSON.stringify(input) }),
+  activity: (limit = 20) =>
+    request<ActivityFeed>(`/api/v1/activity?limit=${limit}`),
+  submit: (input: SubmissionInput) =>
+    request<SubmissionReceipt>("/api/v1/submissions", {
+      method: "POST",
+      body: JSON.stringify(input),
+    }),
 
   /* Content workspace */
-  contentCounts: () => request<ContentCounts>('/api/v1/content/counts'),
-  workflowBoard: () => request<WorkflowBoardPayload>('/api/v1/workflow/board'),
-  contentList: (collectionId: string, params: { status?: ContentStatus; search?: string; page?: number; pageSize?: number } = {}) => {
+  contentCounts: () => request<ContentCounts>("/api/v1/content/counts"),
+  workflowBoard: () => request<WorkflowBoardPayload>("/api/v1/workflow/board"),
+  contentList: (
+    collectionId: string,
+    params: {
+      status?: ContentStatus
+      search?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) => {
     const q = new URLSearchParams()
-    if (params.status) q.set('status', params.status)
-    if (params.search) q.set('search', params.search)
-    if (params.page) q.set('page', String(params.page))
-    if (params.pageSize) q.set('pageSize', String(params.pageSize))
+    if (params.status) q.set("status", params.status)
+    if (params.search) q.set("search", params.search)
+    if (params.page) q.set("page", String(params.page))
+    if (params.pageSize) q.set("pageSize", String(params.pageSize))
     const qs = q.toString()
-    return request<Paginated<ContentItem>>(`/api/v1/content/${encodeURIComponent(collectionId)}${qs ? `?${qs}` : ''}`)
+    return request<Paginated<ContentItem>>(
+      `/api/v1/content/${encodeURIComponent(collectionId)}${
+        qs ? `?${qs}` : ""
+      }`,
+    )
   },
   contentGet: (collectionId: string, id: string) =>
-    request<ContentItemDetail>(`/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}`),
+    request<ContentItemDetail>(
+      `/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}`,
+    ),
   contentCreate: (collectionId: string, body: ContentInput) =>
-    request<ContentItem>(`/api/v1/content/${encodeURIComponent(collectionId)}`, { method: 'POST', body: JSON.stringify(body) }),
-  contentUpdate: (collectionId: string, id: string, body: Partial<ContentInput>) =>
-    request<ContentItem>(`/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    request<ContentItem>(
+      `/api/v1/content/${encodeURIComponent(collectionId)}`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  contentUpdate: (
+    collectionId: string,
+    id: string,
+    body: Partial<ContentInput>,
+  ) =>
+    request<ContentItem>(
+      `/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    ),
   contentTransition: (collectionId: string, id: string, to: ContentStatus) =>
-    request<ContentItem>(`/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}/transition`, { method: 'POST', body: JSON.stringify({ to }) }),
+    request<ContentItem>(
+      `/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}/transition`,
+      { method: "POST", body: JSON.stringify({ to }) },
+    ),
   contentDelete: (collectionId: string, id: string) =>
-    request<{ id: string; deleted: boolean }>(`/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    request<{
+      id: string
+      deleted: boolean
+    }>(
+      `/api/v1/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
 
   /* Media library */
-  assets: (params: { search?: string; mimeType?: string; page?: number; pageSize?: number } = {}) => {
+  assets: (
+    params: {
+      search?: string
+      mimeType?: string
+      page?: number
+      pageSize?: number
+    } = {},
+  ) => {
     const q = new URLSearchParams()
-    if (params.search) q.set('search', params.search)
-    if (params.mimeType) q.set('mimeType', params.mimeType)
-    if (params.page) q.set('page', String(params.page))
-    if (params.pageSize) q.set('pageSize', String(params.pageSize))
+    if (params.search) q.set("search", params.search)
+    if (params.mimeType) q.set("mimeType", params.mimeType)
+    if (params.page) q.set("page", String(params.page))
+    if (params.pageSize) q.set("pageSize", String(params.pageSize))
     const qs = q.toString()
-    return request<Paginated<Asset> & { storageEnabled: boolean }>(`/api/v1/assets${qs ? `?${qs}` : ''}`)
+    return request<Paginated<Asset> & { storageEnabled: boolean }>(
+      `/api/v1/assets${qs ? `?${qs}` : ""}`,
+    )
   },
   assetUpload: (file: File, alt?: LocalizedValue) => {
     const form = new FormData()
-    form.append('file', file)
-    if (alt?.en) form.append('alt', alt.en)
-    if (alt?.ar) form.append('altAr', alt.ar)
-    return request<Asset>('/api/v1/assets', { method: 'POST', body: form })
+    form.append("file", file)
+    if (alt?.en) form.append("alt", alt.en)
+    if (alt?.ar) form.append("altAr", alt.ar)
+    return request<Asset>("/api/v1/assets", { method: "POST", body: form })
   },
   assetUpdateAlt: (id: string, alt: LocalizedValue | null) =>
-    request<Asset>(`/api/v1/assets/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify({ alt }) }),
+    request<Asset>(`/api/v1/assets/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ alt }),
+    }),
   assetDelete: (id: string) =>
-    request<{ id: string; deleted: boolean }>(`/api/v1/assets/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+    request<{
+      id: string
+      deleted: boolean
+    }>(
+      `/api/v1/assets/${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    ),
 
   /* Site settings */
-  siteSettings: () => request<SiteSettingsPayload>('/api/v1/settings/site'),
+  siteSettings: () => request<SiteSettingsPayload>("/api/v1/settings/site"),
   updateSiteSettings: (data: Record<string, unknown>) =>
-    request<SiteSettingsPayload>('/api/v1/settings/site', { method: 'PUT', body: JSON.stringify({ data }) }),
+    request<SiteSettingsPayload>("/api/v1/settings/site", {
+      method: "PUT",
+      body: JSON.stringify({ data }),
+    }),
 
   /* Members */
-  members: () => request<{ items: Member[] }>('/api/v1/members'),
+  members: () => request<{ items: Member[] }>("/api/v1/members"),
   updateMemberRole: (userId: string, role: MemberRole) =>
-    request<{ role: MemberRole; user: { id: string; name: string; email: string } }>(`/api/v1/members/${encodeURIComponent(userId)}`, { method: 'PATCH', body: JSON.stringify({ role }) }),
+    request<{
+      role: MemberRole
+      user: {
+        id: string
+        name: string
+        email: string
+      }
+    }>(`/api/v1/members/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
 }

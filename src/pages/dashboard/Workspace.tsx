@@ -281,7 +281,11 @@ function SignInPage({
               disabled={busy || checking}
             >
               <LockKeyhole size={15} />
-              {busy ? "Signing in…" : checking ? "Checking session…" : "Sign in"}
+              {busy
+                ? "Signing in…"
+                : checking
+                  ? "Checking session…"
+                  : "Sign in"}
             </Button>
           </form>
           <p className="auth-foot">

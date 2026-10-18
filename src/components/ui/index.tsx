@@ -1,7 +1,7 @@
-export { Badge } from './Badge'
-export { Breadcrumbs } from './Breadcrumbs'
-export { Figure } from './Figure'
-export { EmptyState } from './EmptyState'
-export { SegmentedControl } from './SegmentedControl'
-export { Dialog } from './Dialog'
-export { LiveStatus } from './LiveStatus'
+export { Badge } from "./Badge"
+export { Breadcrumbs } from "./Breadcrumbs"
+export { Figure } from "./Figure"
+export { EmptyState } from "./EmptyState"
+export { SegmentedControl } from "./SegmentedControl"
+export { Dialog } from "./Dialog"
+export { LiveStatus } from "./LiveStatus"

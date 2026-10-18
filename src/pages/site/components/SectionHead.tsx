@@ -1,6 +1,18 @@
-import { GoldLine, SplitText } from '@/components/motion/fx'
+import { GoldLine, SplitText } from "@/components/motion/fx"
 
-function SectionHead({ id, n, eyebrow, title, aside }: { id?: string; n: string; eyebrow: string; title: string; aside?: React.ReactNode }) {
+function SectionHead({
+  id,
+  n,
+  eyebrow,
+  title,
+  aside,
+}: {
+  id?: string
+  n: string
+  eyebrow: string
+  title: string
+  aside?: React.ReactNode
+}) {
   return (
     <div id={id} className="scroll-mt-40">
       <div className="flex items-center gap-4">
@@ -9,7 +21,9 @@ function SectionHead({ id, n, eyebrow, title, aside }: { id?: string; n: string;
       </div>
       <GoldLine className="mt-4" />
       <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
-        <h2 className="max-w-3xl text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] font-medium"><SplitText text={title} /></h2>
+        <h2 className="max-w-3xl text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] font-medium">
+          <SplitText text={title} />
+        </h2>
         {aside}
       </div>
     </div>

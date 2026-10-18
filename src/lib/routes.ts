@@ -1,4 +1,4 @@
-export type SectionId = 'for' | 'evidence' | 'cause' | 'knowledge' | 'learning' | 'about' | 'join-board' | 'contact'
+export type SectionId = "for" | "evidence" | "cause" | "knowledge" | "learning" | "about" | "join-board" | "contact"
 
 /**
  * Real path routes for every in-page section, so navigation never mutates a
@@ -6,25 +6,25 @@ export type SectionId = 'for' | 'evidence' | 'cause' | 'knowledge' | 'learning' 
  * section, `/join` the join board and `/contact` the conversation section.
  */
 export const SECTION_ROUTES: Record<string, SectionId> = {
-  '/for': 'for',
-  '/evidence': 'evidence',
-  '/method': 'cause',
-  '/knowledge': 'knowledge',
-  '/learning': 'learning',
-  '/about': 'about',
-  '/join': 'join-board',
-  '/contact': 'contact',
+  "/for": "for",
+  "/evidence": "evidence",
+  "/method": "cause",
+  "/knowledge": "knowledge",
+  "/learning": "learning",
+  "/about": "about",
+  "/join": "join-board",
+  "/contact": "contact",
 }
 
 export const SECTION_PATHS: Record<SectionId, string> = {
-  for: '/for',
-  evidence: '/evidence',
-  cause: '/method',
-  knowledge: '/knowledge',
-  learning: '/learning',
-  about: '/about',
-  'join-board': '/join',
-  contact: '/contact',
+  for: "/for",
+  evidence: "/evidence",
+  cause: "/method",
+  knowledge: "/knowledge",
+  learning: "/learning",
+  about: "/about",
+  "join-board": "/join",
+  contact: "/contact",
 }
 
 export function sectionForPath(path: string): SectionId | null {
