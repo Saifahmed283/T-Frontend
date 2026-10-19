@@ -50,7 +50,14 @@ export function useInView<T extends Element>(threshold = 0.2, enabled = true) {
   const [seen, setSeen] = useState(false)
   useEffect(() => {
     const el = ref.current
-    if (!enabled || !el || reduced()) return
+    if (!enabled || !el) return
+    /* Reduced-motion users must still be "seen": consumers gate content and
+       counters on `seen`, so bailing out here left CountUp stuck at 0 and
+       GoldLine invisible forever for anyone with the preference set. */
+    if (reduced()) {
+      setSeen(true)
+      return
+    }
     return observeOnce(el, threshold, () => setSeen(true))
   }, [threshold, enabled])
   return [ref, seen] as const
@@ -159,30 +166,44 @@ export function CountUp({
   prefix?: string
 }) {
   const [ref, seen] = useInView<HTMLSpanElement>(0.4)
-  const [v, setV] = useState(0)
+  /* Start at the true value, not 0: the prerendered HTML (and the first client
+     paint) must show the real figure so a slow connection, a failed script or a
+     reduced-motion preference never leaves a credibility counter reading "0".
+     When motion is allowed the first requestAnimationFrame tick — which runs
+     before the browser paints — resets it and eases back up.
+
+     The value is written straight to the DOM node rather than through state:
+     setState here re-rendered a React component on every frame for 1.8s, and
+     the hero runs four of these at once. */
+  const fmt = (n: number) => `${prefix}${n.toFixed(decimals)}${suffix}`
   useEffect(() => {
-    if (!seen) return
-    if (reduced()) return setV(to)
+    const el = ref.current
+    if (!seen || !el) return
+    if (reduced()) {
+      el.textContent = fmt(to)
+      return
+    }
     let raf = 0
     const t0 = performance.now()
     const tick = (t: number) => {
       const p = Math.min(1, (t - t0) / 1800)
-      setV(to * (1 - Math.pow(1 - p, 4)))
+      el.textContent = fmt(to * (1 - Math.pow(1 - p, 4)))
       if (p < 1) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [seen, to])
+  }, [seen, to, decimals, prefix, suffix])
   return (
     <span ref={ref} className="tabular-nums">
-      {prefix}
-      {v.toFixed(decimals)}
-      {suffix}
+      {fmt(to)}
     </span>
   )
 }
 
-/* Cursor-following radial light — after ReactBits SpotlightCard */
+/* Cursor-following radial light — after ReactBits SpotlightCard.
+   The handler is rAF-throttled and skipped outright for reduced-motion users:
+   a raw mousemove does a getBoundingClientRect (layout read) plus two style
+   writes, and on a card grid that fires for every pixel the cursor travels. */
 export function Spotlight({
   children,
   className = "",
@@ -193,10 +214,20 @@ export function Spotlight({
   color?: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
+  const raf = useRef(0)
+  useEffect(() => () => cancelAnimationFrame(raf.current), [])
   const move = (e: MouseEvent) => {
-    const r = ref.current!.getBoundingClientRect()
-    ref.current!.style.setProperty("--x", `${e.clientX - r.left}px`)
-    ref.current!.style.setProperty("--y", `${e.clientY - r.top}px`)
+    if (reduced() || raf.current) return
+    const x = e.clientX
+    const y = e.clientY
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0
+      const el = ref.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      el.style.setProperty("--x", `${x - r.left}px`)
+      el.style.setProperty("--y", `${y - r.top}px`)
+    })
   }
   return (
     <div
@@ -229,12 +260,19 @@ export function Magnetic({
   href?: string
 }) {
   const ref = useRef<HTMLAnchorElement>(null)
+  const raf = useRef(0)
+  useEffect(() => () => cancelAnimationFrame(raf.current), [])
   const move = (e: MouseEvent) => {
-    if (reduced()) return
-    const r = ref.current!.getBoundingClientRect()
-    const x = (e.clientX - r.left - r.width / 2) * 0.25
-    const y = (e.clientY - r.top - r.height / 2) * 0.35
-    ref.current!.style.transform = `translate(${x}px, ${y}px)`
+    if (reduced() || raf.current) return
+    const x = e.clientX
+    const y = e.clientY
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0
+      const el = ref.current
+      if (!el) return
+      const r = el.getBoundingClientRect()
+      el.style.transform = `translate(${(x - r.left - r.width / 2) * 0.25}px, ${(y - r.top - r.height / 2) * 0.35}px)`
+    })
   }
   const leave = () => {
     ref.current!.style.transform = ""
@@ -273,30 +311,30 @@ export function Decrypt({
   className?: string
 }) {
   const [ref, seen] = useInView<HTMLSpanElement>(0.6)
-  const [out, setOut] = useState(text)
+  /* Scrambles straight into the DOM node: going through setState re-rendered
+     the component 33×/s for the length of the effect. */
   useEffect(() => {
-    if (!seen || reduced()) return
+    const el = ref.current
+    if (!seen || !el || reduced()) return
     const chars = "ΣΔΛΞΠΦΨΩ01·/—"
     let f = 0
     const id = setInterval(() => {
       f++
-      setOut(
-        text
-          .split("")
-          .map((c, i) =>
-            c === " " || i < f / 1.5
-              ? c
-              : chars[Math.floor(Math.random() * chars.length)],
-          )
-          .join(""),
-      )
+      el.textContent = text
+        .split("")
+        .map((c, i) =>
+          c === " " || i < f / 1.5
+            ? c
+            : chars[Math.floor(Math.random() * chars.length)],
+        )
+        .join("")
       if (f / 1.5 > text.length) clearInterval(id)
     }, 30)
     return () => clearInterval(id)
   }, [seen, text])
   return (
     <span ref={ref} className={className}>
-      {out}
+      {text}
     </span>
   )
 }
@@ -331,12 +369,7 @@ export function Contours({
         opacity={opacity}
       >
         {paths.map((d, i) => (
-          <path
-            key={i}
-            d={d}
-            transform={`rotate(${i * 7} 600 400)`}
-            style={{ willChange: "opacity" }}
-          />
+          <path key={i} d={d} transform={`rotate(${i * 7} 600 400)`} />
         ))}
       </g>
     </svg>
@@ -391,15 +424,7 @@ export function Emblem({
       <rect x="22" y="16" width="20" height="3" fill={main} />
       <rect x="24" y="19.5" width="16" height="1.5" fill={main} />
       {[25.5, 29.5, 33.5, 37.5].map((x) => (
-        <rect
-          key={x}
-          x={x}
-          y="22"
-          width="1.6"
-          height="22"
-          fill={main}
-          style={{ willChange: "opacity" }}
-        />
+        <rect key={x} x={x} y="22" width="1.6" height="22" fill={main} />
       ))}
       <rect x="23" y="44.5" width="18" height="1.5" fill={main} />
       <rect x="21" y="46.5" width="22" height="3" fill={main} />
@@ -417,7 +442,10 @@ export function Logo({
   return (
     <span className={`inline-flex items-center gap-3 ${className}`}>
       <Emblem className="h-9 w-9 shrink-0" tone={tone} />
-      <span className="leading-none">
+      {/* The wordmark is visually hidden below `sm` so the header reflows at
+          320px (WCAG 1.4.10) but still names the logo link for screen readers;
+          the emblem alone stays as the brand mark. */}
+      <span className="sr-only leading-none sm:not-sr-only sm:block">
         <span
           className={`block font-display text-xl font-semibold tracking-[0.22em] ${
             tone === "navy" ? "text-navy" : "text-ivory"

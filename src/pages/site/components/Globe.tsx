@@ -26,16 +26,20 @@ function Globe() {
         stroke="#C4A868"
         strokeWidth=".6"
       >
-        {[0, 1, 2, 3, 4, 5].map((k) => (
-          <ellipse key={k} cx="100" cy="100" rx="78" ry="78" opacity=".55">
-            <animate
-              attributeName="rx"
-              values="78;0;78"
-              dur="12s"
-              begin={`${-k * 2}s`}
-              repeatCount="indefinite"
-            />
-          </ellipse>
+        {/* Static meridians. These used to be six SMIL `<animate>` loops
+            cycling `rx` from 78 → 0 → 78 forever, which forces the browser to
+            re-rasterise the whole SVG on every frame for as long as the section
+            is on screen. Drawn as real meridian ellipses instead: same wireframe
+            read, zero ongoing cost. */}
+        {[72, 55, 38, 20].map((rx) => (
+          <ellipse
+            key={rx}
+            cx="100"
+            cy="100"
+            rx={rx}
+            ry="78"
+            opacity=".5"
+          />
         ))}
         {[-52, -26, 0, 26, 52].map((y) => (
           <ellipse

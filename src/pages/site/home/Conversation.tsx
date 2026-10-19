@@ -141,7 +141,8 @@ export function Conversation({ lang }: { lang: Lang }) {
   const [role, setRole] = useState(rolesShown[0])
   const [intent, setIntent] = useState(intentsShown[0])
   const [fw, setFw] = useState(forwardShown[0])
-  const [sel, setSel] = useState<string[]>([listsShown[0]])
+  // Mailing lists are opt-in marketing consent — default to none selected.
+  const [sel, setSel] = useState<string[]>([])
   const [sent, setSent] = useState(false)
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)

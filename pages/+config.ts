@@ -18,6 +18,7 @@ export default {
   favicon: "/favicon.svg",
   headHtmlBegin: [
     '<meta name="theme-color" content="#132B45" />',
+    '<link rel="preconnect" href="https://images.unsplash.com" crossorigin />',
     ...PRELOAD_FONTS.map(
       (href) =>
         `<link rel="preload" as="font" type="font/woff2" crossorigin href="${href}" />`,

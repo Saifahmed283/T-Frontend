@@ -172,6 +172,12 @@ export function Join({ lang }: { lang: Lang }) {
   const [expertErr, setExpertErr] = useState("")
   const [sending, setSending] = useState(false)
   const [req, setReq] = useState<RequestConfig | null>(null)
+  /* The public submissions API has no file field (it is a strict JSON schema),
+     so a CV cannot be stored from the browser. We capture and validate the file
+     name so the record shows an expert arrived with a CV, and the UI states the
+     file itself is requested during review rather than pretending to upload it. */
+  const [cvName, setCvName] = useState("")
+  const [cvErr, setCvErr] = useState("")
 
   const areasShown = ar ? areasAr : areas
   const rowText = (t: string, i: number) =>
@@ -188,6 +194,32 @@ export function Join({ lang }: { lang: Lang }) {
       selAreas.includes(a) ? selAreas.filter((x) => x !== a) : [...selAreas, a],
     )
 
+  const MAX_CV_BYTES = 10 * 1024 * 1024
+  const onCvChange = (f: File | undefined) => {
+    setCvErr("")
+    if (!f) {
+      setCvName("")
+      return
+    }
+    if (!/\.(pdf|docx?)$/i.test(f.name)) {
+      setCvErr(
+        ar
+          ? "يرجى اختيار ملف PDF أو DOCX."
+          : "Please choose a PDF or DOCX file.",
+      )
+      setCvName("")
+      return
+    }
+    if (f.size > MAX_CV_BYTES) {
+      setCvErr(
+        ar ? "الملف أكبر من 10 ميغابايت." : "That file is larger than 10 MB.",
+      )
+      setCvName("")
+      return
+    }
+    setCvName(f.name)
+  }
+
   const finishExpert = async () => {
     if (!email.trim()) {
       setExpertErr(
@@ -203,7 +235,12 @@ export function Join({ lang }: { lang: Lang }) {
         email: email.trim(),
         name: name.trim() || undefined,
         source: "site",
-        payload: { location, linkedin, areas: selAreas },
+        payload: {
+          location,
+          linkedin,
+          areas: selAreas,
+          ...(cvName ? { cvFileName: cvName } : {}),
+        },
       })
       setStep(3)
     } catch (err) {
@@ -353,12 +390,31 @@ export function Join({ lang }: { lang: Lang }) {
                       </div>
                     )}
                     {step === 2 && (
-                      <label className="grid h-36 cursor-pointer place-items-center border border-dashed border-ivory/30 text-ivory/60 transition hover:border-gold-light">
-                        <input type="file" className="sr-only" />
-                        {ar
-                          ? "أفلت سيرتك الذاتية أو انقر للتصفّح (PDF، DOCX)"
-                          : "Drop your CV or click to browse (PDF, DOCX)"}
-                      </label>
+                      <div>
+                        <label className="grid h-36 cursor-pointer place-items-center border border-dashed border-ivory/30 text-ivory/60 transition hover:border-gold-light">
+                          <input
+                            type="file"
+                            className="sr-only"
+                            accept=".pdf,.doc,.docx,application/pdf"
+                            onChange={(e) => onCvChange(e.target.files?.[0])}
+                          />
+                          {cvName
+                            ? cvName
+                            : ar
+                              ? "أفلت سيرتك الذاتية أو انقر للتصفّح (PDF، DOCX)"
+                              : "Drop your CV or click to browse (PDF, DOCX)"}
+                        </label>
+                        <p className="mt-3 text-xs text-ivory/50">
+                          {ar
+                            ? "الملف نفسه يُطلب بأمان أثناء المراجعة — لا يُخزَّن هنا."
+                            : "The file itself is requested securely during review — it is not stored here."}
+                        </p>
+                        {cvErr && (
+                          <p role="alert" className="eyebrow mt-3 text-gold-light">
+                            {cvErr}
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                   {expertErr && (
@@ -419,6 +475,8 @@ export function Join({ lang }: { lang: Lang }) {
                       setEmail("")
                       setLocation("")
                       setLinkedin("")
+                      setCvName("")
+                      setCvErr("")
                     }}
                     className="eyebrow mt-6 border-b border-gold-light pb-1"
                   >

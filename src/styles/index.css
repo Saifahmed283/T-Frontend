@@ -1,6 +1,26 @@
 @import 'tailwindcss';
 @import './fonts.css';
-@import './dashboard.css';
+
+/* Dashboard design tokens.
+   These must live in the globally Tailwind-compiled stylesheet so the utility
+   classes they generate (text-success, bg-warning, border-rule, ...) exist.
+   The bulk of the dashboard's hand-written rules stay in ./dashboard.css, which
+   the lazy /dashboard chunk imports — they are plain scoped CSS and need no
+   Tailwind compilation, so they never bloat the marketing site. */
+@theme {
+  --color-navy-soft: #31455b;
+  --color-ivory-deep: #f5f0e5;
+  --color-rule: #e0d8c6;
+  --color-brass: #a98a4b;
+  --color-brass-light: #c4a868;
+  --color-success: #4a6b4e;
+  --color-warning: #b07a22;
+  --color-danger: #a32d2d;
+  /* The `* Fallback` families are metric-matched local faces (see
+     fonts.css): they render during the webfont swap with identical
+     advance widths so first paint doesn't reflow (CLS). */
+  --font-serif: 'Cormorant Garamond', 'Cormorant Garamond Fallback', Georgia, serif;
+}
 
 @theme {
   --color-navy: #132b45;
@@ -24,9 +44,9 @@
   --color-data-2: #7fa650;
   --color-data-3: #c97b2d;
   --color-data-4: #6b4e94;
-  --font-display: 'Cormorant Garamond', 'Noto Naskh Arabic', serif;
-  --font-sans: 'Jost', 'Noto Naskh Arabic', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-display: 'Cormorant Garamond', 'Cormorant Garamond Fallback', 'Noto Naskh Arabic', serif;
+  --font-sans: 'Jost', 'Jost Fallback', 'Noto Naskh Arabic', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --font-arabic: 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
   --font-arabic-display: 'Cairo', 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
 }
@@ -71,7 +91,6 @@
   background: linear-gradient(90deg, transparent, var(--color-gold-light), var(--color-gold), transparent);
 }
 
-@keyframes drift { from { transform: translate3d(0,0,0); } to { transform: translate3d(-120px,-60px,0); } }
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes slidein { from { transform: translateX(100%); } to { transform: none; } }
 @keyframes spin360 { to { transform: rotate(360deg); } }
@@ -84,15 +103,20 @@
 @keyframes shrink { from { width: 100%; } to { width: 0; } }
 @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 
-.contour-bg { animation: drift 40s linear infinite alternate; }
+/* Contours are decorative background texture rendered at 12 places per page.
+   The old infinite `drift` re-paints an SVG group every frame forever, and the
+   per-path `will-change` reserved a compositor layer for each of 22 paths at
+   every one of those sites — hundreds of live layers competing for RAM on a
+   low-end device. The field is static by design now: it costs one raster. */
+.contour-bg { animation: none; }
 .marquee { animation: marquee 50s linear infinite; }
 .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-.orbit { animation: spin360 120s linear infinite; }
-.orbit-rev { animation: spin360 120s linear infinite reverse; }
+.orbit { animation: spin360 240s linear infinite; }
+.orbit-rev { animation: spin360 240s linear infinite reverse; }
 .orbit-wrap:hover .orbit, .orbit-wrap:hover .orbit-rev { animation-play-state: paused; }
 
 @media (prefers-reduced-motion: reduce) {
-  .contour-bg, .marquee, .pulse-dot, .orbit, .orbit-rev { animation: none; }
+  .marquee, .pulse-dot, .orbit, .orbit-rev { animation: none; }
   html { scroll-behavior: auto; }
 }
 
@@ -106,8 +130,8 @@
 @keyframes meridian { 0% { transform: scaleX(1); } 50% { transform: scaleX(-1); } 100% { transform: scaleX(1); } }
 @keyframes orbit-dot { to { offset-distance: 100%; } }
 @keyframes scroll-cue { 0% { transform: scaleY(0); transform-origin: top; } 50% { transform: scaleY(1); transform-origin: top; } 51% { transform-origin: bottom; } 100% { transform: scaleY(0); transform-origin: bottom; } }
-.intro-draw { animation: draw .7s cubic-bezier(.65,0,.35,1) both; }
-.intro-rise { animation: rise .35s cubic-bezier(.2,.8,.2,1) both; }
+.intro-draw { animation: draw 1.2s cubic-bezier(.65,0,.35,1) both; }
+.intro-rise { animation: rise .6s cubic-bezier(.2,.8,.2,1) both; }
 .intro-col { transform-box: fill-box; transform-origin: bottom; animation: col .7s cubic-bezier(.2,.8,.2,1) both; }
 .meridian { transform-box: fill-box; transform-origin: center; animation: meridian 3.9s linear infinite; }
 .meridian-slow { transform-box: fill-box; transform-origin: center; animation: meridian 14s linear infinite; }

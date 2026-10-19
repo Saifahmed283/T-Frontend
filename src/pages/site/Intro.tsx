@@ -2,9 +2,7 @@ import { useEffect, useState } from "react"
 import type { Lang } from "./types"
 
 /* Intro: the emblem is constructed — ring, meridians, columns rise one by one,
-   wordmark resolves, then the navy ground lifts away like a lever releasing.
-   Kept intentionally short (~1.2s end to end): it covers the hero, so every
-   millisecond here is a millisecond added to LCP. */
+   wordmark resolves, then the navy ground lifts away like a lever releasing. */
 export default function Intro({
   onDone,
   onLift,
@@ -25,27 +23,31 @@ export default function Intro({
       onDone()
       return
     }
+    document.body.style.overflow = "hidden"
     const t = [
-      setTimeout(() => setPhase("word"), 380),
+      setTimeout(() => setPhase("word"), 1500),
       setTimeout(() => {
         setPhase("lift")
         onLift()
-      }, 750),
-      setTimeout(onDone, 1200),
+      }, 2900),
+      setTimeout(onDone, 3900),
     ]
-    return () => t.forEach(clearTimeout)
+    return () => {
+      t.forEach(clearTimeout)
+      document.body.style.overflow = ""
+    }
   }, [onDone, onLift])
   const skip = () => {
     setPhase("lift")
     onLift()
-    setTimeout(onDone, 500)
+    setTimeout(onDone, 900)
   }
 
   return (
     <div
       role="presentation"
       onClick={skip}
-      className={`fixed inset-0 z-[100] grid cursor-pointer place-items-center bg-navy-3 text-ivory transition-[clip-path] duration-[450ms] ease-[cubic-bezier(.76,0,.24,1)] ${
+      className={`fixed inset-0 z-[100] grid cursor-pointer place-items-center bg-navy-3 text-ivory transition-[clip-path] duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
         phase === "lift"
           ? "[clip-path:inset(0_0_100%_0)]"
           : "[clip-path:inset(0_0_0_0)]"
@@ -53,14 +55,14 @@ export default function Intro({
     >
       <div
         className="absolute inset-x-0 top-1/2 h-px origin-left bg-gold-light/30"
-        style={{ animation: "grow .6s cubic-bezier(.2,.8,.2,1) both" }}
+        style={{ animation: "grow 1.4s cubic-bezier(.2,.8,.2,1) both" }}
       />
-      <div
-        className={`relative flex flex-col items-center transition-transform duration-[450ms] ease-[cubic-bezier(.76,0,.24,1)] ${
-          phase === "lift" ? "-translate-y-24 opacity-0" : ""
-        }`}
-        style={{ transitionProperty: "transform, opacity" }}
-      >
+        <div
+          className={`relative flex flex-col items-center transition-transform duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
+            phase === "lift" ? "-translate-y-24 opacity-0" : ""
+          }`}
+          style={{ transitionProperty: "transform, opacity", minHeight: "300px" }}
+        >
         <svg
           width="128"
           height="128"
@@ -162,12 +164,15 @@ export default function Intro({
           {"TERRAMORPH".split("").map((c, i) => (
             <span
               key={i}
-              className="inline-block transition-[transform,opacity,filter] duration-[450ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+              /* No `filter: blur()` here: animating a blur forces the browser to
+                 re-rasterise all 12 glyphs every frame for 700ms, right when the
+                 page is also trying to reach first paint. Transform + opacity are
+                 compositor-only and read the same at this scale. */
+              className="inline-block transition-[transform,opacity] duration-[700ms] ease-[cubic-bezier(.2,.8,.2,1)]"
               style={{
-                transitionDelay: `${i * 22}ms`,
+                transitionDelay: `${i * 45}ms`,
                 transform: phase === "draw" ? "translateY(110%)" : "none",
                 opacity: phase === "draw" ? 0 : 1,
-                filter: phase === "draw" ? "blur(6px)" : "none",
               }}
             >
               {c}
@@ -175,7 +180,7 @@ export default function Intro({
           ))}
         </p>
         <p
-          className={`mt-4 text-[0.65rem] font-medium tracking-[0.6em] text-gold-light transition-all delay-300 duration-400 ${
+          className={`mt-4 text-[0.65rem] font-medium tracking-[0.6em] text-gold-light transition-all delay-500 duration-700 ${
             phase === "draw" ? "tracking-[1.2em] opacity-0" : ""
           }`}
         >

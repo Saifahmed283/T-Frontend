@@ -1,19 +1,12 @@
 /* TerraMorph content workspace styles.
    Ported from the standalone T-Dashboard prototype and scoped under .tm-workspace
    so its app-level resets and classes never leak into the marketing site.
-   Do not add unscoped element selectors here. */
+   Do not add unscoped element selectors here.
 
-@theme {
-  --color-navy-soft: #31455b;
-  --color-ivory-deep: #f5f0e5;
-  --color-rule: #e0d8c6;
-  --color-brass: #a98a4b;
-  --color-brass-light: #c4a868;
-  --color-success: #4a6b4e;
-  --color-warning: #b07a22;
-  --color-danger: #a32d2d;
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-}
+   The design tokens (@theme) live in styles/index.css so their generated
+   utilities and :root variables exist globally; this file is imported only by
+   the lazy /dashboard chunk and must stay plain scoped CSS. */
+
 .tm-workspace { --surface: #fffefa; --muted: #737b80; --border: #e8e4db; --hover: #f1eee7; --radius: 7px; --sidebar-width: 238px; background: var(--color-ivory); color: var(--color-navy); font-family: var(--font-sans); font-size: 14px; line-height: 1.55 }
 .tm-workspace * { box-sizing: border-box; }
 .tm-workspace body { margin: 0; }

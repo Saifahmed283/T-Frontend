@@ -2793,8 +2793,22 @@ const pathToSlug: Record<string, string> = Object.fromEntries(
   PAGES.map((p) => [p.path, p.slug]),
 )
 
+/* The `@slug` routes pass the URL's last segment (e.g. `/about/contact` →
+   `contact`, `/method/ldia` → `ldia`), which is not always the page's slug
+   (`contact-offices`, `ldia-architecture`). Without this alias the router
+   resolved a valid prerendered URL to the DetailPage "Not found" state.
+   Every path segment is unique across PAGES (verified), so aliasing is safe. */
+const pageBySegment: Record<string, PageDef> = Object.fromEntries(
+  PAGES.map((p) => [p.path.split("/").filter(Boolean).pop() ?? "", p]),
+)
+
 export function pageForPath(path: string): string | null {
   return pathToSlug[path] ?? null
+}
+
+/* Resolve a page from either its slug or the URL segment it is served under. */
+export function resolvePage(key: string): PageDef | undefined {
+  return pageBySlug[key] ?? pageBySegment[key]
 }
 
 /* One-line description for navigation surfaces (mega-menu, mobile list, search).

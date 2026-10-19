@@ -223,8 +223,8 @@ export function WhatsNew({ lang }: { lang: Lang }) {
           >
             <img
               src={img(s.id)}
-              srcSet={`${img(s.id, 700)} 700w, ${img(s.id, 1400)} 1400w`}
-              sizes="(max-width: 768px) 100vw, 1320px"
+              srcSet={`${img(s.id, 700)} 700w, ${img(s.id, 1000)} 1000w, ${img(s.id, 1400)} 1400w`}
+              sizes="(max-width: 768px) calc(100vw - 40px), (max-width: 1280px) calc(100vw - 80px), 1240px"
               alt={ar ? s.titleAr : s.title}
               draggable={false}
               className="h-full w-full object-cover"

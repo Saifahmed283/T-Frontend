@@ -6,7 +6,8 @@ import {
   pageSummary,
   type ColumnKey,
 } from "@/content/pages"
-import { columnMetaAr, localizedPage } from "@/content/pages.i18n"
+import { columnMetaAr, localizedPage, loadPagesAr } from "@/content/pages.i18n"
+import { loadHubsAr } from "@/content/hubs.i18n"
 import { Logo } from "@/components/motion/fx"
 import { SearchOverlay } from "@/pages/site/home"
 import type { Lang } from "../types"
@@ -53,6 +54,14 @@ function useActiveSection(ids: string[]) {
   return active
 }
 
+/* Best-effort warm-up of the Arabic copy chunks when the visitor shows intent
+   (hover/focus the AR button). Fire-and-forget: failures are swallowed because
+   the toggle path re-requests and surfaces the result properly. */
+function prefetchArabic() {
+  void loadPagesAr().catch(() => {})
+  void loadHubsAr().catch(() => {})
+}
+
 function LangSwitch({
   lang,
   setLang,
@@ -80,6 +89,10 @@ function LangSwitch({
         <button
           key={l}
           onClick={() => setLang(l)}
+          /* Warm the Arabic chunks on intent so the toggle lands on translated
+             content immediately instead of waiting on the network. */
+          onPointerEnter={l === "ar" ? prefetchArabic : undefined}
+          onFocus={l === "ar" ? prefetchArabic : undefined}
           aria-pressed={lang === l}
           className={`relative z-10 min-w-12 px-3 py-1.5 transition-colors ${
             lang === l
@@ -122,7 +135,13 @@ function Header({
     return () => ro.disconnect()
   }, [])
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 60)
+    let last = scrolled
+    const on = () => {
+      const next = window.scrollY > 60
+      if (next === last) return
+      last = next
+      setScrolled(next)
+    }
     on()
     window.addEventListener("scroll", on, { passive: true })
     return () => window.removeEventListener("scroll", on)
@@ -148,10 +167,14 @@ function Header({
     <>
       {/* Constant-height header: nothing here animates layout on scroll, so there
           is no stutter. The audience rail stays visible; only the drop shadow and
-          background finish fade in via opacity (compositor-friendly). */}
+          background finish fade in via opacity (compositor-friendly).
+          No backdrop-blur: the sticky header sits above every scroll frame, so a
+          full-width backdrop-filter forces a re-blur of the whole viewport on each
+          scroll — the single most expensive thing a low-end GPU can be asked to do.
+          A near-opaque navy ground reads the same and costs nothing to composite. */}
       <header
         ref={headerRef}
-        className="sticky top-0 z-50 bg-navy-3/85 text-ivory backdrop-blur-xl"
+        className="sticky top-0 z-50 bg-navy-3/95 text-ivory"
       >
         <div
           aria-hidden
@@ -204,7 +227,7 @@ function Header({
                   </a>
                   {pages.length > 0 && (
                     <div className="invisible absolute start-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition duration-300 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 rtl:translate-x-1/2">
-                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3/95 shadow-[0_40px_90px_-30px_rgba(0,0,0,.85)] backdrop-blur-xl transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
+                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3/95 shadow-[0_40px_90px_-30px_rgba(0,0,0,.85)] transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
                         <div className="flex items-start justify-between gap-6 border-b border-ivory/10 px-6 py-5">
                           <div>
                             <p className="eyebrow text-gold-light">

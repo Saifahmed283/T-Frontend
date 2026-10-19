@@ -53,6 +53,7 @@ import {
   type WorkflowBoardPayload,
 } from "@/lib/api"
 import { useWorkspace } from "./hooks/useWorkspace"
+import "@/styles/dashboard.css"
 import { useCollection } from "./hooks/useCollection"
 import { collections, type Collection } from "./content-model"
 import {
@@ -210,9 +211,11 @@ function Empty({
 function SignInPage({
   onLogin,
   checking,
+  notice,
 }: {
   onLogin: (email: string, password: string) => Promise<void>
   checking: boolean
+  notice?: string
 }) {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -272,6 +275,15 @@ function SignInPage({
                 style={{ color: "var(--color-danger)" }}
               >
                 {err}
+              </p>
+            )}
+            {notice && !err && (
+              <p
+                role="status"
+                className="auth-error"
+                style={{ color: "var(--color-danger)" }}
+              >
+                {notice}
               </p>
             )}
             <Button
@@ -385,8 +397,19 @@ export function Workspace() {
           body: "Manage your website in one thoughtfully organised workspace.",
         }
 
-  if (needsAuth || (loading && !data)) {
-    return <SignInPage onLogin={login} checking={loading && !needsAuth} />
+  /* Never render the authenticated shell without a confirmed session. A non-401
+     probe failure (network, CORS, backend unreachable) settles with data=null
+     and needsAuth=false; that used to fall through and show the full admin
+     chrome to unauthenticated visitors. Treat "no session" as needing auth and
+     surface the probe error on the sign-in screen so the state is truthful. */
+  if (!data) {
+    return (
+      <SignInPage
+        onLogin={login}
+        checking={loading && !needsAuth}
+        notice={!loading && !needsAuth && error ? error : undefined}
+      />
+    )
   }
 
   return (

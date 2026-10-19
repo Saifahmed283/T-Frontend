@@ -2,9 +2,9 @@ import { Contours, GoldLine, Reveal, SplitText } from "@/components/motion/fx"
 import { Breadcrumbs } from "@/components/ui"
 import {
   columnMeta,
-  pageBySlug,
   pagesInColumn,
   pathForPage,
+  resolvePage,
   type PageDef,
 } from "@/content/pages"
 import { columnLabelAr, localizedPage } from "@/content/pages.i18n"
@@ -20,7 +20,7 @@ export function DetailPage({
   slug: string
   lang: Lang
 }) {
-  const base = pageBySlug[slug]
+  const base = resolvePage(slug)
   if (!base) {
     return (
       <div className="mx-auto max-w-[1320px] px-5 py-32 text-center md:px-10">

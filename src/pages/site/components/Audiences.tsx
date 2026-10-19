@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { audiences } from "@/content/data"
 import { Contours, Magnetic, SplitText } from "@/components/motion/fx"
 import type { Lang } from "../types"
@@ -9,14 +9,32 @@ function Audiences({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
   const [active, setActive] = useState(0)
   const [auto, setAuto] = useState(true)
+  /* Only advance the auto-rotate while the section is actually on screen.
+     Left running it re-rendered the orbit, the globe and the whole detail
+     panel every 4.2s even when the section was far below the fold. */
+  const root = useRef<HTMLElement>(null)
+  const [visible, setVisible] = useState(false)
   useEffect(() => {
-    if (!auto) return
+    const el = root.current
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setVisible(true)
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => setVisible(entries[0]?.isIntersecting ?? false),
+      { threshold: 0.05 },
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => {
+    if (!auto || !visible) return
     const id = setInterval(
       () => setActive((x) => (x + 1) % audiences.length),
       4200,
     )
     return () => clearInterval(id)
-  }, [auto])
+  }, [auto, visible])
   const pick = (i: number) => {
     setAuto(false)
     setActive(i)
@@ -25,7 +43,7 @@ function Audiences({ lang }: { lang: Lang }) {
   const n = audiences.length
   const angle = (i: number) => (i / n) * 360 - 90
   return (
-    <section className="relative overflow-hidden">
+    <section ref={root} className="relative overflow-hidden">
       <Contours
         className="absolute inset-0 h-full w-full"
         stroke="#132B45"
@@ -51,11 +69,16 @@ function Audiences({ lang }: { lang: Lang }) {
             <div className="absolute inset-[18%] rounded-full border border-dashed border-gold/40" />
             {/* globe */}
             <div className="absolute inset-[27%] transition-transform duration-700 hover:scale-[1.03]">
-              <div className="absolute inset-0 rounded-full bg-gold-light/20 blur-2xl" />
+              {/* Radial gradient instead of `blur-2xl`: a backdrop of that size
+                  has to be rasterised and blurred as its own layer, while a
+                  gradient is painted once. */}
+              <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(196,168,104,.30),transparent_68%)]" />
               <Globe />
             </div>
-            {/* rotating ring of doors */}
-            <div className="orbit absolute inset-0">
+            {/* rotating ring of doors — only rotates while section is visible and on
+                non-mobile (screens with less GPU/memory benefit most from this
+                perpetual spin; mobile also tends to get a scroll-limiting jitter). */}
+            <div className={`orbit absolute inset-0 ${visible ? "md:motion-safe:block motion-reduce:hidden" : "hidden"}`}>
               <svg
                 viewBox="0 0 100 100"
                 className="absolute inset-0 h-full w-full overflow-visible"

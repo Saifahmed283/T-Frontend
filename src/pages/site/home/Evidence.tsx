@@ -83,6 +83,17 @@ export const ledger = [
     geoAr: "مصر",
     size: "< USD 100k",
   },
+  {
+    y: 2023,
+    sector: "Infrastructure",
+    title: "Regional logistics corridor pre-feasibility",
+    titleAr: "دراسة الجدوى الأولية لممر لوجستي إقليمي",
+    client: "Development partner",
+    clientAr: "شريك تنموي",
+    geo: "Morocco",
+    geoAr: "المغرب",
+    size: "USD 100–250k",
+  },
 ]
 const sectors = ["All sectors", ...new Set(ledger.map((l) => l.sector))]
 
@@ -93,6 +104,7 @@ const sectorLabel: Record<string, string> = {
   "Local economic development": "التنمية الاقتصادية المحلية",
   "TVET & skills": "التعليم الفني والمهارات",
   Policy: "السياسات",
+  Infrastructure: "البنية التحتية",
 }
 
 export function Evidence({ lang }: { lang: Lang }) {

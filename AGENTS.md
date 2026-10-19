@@ -15,7 +15,7 @@ This is the canonical project structure. Start with task-relevant files below. O
 
 Routing is file-based via Vike: `pages/` contains `+Page.tsx` files (and `+config.ts`, `+Head.tsx` at the root). Imports use the `@` alias (mapped to `src/` in `tsconfig.json` and `vite.config.ts`), e.g. `@/pages/site/home`.
 
-- `pages/+config.ts` - Vike config: prerender, lang, favicon, async Google Fonts in `headHtmlBegin`
+- `pages/+config.ts` - Vike config: prerender, lang, favicon, theme-color and `<link rel="preload" as="font">` for the three above-fold self-hosted Latin faces in `headHtmlBegin`
 - `pages/+Head.tsx` - Per-route `<title>`, meta description, canonical, Open Graph/Twitter cards, robots noindex (`/dashboard`, 404), and JSON-LD (Organization, WebSite, LocalBusiness, BreadcrumbList)
 - `pages/index/+onBeforePrerenderStart.ts` - Lists dynamic prerender URLs (detail pages + hubs). MUST stay scoped to `pages/index/` (NOT the pages root) — a root-level `+onBeforePrerenderStart` is inherited by every page-id, Vike calls it once per page, and then rejects the duplicate URLs
 - `pages/*/​+Page.tsx` - One per route (`/`, `/for`, `/evidence`, `/method`, `/knowledge`, `/learning`, `/about`, `/join`, `/contact`, `/dashboard`, plus `@slug` detail/hub routes). Each renders `SitePage` from `src/pages/site/SitePage.tsx`

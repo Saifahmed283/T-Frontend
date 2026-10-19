@@ -12,8 +12,11 @@ import { RequestDialog, type RequestConfig } from "./RequestDialog"
 function Hero({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
   const sec = useRef<HTMLElement>(null)
-  const [p, setP] = useState(0)
+  const globe = useRef<HTMLDivElement>(null)
   const [req, setReq] = useState<RequestConfig | null>(null)
+  /* Drive the globe parallax off a ref, not state — a state update here would
+     re-render the whole Hero (meridians, contours, proof strip) every scroll
+     frame, which is the main source of jank while scrolling the page. */
   useEffect(() => {
     let raf = 0
     let ticking = false
@@ -21,22 +24,42 @@ function Hero({ lang }: { lang: Lang }) {
       if (ticking) return
       ticking = true
       raf = requestAnimationFrame(() => {
-        setP(Math.min(1, window.scrollY / (sec.current?.offsetHeight || 800)))
         ticking = false
+        const el = globe.current
+        if (!el) return
+        const p = Math.min(
+          1,
+          window.scrollY / (sec.current?.offsetHeight || 800),
+        )
+        el.style.transform = `translate(${ar ? "50%" : "-50%"}, ${p * 18}%)`
       })
     }
     window.addEventListener("scroll", on, { passive: true })
+    on()
     return () => {
       window.removeEventListener("scroll", on)
       cancelAnimationFrame(raf)
     }
-  }, [])
+  }, [ar])
+  /* The light follows a real pointer only, and at most once per frame. Touch
+     drags fire pointermove as well, so without this guard every mobile scroll
+     gesture paid for a getBoundingClientRect plus a full-viewport gradient
+     repaint — in the middle of the scroll itself. */
+  const lightRaf = useRef(0)
   const light = (e: React.PointerEvent) => {
+    if (e.pointerType === "touch") return
     const el = sec.current
-    if (!el) return
-    const r = el.getBoundingClientRect()
-    el.style.setProperty("--mx", `${((e.clientX - r.left) / r.width) * 100}%`)
-    el.style.setProperty("--my", `${((e.clientY - r.top) / r.height) * 100}%`)
+    if (!el || lightRaf.current) return
+    const x = e.clientX
+    const y = e.clientY
+    lightRaf.current = requestAnimationFrame(() => {
+      lightRaf.current = 0
+      const s = sec.current
+      if (!s) return
+      const r = s.getBoundingClientRect()
+      s.style.setProperty("--mx", `${((x - r.left) / r.width) * 100}%`)
+      s.style.setProperty("--my", `${((y - r.top) / r.height) * 100}%`)
+    })
   }
 
   const openDiagnostic = () =>
@@ -86,10 +109,11 @@ function Hero({ lang }: { lang: Lang }) {
         onPointerMove={light}
         className="relative isolate flex min-h-[calc(100svh-110px)] flex-col overflow-hidden bg-navy-3 text-ivory [--mx:70%] [--my:30%]"
       >
-        {/* light that follows the pointer */}
+        {/* light that follows the pointer — no `transition-[background]`: it only
+            served to keep repainting the gradient after each pointer move */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(600px_circle_at_var(--mx)_var(--my),rgba(196,168,104,.12),transparent_60%)] transition-[background] duration-300"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(600px_circle_at_var(--mx)_var(--my),rgba(196,168,104,.12),transparent_60%)]"
         />
         <Contours
           className="absolute inset-0 -z-10 h-full w-full"
@@ -99,9 +123,10 @@ function Hero({ lang }: { lang: Lang }) {
 
         {/* the rising globe */}
         <div
+          ref={globe}
           aria-hidden
-          className="pointer-events-none absolute start-1/2 top-[calc(62svh_-_68px)] -z-10 aspect-square w-[min(1150px,160vw)]"
-          style={{ transform: `translate(${ar ? "50%" : "-50%"}, ${p * 18}%)` }}
+          className="pointer-events-none absolute start-1/2 top-[calc(62svh_-_68px)] -z-10 aspect-square w-[min(1150px,160vw)] will-change-transform"
+          style={{ transform: `translate(${ar ? "50%" : "-50%"}, 0%)` }}
         >
           <svg viewBox="0 0 400 400" className="h-full w-full">
             <defs>
@@ -124,6 +149,10 @@ function Hero({ lang }: { lang: Lang }) {
               stroke="#FBF8F1"
               strokeWidth=".35"
             >
+              {/* These are full circles (rx === ry): the old `meridian-slow`
+                  animation only flipped scaleX about their own centre, which is
+                  geometrically a no-op — eight infinite SVG transform animations
+                  per hero, producing no visible change at all. Kept static. */}
               {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <ellipse
                   key={i}
@@ -132,11 +161,6 @@ function Hero({ lang }: { lang: Lang }) {
                   rx="198"
                   ry="198"
                   strokeOpacity=".07"
-                  className="meridian-slow"
-                  style={{
-                    animationDuration: "40s",
-                    animationDelay: `${-i * 5}s`,
-                  }}
                 />
               ))}
               {[-150, -100, -50, 0].map((y) => (
