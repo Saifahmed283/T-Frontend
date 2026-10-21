@@ -14,7 +14,7 @@ export default function NotFound() {
           <Logo tone="ivory" />
         </a>
         <p className="eyebrow mt-16 text-gold-light">Error 404</p>
-        <h1 className="mt-4 text-[clamp(2.4rem,6vw,4.5rem)] leading-[1] font-medium">
+        <h1 className="mt-4 text-h1 font-medium">
           This ground hasn't been surveyed.
         </h1>
         <p className="mx-auto mt-6 max-w-md text-ivory/70">
@@ -23,7 +23,7 @@ export default function NotFound() {
         </p>
         <a
           href="/"
-          className="mt-10 inline-block bg-gold-light px-7 py-4 text-xs tracking-[0.2em] text-navy uppercase transition hover:bg-ivory"
+          className="mt-10 inline-block bg-gold-light px-7 py-4 text-xs tracking-cta text-navy uppercase transition hover:bg-ivory"
         >
           Back to the homepage
         </a>

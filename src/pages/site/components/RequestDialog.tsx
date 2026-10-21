@@ -75,8 +75,7 @@ export function RequestDialog({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="mx-5 w-[min(520px,92vw)] border border-line bg-ivory shadow-2xl"
-        style={{ animation: "fadeup .3s both" }}
+        className="animate-fade-in mx-5 w-[min(520px,92vw)] border border-line bg-ivory shadow-2xl"
       >
         {phase === "done" ? (
           <div className="p-10 text-center">
@@ -92,7 +91,7 @@ export function RequestDialog({
             </p>
             <button
               onClick={onClose}
-              className="mt-8 border border-navy px-6 py-3 text-xs tracking-[0.18em] text-navy uppercase transition hover:bg-navy hover:text-ivory"
+              className="mt-8 border border-navy px-6 py-3 text-xs tracking-cta text-navy uppercase transition hover:bg-navy hover:text-ivory"
             >
               Close
             </button>
@@ -169,7 +168,7 @@ export function RequestDialog({
               <button
                 type="submit"
                 disabled={phase === "sending"}
-                className="mt-8 w-full bg-navy px-6 py-4 text-xs tracking-[0.2em] text-ivory uppercase transition hover:bg-navy-2 disabled:opacity-60"
+                className="mt-8 w-full bg-navy px-6 py-4 text-xs tracking-cta text-ivory uppercase transition hover:bg-navy-2 disabled:opacity-60"
               >
                 {phase === "sending"
                   ? "Sending…"

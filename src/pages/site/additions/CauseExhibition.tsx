@@ -1,44 +1,60 @@
 import { useMemo, useState } from "react"
+
 import { Contours } from "@/components/motion/fx"
+
 import type { Lang } from "../types"
 
-/* ——— Cause exhibition: a simulated local community that comes alive as people contribute ——— */
+// Cause exhibition: a simulated local community that comes alive as people contribute
+
 export function CauseExhibition({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const nodes = useMemo(() => {
     let s = 7
+
     const r = () => (s = (s * 9301 + 49297) % 233280) / 233280
+
     return Array.from({ length: 46 }, (_, k) => ({
       x: 40 + r() * 920,
+
       y: 40 + r() * 420,
+
       k,
+
       kind: ["home", "school", "shop", "clinic", "workshop"][k % 5],
     }))
   }, [])
+
   const links = useMemo(() => {
     const out: [number, number][] = []
+
     nodes.forEach((a, i) =>
       nodes.forEach((b, j) => {
         if (j > i && Math.hypot(a.x - b.x, a.y - b.y) < 140) out.push([i, j])
       }),
     )
+
     return out
   }, [nodes])
+
   const [lit, setLit] = useState(6)
+
   const [mode, setMode] = useState<"exhibition" | "intervention">("exhibition")
+
   const trust = Math.round((lit / nodes.length) * 100)
+
   return (
     <section
       id="cause"
       className="relative scroll-mt-40 overflow-hidden bg-navy text-ivory"
     >
       <Contours className="absolute inset-0 h-full w-full" opacity={0.08} />
-      <div className="relative mx-auto grid max-w-[1320px] gap-12 px-5 py-24 md:px-10 lg:grid-cols-[1fr_1.5fr]">
+      <div className="relative mx-auto grid max-w-[1320px] gap-12 px-5 py-24 md:px-10 lg:grid-split-tall">
         <div className="flex flex-col">
           <p className="eyebrow text-gold-light">
             {ar ? "معرض القضية" : "The cause exhibition"}
           </p>
-          <h2 className="mt-6 text-[clamp(2.2rem,4.4vw,3.8rem)] leading-[1.02] font-medium">
+          <h2 className="mt-6 text-h2 font-medium">
             {ar
               ? "مجتمع مسالم، يثق فيه الناس بعضهم ببعض."
               : "A peaceful society, where people trust each other."}
@@ -53,7 +69,7 @@ export function CauseExhibition({ lang }: { lang: Lang }) {
               <button
                 key={m}
                 onClick={() => setMode(m)}
-                className={`px-4 py-2 text-xs tracking-[0.18em] uppercase transition rtl:normal-case rtl:tracking-normal ${
+                className={`px-4 py-2 text-xs tracking-cta uppercase transition rtl:normal-case rtl:tracking-normal ${
                   mode === m
                     ? "bg-gold-light text-navy"
                     : "text-ivory/70 hover:text-ivory"
@@ -89,7 +105,7 @@ export function CauseExhibition({ lang }: { lang: Lang }) {
           <div className="mt-8 flex gap-3">
             <button
               onClick={() => setLit((l) => Math.min(nodes.length, l + 4))}
-              className="bg-gold-light px-6 py-3 text-[0.72rem] font-medium tracking-[0.2em] text-navy uppercase transition hover:bg-ivory rtl:normal-case rtl:tracking-normal"
+              className="bg-gold-light px-6 py-3 text-label font-medium tracking-cta text-navy uppercase transition hover:bg-ivory rtl:normal-case rtl:tracking-normal"
             >
               {ar ? "أضِف إلى الصورة +" : "Contribute to the picture +"}
             </button>
@@ -114,6 +130,7 @@ export function CauseExhibition({ lang }: { lang: Lang }) {
           >
             {links.map(([a, b], k) => {
               const on = a < lit && b < lit
+
               return (
                 <line
                   key={k}
@@ -130,7 +147,9 @@ export function CauseExhibition({ lang }: { lang: Lang }) {
             })}
             {nodes.map((n) => {
               const on = n.k < lit
+
               const hot = mode === "intervention" && n.k % 9 === 0
+
               return (
                 <g
                   key={n.k}

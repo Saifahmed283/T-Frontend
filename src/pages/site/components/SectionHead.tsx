@@ -21,7 +21,7 @@ function SectionHead({
       </div>
       <GoldLine className="mt-4" />
       <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
-        <h2 className="max-w-3xl text-[clamp(2rem,4vw,3.4rem)] leading-[1.02] font-medium">
+        <h2 className="max-w-3xl text-h2 font-medium">
           <SplitText text={title} />
         </h2>
         {aside}

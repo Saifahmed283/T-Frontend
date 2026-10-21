@@ -32,14 +32,7 @@ function Globe() {
             is on screen. Drawn as real meridian ellipses instead: same wireframe
             read, zero ongoing cost. */}
         {[72, 55, 38, 20].map((rx) => (
-          <ellipse
-            key={rx}
-            cx="100"
-            cy="100"
-            rx={rx}
-            ry="78"
-            opacity=".5"
-          />
+          <ellipse key={rx} cx="100" cy="100" rx={rx} ry="78" opacity=".5" />
         ))}
         {[-52, -26, 0, 26, 52].map((y) => (
           <ellipse

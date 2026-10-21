@@ -1,8 +1,8 @@
-﻿/* Self-hosted Latin variable fonts (latin + latin-ext subsets).
+/* Self-hosted Latin variable fonts (latin + latin-ext subsets).
    Served from /fonts/* on the same origin so the critical above-the-fold faces
    can be <link rel="preload">ed (see pages/+config.ts) instead of discovered
    late through a render-blocking request to fonts.googleapis.com. Arabic
-   families still come from Google Fonts on demand â€” see src/lib/fonts.ts. */
+   families still come from Google Fonts on demand — see src/lib/fonts.ts. */
 
 @font-face {
   font-family: 'Cormorant Garamond';
@@ -71,14 +71,14 @@
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* ---------------------------------------------------------------- *
+/*
  * Metric-matched local fallbacks.
  *
  * While a self-hosted face above is still downloading (`font-display:
  * swap`), the browser renders text in the *next family of the stack*.
  * Raw system fonts have very different advance widths (Times italic is
  * ~16% wider than Cormorant italic), so the interim text occupies a
- * different number of lines â€” and when the real face lands, everything
+ * different number of lines — and when the real face lands, everything
  * below the headline reflows. That reflow was the site's dominant CLS
  * (measured 0.16-0.50 depending on viewport) and the visible "jump" in
  * the hero on first paint.
@@ -90,9 +90,9 @@
  * too. The swap then changes glyphs but not geometry: zero layout
  * shift. Values were measured from the real faces in-browser (advance
  * widths at the weights each band actually renders at).
- * ---------------------------------------------------------------- */
+ */
 
-/* Cormorant Garamond â†’ Times New Roman. Bands split at 500/600 because
+/* Cormorant Garamond → Times New Roman. Bands split at 500/600 because
    Times only ships Regular + Bold: a single size-adjust would either
    shrink the bold band by 9% or widen the book band by 9%. */
 @font-face {
@@ -144,7 +144,7 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* Jost â†’ Arial. Jost's vertical metrics are much taller than Arial's
+/* Jost → Arial. Jost's vertical metrics are much taller than Arial's
    (asc 107/desc 38 vs 91/21 per em), so the overrides matter as much
    as the width here. */
 @font-face {
@@ -172,9 +172,9 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD, U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
-/* JetBrains Mono â†’ Consolas (Windows). `local()` misses on macOS, in
+/* JetBrains Mono → Consolas (Windows). `local()` misses on macOS, in
    which case this face simply doesn't resolve and the stack falls
-   through to ui-monospace exactly as it did before â€” no regression. */
+   through to ui-monospace exactly as it did before — no regression. */
 @font-face {
   font-family: 'JetBrains Mono Fallback';
   font-style: normal;

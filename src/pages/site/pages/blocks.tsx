@@ -1,6 +1,9 @@
 import { Badge, Figure } from "@/components/ui"
+
 import { Contours, Reveal, SplitText, Spotlight } from "@/components/motion/fx"
+
 import type { Block as BlockDef, Tone } from "@/content/pages"
+
 import type { Lang } from "@/pages/site/types"
 
 /* Renders a single content block from the page registry. Each block is its own
@@ -8,25 +11,34 @@ import type { Lang } from "@/pages/site/types"
    read as one document. */
 
 const wrap = "border-b border-line py-16"
-const h2 = "max-w-3xl text-[clamp(1.7rem,3vw,2.6rem)] leading-tight font-medium"
+
+const h2 = "max-w-3xl text-h3 font-medium"
 
 function initials(name: string) {
   return name
+
     .replace(/^(Dr\.|Prof\.)\s+/, "")
+
     .split(/\s+/)
+
     .slice(0, 2)
+
     .map((w) => w[0]?.toUpperCase() ?? "")
+
     .join("")
 }
 
 function BlockHead({
   heading,
+
   aside,
 }: {
   heading?: string
+
   aside?: string
 }) {
   if (!heading) return null
+
   return (
     <div className="flex flex-wrap items-end justify-between gap-6">
       <h2 className={h2}>
@@ -39,14 +51,19 @@ function BlockHead({
 
 export function Block({
   block,
+
   index,
+
   lang = "en",
 }: {
   block: BlockDef
+
   index: number
+
   lang?: Lang
 }) {
   const d = index * 50
+
   const open = lang === "ar" ? "افتح ←" : "Open →"
 
   switch (block.kind) {
@@ -189,6 +206,7 @@ export function Block({
                   </article>
                 </Spotlight>
               )
+
               return (
                 <Reveal key={it.title} delay={d + i * 60} className="bg-ivory">
                   {it.href ? (
@@ -219,7 +237,8 @@ export function Block({
           >
             {block.items.map((it, i) => {
               const row =
-                "grid items-center gap-3 py-6 transition-colors hover:bg-ivory-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-navy md:grid-cols-[1fr_300px_120px] md:px-4"
+                "grid items-center gap-3 py-6 transition-colors hover:bg-ivory-2 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-navy md:grid-cases md:px-4"
+
               const inner = (
                 <>
                   <div>
@@ -244,6 +263,7 @@ export function Block({
                   </div>
                 </>
               )
+
               return (
                 <Reveal as="li" key={it.title} delay={d + i * 40}>
                   {it.href ? (
@@ -368,7 +388,7 @@ export function Block({
                 as="li"
                 key={it.title}
                 delay={d + i * 50}
-                className="grid items-center gap-4 border-b border-line py-6 transition-colors hover:bg-ivory-2 md:grid-cols-[100px_1fr_240px_150px] md:px-4"
+                className="grid items-center gap-4 border-b border-line py-6 transition-colors hover:bg-ivory-2 md:grid-record md:px-4"
               >
                 <div className="flex items-baseline gap-2 md:block">
                   <span className="font-display text-4xl leading-none">
@@ -404,9 +424,9 @@ export function Block({
               <li key={it.label}>
                 <a
                   href={it.href}
-                  className="group grid items-center gap-2 py-5 transition-colors hover:bg-ivory-2 md:grid-cols-[1fr_320px_120px] md:px-4"
+                  className="group grid items-center gap-2 py-5 transition-colors hover:bg-ivory-2 md:grid-feature md:px-4"
                 >
-                  <span className="font-display text-xl transition-transform duration-500 group-hover:translate-x-2 rtl:group-hover:-translate-x-2">
+                  <span className="min-w-0 break-words font-display text-xl transition-transform duration-500 group-hover:translate-x-2 rtl:group-hover:-translate-x-2">
                     {it.label}
                   </span>
                   <span className="text-sm text-slate">{it.meta}</span>
@@ -482,7 +502,7 @@ export function Block({
                     <a
                       key={a.label}
                       href={a.href}
-                      className="bg-gold-light px-6 py-3.5 text-xs tracking-[0.2em] text-navy uppercase transition hover:bg-ivory"
+                      className="bg-gold-light px-6 py-3.5 text-xs tracking-cta text-navy uppercase transition hover:bg-ivory"
                     >
                       {a.label}
                     </a>
@@ -490,7 +510,7 @@ export function Block({
                     <a
                       key={a.label}
                       href={a.href}
-                      className="border border-ivory/25 px-6 py-3.5 text-xs tracking-[0.2em] uppercase transition hover:border-gold-light"
+                      className="border border-ivory/25 px-6 py-3.5 text-xs tracking-cta uppercase transition hover:border-gold-light"
                     >
                       {a.label}
                     </a>

@@ -447,14 +447,14 @@ export function Logo({
           the emblem alone stays as the brand mark. */}
       <span className="sr-only leading-none sm:not-sr-only sm:block">
         <span
-          className={`block font-display text-xl font-semibold tracking-[0.22em] ${
+          className={`block font-display text-xl font-semibold tracking-cta ${
             tone === "navy" ? "text-navy" : "text-ivory"
           }`}
         >
           TERRAMORPH
         </span>
         <span
-          className={`mt-1 block text-[0.55rem] font-medium tracking-[0.42em] ${
+          className={`mt-1 block text-micro font-medium tracking-[0.42em] ${
             tone === "navy" ? "text-gold-strong" : "text-gold-light"
           }`}
         >

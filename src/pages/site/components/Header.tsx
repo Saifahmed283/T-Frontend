@@ -75,7 +75,7 @@ function LangSwitch({
     <div
       role="group"
       aria-label="Language"
-      className={`relative grid grid-cols-2 rounded-full border p-0.5 text-[0.72rem] ${
+      className={`relative grid grid-cols-2 rounded-full border p-0.5 text-label ${
         dark ? "border-ivory/20" : "border-navy/20"
       }`}
     >
@@ -178,7 +178,7 @@ function Header({
       >
         <div
           aria-hidden
-          className={`pointer-events-none absolute inset-0 shadow-[0_10px_40px_-20px_rgba(0,0,0,.6)] transition-opacity duration-500 ${
+          className={`pointer-events-none absolute inset-0 shadow-drop transition-opacity duration-500 ${
             scrolled ? "opacity-100" : "opacity-0"
           }`}
         />
@@ -202,19 +202,17 @@ function Header({
                     href={n.path}
                     aria-current={on ? "true" : undefined}
                     aria-haspopup={pages.length > 0 || undefined}
-                    className={`relative flex items-center gap-1.5 px-4 py-2 text-[0.8rem] tracking-[0.14em] uppercase transition-colors ${
+                    className={`relative flex items-center gap-1.5 px-4 py-2 text-label tracking-cta uppercase transition-colors ${
                       on ? "text-ivory" : "text-ivory/60 hover:text-ivory"
                     } ${
-                      ar
-                        ? "font-sans tracking-normal text-[0.95rem] normal-case"
-                        : ""
+                      ar ? "font-sans tracking-normal text-sm normal-case" : ""
                     }`}
                   >
                     {ar ? n.ar : n.en}
                     {pages.length > 0 && (
                       <span
                         aria-hidden
-                        className="text-[0.55rem] text-gold-light/60 transition-transform duration-300 group-hover:translate-y-0.5 group-hover:text-gold-light"
+                        className="text-micro text-gold-light/60 transition-transform duration-300 group-hover:translate-y-0.5 group-hover:text-gold-light"
                       >
                         ▾
                       </span>
@@ -227,7 +225,7 @@ function Header({
                   </a>
                   {pages.length > 0 && (
                     <div className="invisible absolute start-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition duration-300 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 rtl:translate-x-1/2">
-                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3/95 shadow-[0_40px_90px_-30px_rgba(0,0,0,.85)] transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
+                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3/95 shadow-overlay transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
                         <div className="flex items-start justify-between gap-6 border-b border-ivory/10 px-6 py-5">
                           <div>
                             <p className="eyebrow text-gold-light">
@@ -241,7 +239,7 @@ function Header({
                           </div>
                           <a
                             href={n.path}
-                            className="shrink-0 border-b border-gold-light/40 pb-0.5 text-[0.78rem] whitespace-nowrap text-gold-light transition hover:border-gold-light"
+                            className="shrink-0 border-b border-gold-light/40 pb-0.5 text-label whitespace-nowrap text-gold-light transition hover:border-gold-light"
                           >
                             {ar ? "القسم كاملًا" : "View section"}{" "}
                             <span
@@ -259,7 +257,7 @@ function Header({
                                 href={p.path}
                                 className="group/p flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-ivory/[0.06]"
                               >
-                                <span className="flex items-center gap-2 text-[0.95rem] tracking-normal text-ivory/85 normal-case transition-colors group-hover/p:text-ivory">
+                                <span className="flex items-center gap-2 text-sm tracking-normal text-ivory/85 normal-case transition-colors group-hover/p:text-ivory">
                                   {p.label}
                                   <span
                                     aria-hidden
@@ -305,7 +303,7 @@ function Header({
             </div>
             <a
               href="/contact"
-              className="hidden bg-gold-light px-5 py-2.5 text-[0.72rem] font-medium tracking-[0.2em] text-navy uppercase transition hover:bg-ivory xl:block"
+              className="hidden bg-gold-light px-5 py-2.5 text-label font-medium tracking-cta text-navy uppercase transition hover:bg-ivory xl:block"
             >
               {ar ? "تواصل" : "Contact"}
             </a>
@@ -340,7 +338,7 @@ function Header({
               <a
                 key={a.slug}
                 href={`/hub/${a.slug}`}
-                className="shrink-0 rounded-full px-3 py-1.5 text-[0.78rem] text-ivory/60 transition hover:bg-ivory/10 hover:text-ivory"
+                className="shrink-0 rounded-full px-3 py-1.5 text-label text-ivory/60 transition hover:bg-ivory/10 hover:text-ivory"
               >
                 {ar ? a.ar : a.label}
               </a>
@@ -415,7 +413,7 @@ function Header({
             <a
               href="/contact"
               onClick={() => setOpen(false)}
-              className="bg-gold-light px-5 py-3 text-xs tracking-[0.2em] text-navy uppercase"
+              className="bg-gold-light px-5 py-3 text-xs tracking-cta text-navy uppercase"
             >
               {ar ? "تواصل" : "Contact"}
             </a>

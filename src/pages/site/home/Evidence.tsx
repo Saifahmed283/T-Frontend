@@ -1,118 +1,206 @@
 import { useState } from "react"
+
 import { cases } from "@/content/data"
+
 import { Reveal, Spotlight } from "@/components/motion/fx"
+
 import { Head } from "./Head"
+
 import type { Lang } from "../types"
 
-/* ——— 03 Evidence: three cases up top, the full ledger beneath, sector as a filter ——— */
+// Evidence: three cases up top, the full ledger beneath, sector as a filter
+
 export const ledger = [
   {
     y: 2026,
+
     sector: "Social enterprise",
+
     title: "Blended-finance structure, women-led agri cooperative",
+
     titleAr: "هيكل تمويل مختلط لتعاونية زراعية تقودها نساء",
+
     client: "Delta Impact Fund",
+
     clientAr: "صندوق أثر الدلتا",
+
     geo: "Egypt",
+
     geoAr: "مصر",
+
     size: "< USD 100k",
   },
+
   {
     y: 2026,
+
     sector: "Investment climate",
+
     title: "Investment climate action plan",
+
     titleAr: "خطة عمل مناخ الاستثمار",
+
     client: "Ministry of Planning",
+
     clientAr: "وزارة التخطيط",
+
     geo: "Egypt",
+
     geoAr: "مصر",
+
     size: "USD 250–500k",
   },
+
   {
     y: 2025,
+
     sector: "Local economic development",
+
     title: "Governorate investment map, phase I–II",
+
     titleAr: "الخريطة الاستثمارية للمحافظة، المرحلة الأولى–الثانية",
+
     client: "Assiut Governorate",
+
     clientAr: "محافظة أسيوط",
+
     geo: "Egypt",
+
     geoAr: "مصر",
+
     size: "USD 100–250k",
   },
+
   {
     y: 2025,
+
     sector: "Local economic development",
+
     title: "Main-street LED pilot design",
+
     titleAr: "تصميم مشروع تجريبي للتنمية الاقتصادية المحلية بالشارع الرئيسي",
+
     client: "Municipal authority",
+
     clientAr: "سلطة محلية",
+
     geo: "Egypt",
+
     geoAr: "مصر",
+
     size: "< USD 100k",
   },
+
   {
     y: 2024,
+
     sector: "TVET & skills",
+
     title: "Employer-validated curricula for 14 schools",
+
     titleAr: "مناهج معتمدة من أصحاب العمل لـ14 مدرسة",
+
     client: "GIZ programme",
+
     clientAr: "برنامج GIZ",
+
     geo: "Egypt",
+
     geoAr: "مصر",
+
     size: "USD 100–250k",
   },
+
   {
     y: 2024,
+
     sector: "Policy",
+
     title: "SME regulatory burden review",
+
     titleAr: "مراجعة العبء التنظيمي على المشروعات الصغيرة والمتوسطة",
+
     client: "Chamber of commerce",
+
     clientAr: "غرفة تجارية",
+
     geo: "Jordan",
+
     geoAr: "الأردن",
+
     size: "< USD 100k",
   },
+
   {
     y: 2023,
+
     sector: "TVET & skills",
+
     title: "Train-the-trainer certification framework",
+
     titleAr: "إطار اعتماد تدريب المدربين",
+
     client: "AAST Academy",
+
     clientAr: "أكاديمية AAST",
+
     geo: "Egypt",
+
     geoAr: "مصر",
+
     size: "< USD 100k",
   },
+
   {
     y: 2023,
+
     sector: "Infrastructure",
+
     title: "Regional logistics corridor pre-feasibility",
+
     titleAr: "دراسة الجدوى الأولية لممر لوجستي إقليمي",
+
     client: "Development partner",
+
     clientAr: "شريك تنموي",
+
     geo: "Morocco",
+
     geoAr: "المغرب",
+
     size: "USD 100–250k",
   },
 ]
+
 const sectors = ["All sectors", ...new Set(ledger.map((l) => l.sector))]
 
 const sectorLabel: Record<string, string> = {
   "All sectors": "كل القطاعات",
+
   "Social enterprise": "المشروعات الاجتماعية",
+
   "Investment climate": "مناخ الاستثمار",
+
   "Local economic development": "التنمية الاقتصادية المحلية",
+
   "TVET & skills": "التعليم الفني والمهارات",
+
   Policy: "السياسات",
+
   Infrastructure: "البنية التحتية",
 }
 
 export function Evidence({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const [sec, setSec] = useState("All sectors")
+
   const [open, setOpen] = useState(false)
+
   const rows = ledger.filter((l) => sec === "All sectors" || l.sector === sec)
+
   const sLabel = (s: string) => (ar ? (sectorLabel[s] ?? s) : s)
+
   return (
     <section className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">
       <Head
@@ -158,7 +246,9 @@ export function Evidence({ lang }: { lang: Lang }) {
                         d={
                           [
                             "M0 80 Q60 75 100 60 T200 35 T300 10",
+
                             "M0 70 L50 66 L100 50 L150 52 L200 30 L250 26 L300 12",
+
                             "M0 85 C80 85 120 50 170 45 S260 20 300 18",
                           ][i]
                         }
@@ -173,7 +263,9 @@ export function Evidence({ lang }: { lang: Lang }) {
                         d={
                           [
                             "M0 80 Q60 75 100 60 T200 35 T300 10",
+
                             "M0 70 L50 66 L100 50 L150 52 L200 30 L250 26 L300 12",
+
                             "M0 85 C80 85 120 50 170 45 S260 20 300 18",
                           ][i]
                         }
@@ -260,11 +352,13 @@ export function Evidence({ lang }: { lang: Lang }) {
                     {(ar
                       ? ["السنة", "المهمة", "العميل", "البلد", "الحجم"]
                       : ["Year", "Assignment", "Client", "Country", "Size"]
-                    ).map((h) => (
-                      <th key={h} className="py-3 text-start font-medium">
-                        {h}
-                      </th>
-                    ))}
+                    )
+
+                      .map((h) => (
+                        <th key={h} className="py-3 text-start font-medium">
+                          {h}
+                        </th>
+                      ))}
                   </tr>
                 </thead>
                 <tbody>

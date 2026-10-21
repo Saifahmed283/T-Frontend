@@ -57,12 +57,12 @@ export default function Intro({
         className="absolute inset-x-0 top-1/2 h-px origin-left bg-gold-light/30"
         style={{ animation: "grow 1.4s cubic-bezier(.2,.8,.2,1) both" }}
       />
-        <div
-          className={`relative flex flex-col items-center transition-transform duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
-            phase === "lift" ? "-translate-y-24 opacity-0" : ""
-          }`}
-          style={{ transitionProperty: "transform, opacity", minHeight: "300px" }}
-        >
+      <div
+        className={`relative flex flex-col items-center transition-transform duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
+          phase === "lift" ? "-translate-y-24 opacity-0" : ""
+        }`}
+        style={{ transitionProperty: "transform, opacity", minHeight: "300px" }}
+      >
         <svg
           width="128"
           height="128"
@@ -180,7 +180,7 @@ export default function Intro({
           ))}
         </p>
         <p
-          className={`mt-4 text-[0.65rem] font-medium tracking-[0.6em] text-gold-light transition-all delay-500 duration-700 ${
+          className={`mt-4 text-micro font-medium tracking-[0.6em] text-gold-light transition-all delay-500 duration-700 ${
             phase === "draw" ? "tracking-[1.2em] opacity-0" : ""
           }`}
         >

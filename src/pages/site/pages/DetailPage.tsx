@@ -1,5 +1,7 @@
 import { Contours, GoldLine, Reveal, SplitText } from "@/components/motion/fx"
+
 import { Breadcrumbs } from "@/components/ui"
+
 import {
   columnMeta,
   pagesInColumn,
@@ -7,20 +9,28 @@ import {
   resolvePage,
   type PageDef,
 } from "@/content/pages"
+
 import { columnLabelAr, localizedPage } from "@/content/pages.i18n"
+
 import { pathForSection } from "@/lib/routes"
+
 import type { Lang } from "@/pages/site/types"
+
 import { Block } from "./blocks"
 
-/* ——— Dedicated footer page: breadcrumbed hero, data-driven blocks, related rail ——— */
+// Dedicated footer page: breadcrumbed hero, data-driven blocks, related rail
+
 export function DetailPage({
   slug,
+
   lang,
 }: {
   slug: string
+
   lang: Lang
 }) {
   const base = resolvePage(slug)
+
   if (!base) {
     return (
       <div className="mx-auto max-w-[1320px] px-5 py-32 text-center md:px-10">
@@ -34,7 +44,7 @@ export function DetailPage({
         </h1>
         <a
           href="/"
-          className="mt-8 inline-block bg-navy px-6 py-3 text-xs tracking-[0.2em] text-ivory uppercase rtl:normal-case rtl:tracking-normal"
+          className="mt-8 inline-block bg-navy px-6 py-3 text-xs tracking-cta text-ivory uppercase rtl:normal-case rtl:tracking-normal"
         >
           {lang === "ar"
             ? "العودة إلى الصفحة الرئيسية"
@@ -43,21 +53,29 @@ export function DetailPage({
       </div>
     )
   }
+
   return <PageBody page={localizedPage(base, lang)} lang={lang} />
 }
 
 function PageBody({
   page,
+
   lang,
 }: {
   page: PageDef
+
   lang: Lang
 }) {
   const ar = lang === "ar"
+
   const col = columnMeta[page.column]
+
   const related = pagesInColumn(page.column)
+
     .filter((p) => p.slug !== page.slug)
+
     .slice(0, 4)
+
     .map((p) => localizedPage(p, lang))
 
   return (
@@ -68,10 +86,13 @@ function PageBody({
           <Breadcrumbs
             items={[
               { label: ar ? "الرئيسية" : "Home", href: "/" },
+
               {
                 label: ar ? columnLabelAr[page.column] : page.column,
+
                 href: pathForSection(col.section),
               },
+
               { label: page.title },
             ]}
           />
@@ -80,7 +101,7 @@ function PageBody({
             <span className="eyebrow text-slate">{page.eyebrow}</span>
           </div>
           <GoldLine className="mt-4" />
-          <h1 className="mt-8 max-w-4xl text-[clamp(2.4rem,5.5vw,4.4rem)] leading-[1.02] font-medium">
+          <h1 className="mt-8 max-w-4xl text-h1 font-medium">
             <SplitText text={page.title} immediate />
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-relaxed text-navy-2">

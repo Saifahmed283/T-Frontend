@@ -543,11 +543,7 @@ export function ContentEditor({
           </>
         )}
         {error && (
-          <p
-            className="field-hint"
-            role="alert"
-            style={{ color: "var(--color-danger)" }}
-          >
+          <p className="field-hint is-error" role="alert">
             {error}
           </p>
         )}

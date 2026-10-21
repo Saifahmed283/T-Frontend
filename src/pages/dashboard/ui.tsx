@@ -31,8 +31,11 @@ export function Input({
   return <input className={`input ${className}`} {...props} />
 }
 
-export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return <textarea className="input textarea" {...props} />
+export function Textarea({
+  className = "",
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={`input textarea ${className}`} {...props} />
 }
 
 export function Select({

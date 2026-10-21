@@ -113,7 +113,7 @@ function Hero({ lang }: { lang: Lang }) {
             served to keep repainting the gradient after each pointer move */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(600px_circle_at_var(--mx)_var(--my),rgba(196,168,104,.12),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 -z-10 glow-spotlight"
         />
         <Contours
           className="absolute inset-0 -z-10 h-full w-full"
@@ -125,7 +125,7 @@ function Hero({ lang }: { lang: Lang }) {
         <div
           ref={globe}
           aria-hidden
-          className="pointer-events-none absolute start-1/2 top-[calc(62svh_-_68px)] -z-10 aspect-square w-[min(1150px,160vw)] will-change-transform"
+          className="pointer-events-none absolute start-1/2 hero-cue-top -z-10 aspect-square w-[min(1150px,160vw)] will-change-transform"
           style={{ transform: `translate(${ar ? "50%" : "-50%"}, 0%)` }}
         >
           <svg viewBox="0 0 400 400" className="h-full w-full">
@@ -200,7 +200,7 @@ function Hero({ lang }: { lang: Lang }) {
 
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[75%] bg-[radial-gradient(ellipse_60%_70%_at_50%_35%,#0C1D30_45%,transparent_100%)]"
+          className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[75%] hero-vignette"
         />
 
         <div className="relative mx-auto flex w-full max-w-[1320px] flex-1 flex-col items-center justify-center px-5 pt-[10vh] text-center md:px-10">
@@ -215,7 +215,7 @@ function Hero({ lang }: { lang: Lang }) {
             className={`mt-6 max-w-5xl font-medium ${
               ar
                 ? "text-[clamp(2.4rem,6vw,5rem)] leading-[1.25]"
-                : "text-[clamp(2.8rem,7.4vw,6.8rem)] leading-[0.95] tracking-[-0.02em]"
+                : "text-[clamp(2.8rem,7.4vw,6.8rem)] leading-[0.95] tracking-tight"
             }`}
           >
             {ar ? (
@@ -251,7 +251,7 @@ function Hero({ lang }: { lang: Lang }) {
               <button
                 type="button"
                 onClick={openDiagnostic}
-                className="group inline-flex items-center gap-3 bg-gold-light px-7 py-4 text-[0.72rem] font-medium tracking-[0.2em] text-navy uppercase transition hover:bg-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light"
+                className="group inline-flex items-center gap-3 bg-gold-light px-7 py-4 text-label font-medium tracking-cta text-navy uppercase transition hover:bg-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light"
               >
                 {ar ? "ابدأ تشخيص الجاهزية" : "Start the readiness diagnostic"}
                 <span
@@ -261,7 +261,7 @@ function Hero({ lang }: { lang: Lang }) {
               </button>
               <a
                 href="/evidence"
-                className="group inline-flex items-center gap-3 border border-ivory/25 px-7 py-4 text-[0.72rem] font-medium tracking-[0.2em] text-ivory uppercase transition hover:border-gold-light hover:text-gold-light"
+                className="group inline-flex items-center gap-3 border border-ivory/25 px-7 py-4 text-label font-medium tracking-cta text-ivory uppercase transition hover:border-gold-light hover:text-gold-light"
               >
                 {ar ? "اطّلع على الأدلة" : "See the evidence"}
                 <span

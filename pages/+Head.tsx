@@ -11,13 +11,10 @@ const LOCAL_ID = `${ORIGIN}/#local-business`
 const OG_IMAGE = `${ORIGIN}/og-image.png`
 const LINKEDIN = "https://www.linkedin.com/company/terramorph"
 
-const SECTIONS: Record<
-  string,
-  {
-    title: string
-    description: string
-  }
-> = {
+const SECTIONS: Record<string, {
+  title: string
+  description: string
+}> = {
   "/": {
     title: "TerraMorph — Strategy, Policy & Transformation Advisory | Egypt",
     description:
@@ -147,7 +144,7 @@ function organizationJsonLd() {
     url: `${ORIGIN}/`,
     logo: `${ORIGIN}/favicon.svg`,
     email: "hello@askterramorph.com",
-    telephone: "+201000000000",
+    telephone: "+201150000984",
     sameAs: [LINKEDIN],
     knowsLanguage: ["ar", "en"],
     identifier: [
@@ -190,7 +187,7 @@ function localBusinessJsonLd() {
     image: OG_IMAGE,
     logo: `${ORIGIN}/favicon.svg`,
     email: "hello@askterramorph.com",
-    telephone: "+201000000000",
+    telephone: "+201150000984",
     parentOrganization: { "@id": ORG_ID },
     address: {
       "@type": "PostalAddress",

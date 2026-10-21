@@ -1,76 +1,116 @@
 import { useEffect, useMemo, useRef, useState } from "react"
+
 import { Dialog } from "@/components/ui"
+
 import { audiences, cases } from "@/content/data"
+
 import { PAGES } from "@/content/pages"
+
 import { columnLabelAr, localizedPage } from "@/content/pages.i18n"
+
 import { pathForSection } from "@/lib/routes"
+
 import { ledger } from "./Evidence"
+
 import { library } from "./Knowledge"
+
 import { programmes } from "./Learning"
+
 import type { Lang } from "../types"
 
 const typeAr: Record<string, string> = {
   "Policy brief": "موجز سياسات",
+
   "Working paper": "ورقة عمل",
+
   "Practice note": "ملاحظة تطبيقية",
+
   Podcast: "بودكاست",
+
   Toolkit: "حزمة أدوات",
 }
 
-/* ——— Global search (blueprint F1.3): reaches every content type ——— */
+// Global search: reaches every content type
+
 export function SearchOverlay({
   onClose,
+
   lang,
 }: {
   onClose: () => void
+
   lang: Lang
 }) {
   const ar = lang === "ar"
+
   const [q, setQ] = useState("")
+
   const ref = useRef<HTMLInputElement>(null)
+
   useEffect(() => {
     ref.current?.focus()
   }, [])
+
   const all = useMemo(
     () => [
       ...audiences.map((a) => ({
         type: ar ? "جمهور" : "Audience",
+
         title: ar ? a.ar : a.label,
+
         href: `/hub/${a.slug}`,
       })),
+
       ...cases.map((c) => ({
         type: ar ? "حالة" : "Case",
+
         title: ar ? c.titleAr : c.title,
+
         href: pathForSection("evidence"),
       })),
+
       ...ledger.map((c) => ({
         type: ar ? "سجل" : "Ledger",
+
         title: ar ? c.titleAr : c.title,
+
         href: pathForSection("evidence"),
       })),
+
       ...library.map((k) => ({
         type: ar ? (k.typeAr ?? typeAr[k.type] ?? k.type) : k.type,
+
         title: ar ? (k.titleAr ?? k.title) : k.title,
+
         href: pathForSection("knowledge"),
       })),
+
       ...programmes.map((p) => ({
         type: ar ? "دورة" : "Course",
+
         title: ar ? p.titleAr : p.title,
+
         href: pathForSection("learning"),
       })),
+
       ...PAGES.map((p) => ({
         type: ar ? (columnLabelAr[p.column] ?? p.column) : p.column,
+
         title: ar ? localizedPage(p, "ar").title : p.title,
+
         href: p.path,
       })),
     ],
+
     [ar],
   )
+
   const res = q.trim()
     ? all.filter((r) =>
         (r.title + r.type).toLowerCase().includes(q.toLowerCase()),
       )
     : []
+
   return (
     <Dialog
       open
@@ -81,8 +121,7 @@ export function SearchOverlay({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="mx-auto mt-[10vh] w-[min(760px,92vw)] bg-ivory shadow-2xl"
-        style={{ animation: "fadeup .3s both" }}
+        className="animate-fade-in mx-auto mt-[10vh] w-[min(760px,92vw)] bg-ivory shadow-2xl"
       >
         <h2 id="search-overlay-title" className="sr-only">
           {ar ? "بحث" : "Search"}

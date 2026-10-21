@@ -269,20 +269,12 @@ function SignInPage({
               />
             </Field>
             {err && (
-              <p
-                role="alert"
-                className="auth-error"
-                style={{ color: "var(--color-danger)" }}
-              >
+              <p role="alert" className="auth-error text-error">
                 {err}
               </p>
             )}
             {notice && !err && (
-              <p
-                role="status"
-                className="auth-error"
-                style={{ color: "var(--color-danger)" }}
-              >
+              <p role="status" className="auth-error text-error">
                 {notice}
               </p>
             )}
@@ -1370,17 +1362,7 @@ function CollectionPage({
               variant="ghost"
               key={it.id}
               onClick={() => onOpenItem(it.id)}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "2fr 1fr 1fr 1fr",
-                gap: 10,
-                alignItems: "center",
-                textAlign: "start",
-                padding: "13px 25px",
-                borderBottom: "1px solid var(--border)",
-                borderRadius: 0,
-                width: "100%",
-              }}
+              className="item-row"
             >
               <div className="min-w-0">
                 <p className="truncate font-medium">{it.title || "Untitled"}</p>
@@ -1582,17 +1564,13 @@ function MediaPage() {
       </div>
 
       {!storageEnabled && (
-        <p className="panel-foot" style={{ color: "var(--color-danger)" }}>
+        <p className="panel-foot is-error">
           Storage is not configured on this environment, so uploads stay
           disabled.
         </p>
       )}
       {error && (
-        <p
-          className="panel-foot"
-          role="alert"
-          style={{ color: "var(--color-danger)" }}
-        >
+        <p className="panel-foot is-error" role="alert">
           {error}
         </p>
       )}
@@ -1641,8 +1619,7 @@ function MediaPage() {
                   type="button"
                   disabled={busy}
                   onClick={() => void remove(a.id)}
-                  className="text-xs hover:underline disabled:opacity-50"
-                  style={{ color: "var(--color-danger)" }}
+                  className="text-xs hover:underline text-error disabled:opacity-50"
                 >
                   Delete
                 </button>
@@ -1726,19 +1703,11 @@ function WebsitePage({ canEdit }: { canEdit: boolean }) {
         </p>
       )}
       {error && (
-        <p
-          className="panel-foot"
-          role="alert"
-          style={{ color: "var(--color-danger)" }}
-        >
+        <p className="panel-foot is-error" role="alert">
           {error}
         </p>
       )}
-      {saved && (
-        <p className="panel-foot" style={{ color: "var(--color-ok)" }}>
-          Website settings saved.
-        </p>
-      )}
+      {saved && <p className="panel-foot is-ok">Website settings saved.</p>}
       {loading ? (
         <div className="m-4 h-80 w-full animate-pulse border border-line bg-ivory-2" />
       ) : (
@@ -1758,11 +1727,7 @@ function WebsitePage({ canEdit }: { canEdit: boolean }) {
             disabled={!canEdit}
             spellCheck={false}
             rows={22}
-            style={{
-              fontFamily: "var(--font-mono)",
-              borderRadius: 0,
-              border: 0,
-            }}
+            className="json-area"
           />
         </>
       )}
@@ -1895,11 +1860,7 @@ function UsersPage({ canEdit }: { canEdit: boolean }) {
         <ShieldCheck size={19} strokeWidth={1.5} />
       </div>
       {error ? (
-        <p
-          className="panel-foot"
-          role="alert"
-          style={{ color: "var(--color-danger)" }}
-        >
+        <p className="panel-foot is-error" role="alert">
           {error}
         </p>
       ) : loading ? (
@@ -2098,13 +2059,11 @@ function SettingsPage({
             />
           </Field>
           {error && (
-            <p role="alert" style={{ color: "var(--color-danger)" }}>
+            <p role="alert" className="text-error">
               {error}
             </p>
           )}
-          {done && (
-            <p style={{ color: "var(--color-ok)" }}>Password updated.</p>
-          )}
+          {done && <p className="text-ok">Password updated.</p>}
           <Button
             variant="primary"
             disabled={busy}

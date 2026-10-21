@@ -1,9 +1,12 @@
 ﻿import type { SectionId } from "@/lib/routes"
 
-/* ——— Dedicated footer pages ——————————————————————————————————————————————
-   Every footer link resolves to a real, dated page. Content is data-driven so a
-   single renderer (pages/site/pages/DetailPage) can present any of them, and the
-   block union below is the contract between content and layout. */
+/*
+ * Dedicated footer pages.
+ *
+ * Every footer link resolves to a real, dated page. Content is data-driven so a
+ * single renderer (pages/site/pages/DetailPage) can present any of them, and the
+ * block union below is the contract between content and layout.
+ */
 
 export type ColumnKey = "Evidence" | "Method" | "Knowledge" | "Learning" | "About" | "Join"
 
@@ -46,136 +49,123 @@ export const columnMeta: Record<ColumnKey, {
 
 export type Tone = "ok" | "warn" | "risk" | "neutral" | "gold"
 
-export type Block =
-  | {
-      kind: "prose"
-      heading?: string
-      body: string[]
-    }
-  | {
-      kind: "stats"
-      heading?: string
-      aside?: string
-      items: {
-        value: string
-        label: string
-        note?: string
-      }[]
-    }
-  | {
-      kind: "table"
-      heading?: string
-      aside?: string
-      note?: string
-      columns: string[]
-      rows: string[][]
-    }
-  | {
-      kind: "cards"
-      heading?: string
-      aside?: string
-      items: {
-        kicker?: string
-        title: string
-        body: string
-        meta?: string
-        badge?: string
-        href?: string
-      }[]
-    }
-  | {
-      kind: "list"
-      heading?: string
-      aside?: string
-      items: {
-        title: string
-        meta?: string
-        body?: string
-        tag?: string
-        href?: string
-      }[]
-    }
-  | {
-      kind: "figure"
-      heading?: string
-      src?: string
-      alt: string
-      eyebrow?: string
-      title?: string
-      caption?: string
-      credit?: string
-      ratio?: string
-      ink?: boolean
-    }
-  | {
-      kind: "timeline"
-      heading?: string
-      aside?: string
-      items: {
-        step: string
-        title: string
-        meta?: string
-        body: string
-      }[]
-    }
-  | {
-      kind: "faq"
-      heading?: string
-      aside?: string
-      items: {
-        q: string
-        a: string
-      }[]
-    }
-  | {
-      kind: "team"
-      heading?: string
-      aside?: string
-      people: {
-        name: string
-        role: string
-        focus: string
-      }[]
-    }
-  | {
-      kind: "calendar"
-      heading?: string
-      aside?: string
-      items: {
-        date: string
-        month: string
-        title: string
-        format: string
-        status: string
-        tone?: Tone
-      }[]
-    }
-  | {
-      kind: "links"
-      heading?: string
-      aside?: string
-      items: {
-        label: string
-        meta?: string
-        href: string
-        badge?: string
-      }[]
-    }
-  | {
-      kind: "quote"
-      text: string
-      attribution: string
-    }
-  | {
-      kind: "cta"
-      title: string
-      body: string
-      actions: {
-        label: string
-        href: string
-        primary?: boolean
-      }[]
-    }
+export type Block = {
+  kind: "prose"
+  heading?: string
+  body: string[]
+} | {
+  kind: "stats"
+  heading?: string
+  aside?: string
+  items: {
+    value: string
+    label: string
+    note?: string
+  }[]
+} | {
+  kind: "table"
+  heading?: string
+  aside?: string
+  note?: string
+  columns: string[]
+  rows: string[][]
+} | {
+  kind: "cards"
+  heading?: string
+  aside?: string
+  items: {
+    kicker?: string
+    title: string
+    body: string
+    meta?: string
+    badge?: string
+    href?: string
+  }[]
+} | {
+  kind: "list"
+  heading?: string
+  aside?: string
+  items: {
+    title: string
+    meta?: string
+    body?: string
+    tag?: string
+    href?: string
+  }[]
+} | {
+  kind: "figure"
+  heading?: string
+  src?: string
+  alt: string
+  eyebrow?: string
+  title?: string
+  caption?: string
+  credit?: string
+  ratio?: string
+  ink?: boolean
+} | {
+  kind: "timeline"
+  heading?: string
+  aside?: string
+  items: {
+    step: string
+    title: string
+    meta?: string
+    body: string
+  }[]
+} | {
+  kind: "faq"
+  heading?: string
+  aside?: string
+  items: {
+    q: string
+    a: string
+  }[]
+} | {
+  kind: "team"
+  heading?: string
+  aside?: string
+  people: {
+    name: string
+    role: string
+    focus: string
+  }[]
+} | {
+  kind: "calendar"
+  heading?: string
+  aside?: string
+  items: {
+    date: string
+    month: string
+    title: string
+    format: string
+    status: string
+    tone?: Tone
+  }[]
+} | {
+  kind: "links"
+  heading?: string
+  aside?: string
+  items: {
+    label: string
+    meta?: string
+    href: string
+    badge?: string
+  }[]
+} | {
+  kind: "quote"
+  text: string
+  attribution: string
+} | {
+  kind: "cta"
+  title: string
+  body: string
+  actions: {
+    label: string
+    href: string
+    primary?: boolean
+  }[]
+}
 
 export type PageDef = {
   slug: string
@@ -192,7 +182,7 @@ export type PageDef = {
 }
 
 export const PAGES: PageDef[] = [
-  /* ——————————————————————————— EVIDENCE ——————————————————————————— */
+  // Evidence
   {
     slug: "assignment-ledger",
     path: "/evidence/assignment-ledger",
@@ -733,7 +723,7 @@ export const PAGES: PageDef[] = [
     ],
   },
 
-  /* ——————————————————————————— METHOD ——————————————————————————— */
+  // Method
   {
     slug: "ldia-architecture",
     path: "/method/ldia",
@@ -1235,7 +1225,7 @@ export const PAGES: PageDef[] = [
     ],
   },
 
-  /* ——————————————————————————— KNOWLEDGE ——————————————————————————— */
+  // Knowledge
   {
     slug: "publications",
     path: "/knowledge/publications",
@@ -1629,7 +1619,7 @@ export const PAGES: PageDef[] = [
     ],
   },
 
-  /* ——————————————————————————— LEARNING ——————————————————————————— */
+  // Learning
   {
     slug: "catalogue",
     path: "/learning/catalogue",
@@ -2020,7 +2010,7 @@ export const PAGES: PageDef[] = [
     ],
   },
 
-  /* ——————————————————————————— ABOUT ——————————————————————————— */
+  // About
   {
     slug: "team",
     path: "/about/team",
@@ -2399,9 +2389,9 @@ export const PAGES: PageDef[] = [
             href: "mailto:tenders@askterramorph.com",
           },
           {
-            label: "+20 100 000 0000",
+            label: "+20 115 000 0984",
             meta: "Switchboard · Sun–Thu, 09:00–17:00 EET",
-            href: "tel:+201000000000",
+            href: "tel:+201150000984",
           },
           {
             label: "linkedin.com/company/terramorph",
@@ -2431,7 +2421,7 @@ export const PAGES: PageDef[] = [
     ],
   },
 
-  /* ——————————————————————————— JOIN ——————————————————————————— */
+  // Join
   {
     slug: "careers",
     path: "/join/careers",

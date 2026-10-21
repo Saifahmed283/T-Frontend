@@ -1,54 +1,83 @@
 @import 'tailwindcss';
 @import './fonts.css';
 
-/* Dashboard design tokens.
-   These must live in the globally Tailwind-compiled stylesheet so the utility
-   classes they generate (text-success, bg-warning, border-rule, ...) exist.
-   The bulk of the dashboard's hand-written rules stay in ./dashboard.css, which
-   the lazy /dashboard chunk imports — they are plain scoped CSS and need no
-   Tailwind compilation, so they never bloat the marketing site. */
+/*
+ * Design tokens.
+ *
+ * These live in the globally compiled stylesheet so the utility classes they
+ * generate (text-ok, bg-warn, border-line, tracking-cta, ...) exist everywhere.
+ * The bulk of the dashboard's hand-written rules stay in ./dashboard.css, which
+ * the lazy /dashboard chunk imports — they are plain scoped CSS and need no
+ * compilation, so they never bloat the marketing site.
+ */
 @theme {
-  --color-navy-soft: #31455b;
-  --color-ivory-deep: #f5f0e5;
-  --color-rule: #e0d8c6;
-  --color-brass: #a98a4b;
-  --color-brass-light: #c4a868;
-  --color-success: #4a6b4e;
-  --color-warning: #b07a22;
-  --color-danger: #a32d2d;
-  /* The `* Fallback` families are metric-matched local faces (see
-     fonts.css): they render during the webfont swap with identical
-     advance widths so first paint doesn't reflow (CLS). */
-  --font-serif: 'Cormorant Garamond', 'Cormorant Garamond Fallback', Georgia, serif;
-}
-
-@theme {
+  /* Surfaces */
   --color-navy: #132b45;
   --color-navy-2: #31455b;
   --color-navy-3: #0c1d30;
-  --color-gold: #a98a4b;
-  --color-gold-light: #c4a868;
-  --color-gold-strong: #76602c;
   --color-ivory: #fbf8f1;
   --color-ivory-2: #f5f0e5;
   --color-line: #e0d8c6;
+
+  /* Accents */
+  --color-gold: #a98a4b;
+  --color-gold-light: #c4a868;
+  --color-gold-strong: #76602c;
   --color-slate: #5e6772;
-  --color-risk: #a32d2d;
-  --color-risk-strong: #8f1f1f;
-  --color-warn: #b07a22;
-  --color-warn-strong: #7a5200;
+
+  /* Status — plain variants sit on navy, `-strong` variants on ivory (WCAG AA) */
   --color-ok: #4a6b4e;
   --color-ok-strong: #2f6b3a;
+  --color-warn: #b07a22;
+  --color-warn-strong: #7a5200;
+  --color-risk: #a32d2d;
+  --color-risk-strong: #8f1f1f;
   --color-error: #b42318;
-  --color-data-1: #2e6f9e;
-  --color-data-2: #7fa650;
-  --color-data-3: #c97b2d;
-  --color-data-4: #6b4e94;
+
+  /* The `* Fallback` families are metric-matched local faces (see
+     fonts.css): they render during the webfont swap with identical
+     advance widths so first paint doesn't reflow (CLS). */
   --font-display: 'Cormorant Garamond', 'Cormorant Garamond Fallback', 'Noto Naskh Arabic', serif;
   --font-sans: 'Jost', 'Jost Fallback', 'Noto Naskh Arabic', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
   --font-arabic: 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
   --font-arabic-display: 'Cairo', 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
+  /* Readex Pro is the dashboard's Arabic face (see AGENTS.md); one token so
+     every dashboard rule falls back through the same stack. */
+  --font-arabic-ui: 'Readex Pro', 'IBM Plex Sans Arabic', 'Noto Naskh Arabic', system-ui, sans-serif;
+
+  /* Type scale — one step per design role. Headings pair size and leading, so
+     `text-h2` alone renders a section heading correctly. */
+  --text-h1: clamp(2.4rem, 5.5vw, 4.5rem);
+  --text-h1--line-height: 1.02;
+  --text-h2: clamp(2rem, 4vw, 3.4rem);
+  --text-h2--line-height: 1.02;
+  --text-h3: clamp(1.7rem, 3vw, 2.6rem);
+  --text-h3--line-height: 1.15;
+  --text-h4: clamp(1.4rem, 2.6vw, 2.2rem);
+  --text-h4--line-height: 1.25;
+  --text-lede: clamp(1.05rem, 1.4vw, 1.2rem);
+  --text-lede--line-height: 1.65;
+  /* Micro label: eyebrows, badges, CTA labels. Never go below this. */
+  --text-label: 0.75rem;
+  --text-label--line-height: 1.4;
+  --text-micro: 0.68rem;
+  --text-micro--line-height: 1.4;
+
+  /* Letter spacing — the CTA/eyebrow family once drifted across 0.14–0.22em;
+     this is the one value they all share. */
+  --tracking-cta: 0.2em;
+  --tracking-eyebrow: 0.28em;
+
+  /* Entrance motion — two shared timings: 0.6s for sections, 0.3s for
+     dialogs/overlays. Staggered variants set their delay through the class or
+     through `animationDelay` inline. Bespoke progress fills (grow/shrink)
+     keep their durations inline next to their timers. */
+  --animate-fade-up: fadeup 0.6s both;
+  --animate-fade-in: fadeup 0.3s both;
+  --animate-slide-up: slideup 0.7s both;
+  --animate-slide-up-late: slideup 0.7s 0.2s both;
+  --animate-slide-in: slidein 0.5s cubic-bezier(.2,.8,.2,1) both;
 }
 
 @layer base {
@@ -66,10 +95,13 @@
    is kept in `--tm-header-h`, measured live by the Header via ResizeObserver. */
 :where([id]) { scroll-margin-top: calc(var(--tm-header-h, 115px) + 14px); }
 
-/* ——— Arabic / RTL ———
-   Arabic is connected script: letter-spacing and `uppercase` distort it, and the
-   Latin display serif has no Arabic coverage. Swap in Arabic families and drop the
-   Latin tracking/transform treatments whenever the document is RTL. */
+/*
+ * Arabic / RTL.
+ *
+ * Arabic is connected script: letter-spacing and `uppercase` distort it, and the
+ * Latin display serif has no Arabic coverage. Swap in Arabic families and drop the
+ * Latin tracking/transform treatments whenever the document is RTL.
+ */
 [dir='rtl'] { font-family: var(--font-arabic); line-height: 1.75; }
 [dir='rtl'] h1, [dir='rtl'] h2, [dir='rtl'] h3, [dir='rtl'] .font-display { font-family: var(--font-arabic-display); }
 [dir='rtl'] h1, [dir='rtl'] h2, [dir='rtl'] h3 { line-height: 1.35; letter-spacing: 0; }
@@ -81,8 +113,8 @@
 @utility eyebrow {
   font-family: var(--font-sans);
   font-weight: 500;
-  font-size: 0.68rem;
-  letter-spacing: 0.28em;
+  font-size: var(--text-micro);
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
 }
 
@@ -90,6 +122,57 @@
   height: 1px;
   background: linear-gradient(90deg, transparent, var(--color-gold-light), var(--color-gold), transparent);
 }
+
+/*
+ * Elevations, glows and layout shorthands.
+ *
+ * These used to live as raw arbitrary values in class attributes
+ * (shadow-[0_24px_60px_-20px_rgba(0,0,0,.5)], grid-cols-[1fr_300px_120px], …),
+ * which put implementation detail — and underscores — straight into the DOM.
+ * One named utility per surface keeps the markup readable.
+ */
+@utility shadow-drop {
+  box-shadow: 0 10px 40px -20px rgb(0 0 0 / .6);
+}
+@utility shadow-card {
+  box-shadow: 0 24px 60px -20px rgb(0 0 0 / .5);
+}
+@utility shadow-overlay {
+  box-shadow: 0 40px 90px -30px rgb(0 0 0 / .85);
+}
+@utility shadow-gold-ring {
+  box-shadow: 0 0 0 6px rgb(196 168 104 / .18);
+}
+@utility glow-navy {
+  background-image: radial-gradient(circle at 30% 20%, rgb(49 69 91 / .55), transparent 60%);
+}
+@utility glow-gold {
+  background-image: radial-gradient(circle, rgb(196 168 104 / .30), transparent 68%);
+}
+/* Spotlight follows the pointer through --mx/--my, set by the Hero's mousemove. */
+@utility glow-spotlight {
+  background-image: radial-gradient(600px circle at var(--mx) var(--my), rgb(196 168 104 / .12), transparent 60%);
+}
+@utility hero-vignette {
+  background-image: radial-gradient(ellipse 60% 70% at 50% 35%, #0c1d30 45%, transparent 100%);
+}
+/* Scroll cue sits below the hero headline, which itself is viewport-clamped. */
+@utility hero-cue-top {
+  top: calc(62svh - 68px);
+}
+
+/* Two-column editorial splits and data-row tracks, named by role. */
+@utility grid-split-even { grid-template-columns: 1.15fr 1fr; }
+@utility grid-split-hero { grid-template-columns: 1.1fr .9fr; }
+@utility grid-split-narrow { grid-template-columns: 1fr 1.2fr; }
+@utility grid-split-wide { grid-template-columns: 1.5fr 1fr; }
+@utility grid-split-tall { grid-template-columns: 1fr 1.5fr; }
+@utility grid-cases { grid-template-columns: 1fr 300px 120px; }
+@utility grid-record { grid-template-columns: 100px 1fr 240px 150px; }
+@utility grid-feature { grid-template-columns: 1fr 320px 120px; }
+@utility grid-programme { grid-template-columns: 90px 1fr 180px 180px; }
+@utility grid-vacancy { grid-template-columns: 1fr 280px 180px; }
+@utility grid-list { grid-template-columns: 160px 1fr 32px; }
 
 @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
 @keyframes slidein { from { transform: translateX(100%); } to { transform: none; } }

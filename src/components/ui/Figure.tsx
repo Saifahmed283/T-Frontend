@@ -3,25 +3,42 @@ import { Emblem } from "@/components/motion/fx"
 /* Formal image frame. Works as a real photo when `src` is given, and as a
    branded, titled placeholder when it is not — so a layout can be published
    before the photography exists without ever looking broken. */
+
 export function Figure({
   src,
+
   alt,
+
   title,
+
   eyebrow,
+
   caption,
+
   credit,
+
   ratio = "3 / 2",
+
   ink = false,
+
   className = "",
 }: {
   src?: string
+
   alt: string
+
   title?: string
+
   eyebrow?: string
+
   caption?: string
+
   credit?: string
+
   ratio?: string
+
   ink?: boolean
+
   className?: string
 }) {
   return (
@@ -43,7 +60,7 @@ export function Figure({
             className="absolute inset-0 h-full w-full object-cover transition-transform duration-[1200ms] ease-[cubic-bezier(.2,.8,.2,1)] group-hover/fig:scale-[1.04]"
           />
         ) : (
-          <div className="absolute inset-0 grid place-items-center bg-[radial-gradient(circle_at_30%_20%,rgba(49,69,91,.55),transparent_60%)]">
+          <div className="absolute inset-0 grid place-items-center glow-navy">
             <span
               aria-hidden
               className="absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(135deg,#FBF8F1_0_1px,transparent_1px_16px)]"
@@ -81,9 +98,7 @@ export function Figure({
           <figcaption className="absolute inset-x-0 bottom-0 p-6 text-ivory md:p-8">
             {eyebrow && <p className="eyebrow text-gold-light">{eyebrow}</p>}
             {title && (
-              <p className="mt-2 max-w-2xl font-display text-[clamp(1.4rem,2.6vw,2.2rem)] leading-snug">
-                {title}
-              </p>
+              <p className="mt-2 max-w-2xl font-display text-h4">{title}</p>
             )}
           </figcaption>
         )}

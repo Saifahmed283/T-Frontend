@@ -1,4 +1,4 @@
-﻿import { useState } from "react"
+import { useState } from "react"
 import { hubBySlug, hubs, type Hub as HubContent } from "@/content/hubs"
 import { localizedHub } from "@/content/hubs.i18n"
 import {
@@ -37,7 +37,7 @@ function Hub({
   const [req, setReq] = useState<RequestConfig | null>(null)
 
   const primary =
-    "inline-flex items-center gap-3 bg-navy px-7 py-4 text-[0.75rem] font-medium tracking-[0.22em] text-ivory uppercase transition-colors duration-300 hover:bg-navy-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold rtl:normal-case rtl:tracking-normal"
+    "inline-flex items-center gap-3 bg-navy px-7 py-4 text-label font-medium tracking-cta text-ivory uppercase transition-colors duration-300 hover:bg-navy-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold rtl:normal-case rtl:tracking-normal"
 
   return (
     <>
@@ -55,10 +55,10 @@ function Hub({
             </a>{" "}
             › <span className="text-gold-strong">{hub.label}</span>
           </p>
-          <div className="mt-10 grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
+          <div className="mt-10 grid gap-12 lg:grid-split-hero lg:items-end">
             <div>
               <p className="eyebrow text-gold-strong">{hub.kicker}</p>
-              <h1 className="mt-5 max-w-4xl text-[clamp(2.4rem,5.4vw,4.6rem)] leading-[1.02] font-medium">
+              <h1 className="mt-5 max-w-4xl text-h1 font-medium">
                 <SplitText text={lang === "ar" ? hub.ar : hub.line} immediate />
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-relaxed text-slate">
@@ -176,7 +176,7 @@ function Hub({
               <Reveal as="li" key={p.title} delay={i * 50}>
                 <a
                   href={p.href}
-                  className="group grid items-center gap-2 border-b border-line py-6 transition-colors hover:bg-ivory md:grid-cols-[1fr_320px_120px] md:px-4"
+                  className="group grid items-center gap-2 border-b border-line py-6 transition-colors hover:bg-ivory md:grid-feature md:px-4"
                 >
                   <span className="font-display text-2xl transition-transform duration-500 group-hover:translate-x-2 rtl:group-hover:-translate-x-2">
                     {p.title}
@@ -272,14 +272,14 @@ function Hub({
                   <button
                     type="button"
                     onClick={() => setReq(requestConfig(hub, lang))}
-                    className="cursor-pointer bg-gold-light px-6 py-3.5 text-xs tracking-[0.2em] text-navy uppercase transition hover:bg-ivory rtl:normal-case rtl:tracking-normal"
+                    className="cursor-pointer bg-gold-light px-6 py-3.5 text-xs tracking-cta text-navy uppercase transition hover:bg-ivory rtl:normal-case rtl:tracking-normal"
                   >
                     {hub.cta.label}
                   </button>
                 ) : (
                   <a
                     href={hub.cta.href ?? "/"}
-                    className="bg-gold-light px-6 py-3.5 text-xs tracking-[0.2em] text-navy uppercase transition hover:bg-ivory rtl:normal-case rtl:tracking-normal"
+                    className="bg-gold-light px-6 py-3.5 text-xs tracking-cta text-navy uppercase transition hover:bg-ivory rtl:normal-case rtl:tracking-normal"
                   >
                     {hub.cta.label}
                   </a>
@@ -287,7 +287,7 @@ function Hub({
                 {hub.secondary && (
                   <a
                     href={hub.secondary.href}
-                    className="border border-ivory/25 px-6 py-3.5 text-xs tracking-[0.2em] uppercase transition hover:border-gold-light rtl:normal-case rtl:tracking-normal"
+                    className="border border-ivory/25 px-6 py-3.5 text-xs tracking-cta uppercase transition hover:border-gold-light rtl:normal-case rtl:tracking-normal"
                   >
                     {hub.secondary.label}
                   </a>

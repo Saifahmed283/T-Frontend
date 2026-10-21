@@ -1,149 +1,222 @@
 import { useEffect, useRef, useState } from "react"
+
 import { SplitText } from "@/components/motion/fx"
+
 import { Badge, LiveStatus } from "@/components/ui"
+
 import { useMetrics } from "@/hooks/useMetrics"
+
 import type { Lang } from "../types"
 
-/* ——— Access tiers: hold/arm → impact preview → 3s undo ——— */
+// Access tiers: hold/arm → impact preview → 3s undo
+
 const levels = ["Viewer", "Editor", "Admin"] as const
+
 type Level = typeof levels[number]
 
 const Tier: Record<Level, {
   blurb: string
+
   tone: "neutral" | "ok" | "gold"
+
   can: string[]
+
   cannot: string[]
 }> = {
   Viewer: {
     blurb: "Read-only — dashboards, reports, roster.",
+
     tone: "neutral",
+
     can: [
       "Read assignments and live metrics",
+
       "Download published reports",
+
       "Browse the expert roster",
     ],
+
     cannot: [
       "Edit assignments or statuses",
+
       "Change access for other users",
+
       "Approve vendor payments",
     ],
   },
+
   Editor: {
     blurb: "Operates assignments, stages and roster.",
+
     tone: "ok",
+
     can: [
       "Edit assignments, gates and statuses",
+
       "Manage the expert roster",
+
       "Comment on the activity feed",
     ],
+
     cannot: [
       "Change user privileges",
+
       "Invite or remove tenants",
+
       "Run migrations / schema DDL",
     ],
   },
+
   Admin: {
     blurb: "Full tenant control — still least-privilege.",
+
     tone: "gold",
+
     can: [
       "Everything Editors can",
+
       "Change user privileges",
+
       "Invite and remove tenant workspaces",
     ],
+
     cannot: ["Runtime role is least-privilege — no DDL, no CREATEDB"],
   },
 }
 
-const TierAr: Record<
-  Level,
-  {
-    blurb: string
-    can: string[]
-    cannot: string[]
-  }
-> =
-  {
-    Viewer: {
-      blurb: "للقراءة فقط — لوحات وتقارير وسجل.",
-      can: [
-        "قراءة المهام والمؤشرات الحية",
-        "تنزيل التقارير المنشورة",
-        "تصفّح سجل الخبراء",
-      ],
-      cannot: [
-        "تعديل المهام أو الحالات",
-        "تغيير وصول المستخدمين الآخرين",
-        "اعتماد مدفوعات الموردين",
-      ],
-    },
-    Editor: {
-      blurb: "يشغّل المهام والمراحل والسجل.",
-      can: [
-        "تعديل المهام والبوابات والحالات",
-        "إدارة سجل الخبراء",
-        "التعليق على سجل النشاط",
-      ],
-      cannot: [
-        "تغيير صلاحيات المستخدمين",
-        "دعوة أو إزالة المساحات",
-        "تشغيل الترحيلات / أوامر المخطط",
-      ],
-    },
-    Admin: {
-      blurb: "تحكّم كامل بالمساحة — مع أقل صلاحيات.",
-      can: [
-        "كل ما يستطيعه المحرّرون",
-        "تغيير صلاحيات المستخدمين",
-        "دعوة مساحات وإزالتها",
-      ],
-      cannot: ["دور التشغيل بأقل صلاحيات — بلا DDL أو CREATEDB"],
-    },
-  }
+const TierAr: Record<Level, {
+  blurb: string
+
+  can: string[]
+
+  cannot: string[]
+}> = {
+  Viewer: {
+    blurb: "للقراءة فقط — لوحات وتقارير وسجل.",
+
+    can: [
+      "قراءة المهام والمؤشرات الحية",
+
+      "تنزيل التقارير المنشورة",
+
+      "تصفّح سجل الخبراء",
+    ],
+
+    cannot: [
+      "تعديل المهام أو الحالات",
+
+      "تغيير وصول المستخدمين الآخرين",
+
+      "اعتماد مدفوعات الموردين",
+    ],
+  },
+
+  Editor: {
+    blurb: "يشغّل المهام والمراحل والسجل.",
+
+    can: [
+      "تعديل المهام والبوابات والحالات",
+
+      "إدارة سجل الخبراء",
+
+      "التعليق على سجل النشاط",
+    ],
+
+    cannot: [
+      "تغيير صلاحيات المستخدمين",
+
+      "دعوة أو إزالة المساحات",
+
+      "تشغيل الترحيلات / أوامر المخطط",
+    ],
+  },
+
+  Admin: {
+    blurb: "تحكّم كامل بالمساحة — مع أقل صلاحيات.",
+
+    can: [
+      "كل ما يستطيعه المحرّرون",
+
+      "تغيير صلاحيات المستخدمين",
+
+      "دعوة مساحات وإزالتها",
+    ],
+
+    cannot: ["دور التشغيل بأقل صلاحيات — بلا DDL أو CREATEDB"],
+  },
+}
 
 export function PrivilegeToggle({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const [level, setLevel] = useState<Level>("Viewer")
+
   const [armed, setArmed] = useState<Level | null>(null)
+
   const [undoActive, setUndoActive] = useState(false)
+
   const [undoKey, setUndoKey] = useState(0)
+
   const [announce, setAnnounce] = useState("")
+
   const commitTimer = useRef<number | null>(null)
+
   const undoTimeout = useRef<number | null>(null)
+
   const prevLevel = useRef<Level>("Viewer")
+
   const held = useRef(false)
+
   const armedRef = useRef<Level | null>(null)
+
   const m = useMetrics()
 
   const notify = (m: string) => {
     setAnnounce(m)
+
     window.setTimeout(() => setAnnounce(""), 3000)
   }
+
   const clearArm = () => {
     if (commitTimer.current !== null) {
       clearTimeout(commitTimer.current)
+
       commitTimer.current = null
     }
   }
 
   const commit = (l: Level) => {
     clearArm()
+
     armedRef.current = null
+
     setArmed(null)
+
     held.current = false
+
     prevLevel.current = level
+
     m.bump("priv.commits")
+
     if (import.meta.env.DEV) console.debug(`[tm] privilege commit: ${l}`)
+
     setUndoKey((k) => k + 1)
+
     setUndoActive(true)
+
     setLevel(l)
+
     notify(
       ar
         ? `ضُبط الوصول إلى ${l} — التراجع متاح 3 ثوانٍ`
         : `Access set to ${l} — undo available for 3 seconds`,
     )
+
     if (undoTimeout.current !== null) clearTimeout(undoTimeout.current)
+
     undoTimeout.current = window.setTimeout(() => {
       setUndoActive(false)
+
       notify(
         ar
           ? `تم تثبيت تغيير الوصول إلى ${l}`
@@ -155,44 +228,68 @@ export function PrivilegeToggle({ lang }: { lang: Lang }) {
   const beginArm = (l: Level, hold: boolean) => {
     if (level === l) {
       armedRef.current = null
+
       setArmed(null)
+
       return
     }
+
     if (armedRef.current === l) {
       commit(l)
+
       return
     }
+
     clearArm()
+
     held.current = hold
+
     armedRef.current = l
+
     setArmed(l)
+
     commitTimer.current = window.setTimeout(() => commit(l), 600)
   }
 
   const doCancel = () => {
     const wasArming = armedRef.current !== null
+
     if (!wasArming) return
+
     clearArm()
+
     armedRef.current = null
+
     setArmed(null)
+
     held.current = false
+
     m.bump("priv.cancels")
+
     if (import.meta.env.DEV)
       console.debug("[tm] privilege arm cancelled before commit")
   }
+
   const release = () => {
     if (held.current) doCancel()
   }
 
   const undo = () => {
     if (undoTimeout.current !== null) clearTimeout(undoTimeout.current)
+
     m.bump("priv.undos")
+
     if (import.meta.env.DEV)
       console.debug(`[tm] privilege undo back to ${prevLevel.current}`)
+
     armedRef.current = null
+
     setArmed(null)
+
     setUndoActive(false)
+
     setLevel(prevLevel.current)
+
     notify(
       ar
         ? `تمت الاستعادة إلى ${prevLevel.current}`
@@ -204,17 +301,22 @@ export function PrivilegeToggle({ lang }: { lang: Lang }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && armed) {
         e.preventDefault()
+
         doCancel()
       }
     }
+
     window.addEventListener("keydown", onKey)
+
     return () => {
       window.removeEventListener("keydown", onKey)
+
       clearArm()
     }
   }, [armed])
 
   const shown = armed ?? level
+
   return (
     <section
       id="privilege"
@@ -228,7 +330,7 @@ export function PrivilegeToggle({ lang }: { lang: Lang }) {
               ? "مستويات الوصول — التحكم في الميزات والصلاحيات"
               : "Access tiers — feature & privilege control"}
           </p>
-          <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-none font-medium">
+          <h2 className="mt-4 text-h2 font-medium">
             <SplitText text={ar ? "من يستطيع فعل ماذا." : "Who can do what."} />
           </h2>
         </div>
@@ -275,7 +377,9 @@ export function PrivilegeToggle({ lang }: { lang: Lang }) {
         >
           {levels.map((l) => {
             const isCommitted = level === l
+
             const isArming = armed === l
+
             return (
               <button
                 key={l}
@@ -287,7 +391,9 @@ export function PrivilegeToggle({ lang }: { lang: Lang }) {
                 onPointerLeave={release}
                 onKeyDown={(e) => {
                   if (e.key !== "Enter" && e.key !== " ") return
+
                   e.preventDefault()
+
                   beginArm(l, false)
                 }}
                 className={`relative overflow-hidden p-6 text-start transition select-none ${

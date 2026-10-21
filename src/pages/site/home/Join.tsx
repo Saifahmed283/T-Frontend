@@ -1,77 +1,121 @@
 import { useState } from "react"
+
 import { Contours } from "@/components/motion/fx"
+
 import { Head } from "./Head"
+
 import { api, ApiError, type SubmissionKind } from "@/lib/api"
+
 import {
   RequestDialog,
   type RequestConfig,
 } from "@/pages/site/components/RequestDialog"
+
 import type { Lang } from "../types"
 
-/* ——— 08 Join: two doors (partners, experts) + careers & tenders, one place ——— */
+// Join: two doors (partners, experts) + careers & tenders, one place
+
 const lists: Record<string, {
   title: string
+
   meta: string
+
   cta: string
+
   kind: SubmissionKind
 }[]> = {
   "Team with us": [
     {
       title: "Specialist sub-partner for LED & policy lots",
+
       meta: "Method + local reach + compliance file",
+
       cta: "Propose teaming",
+
       kind: "TEAM_PROPOSAL",
     },
+
     {
       title: "Capability statement — consultancies",
+
       meta: "PDF · v3.1 · Sep 2026",
+
       cta: "Download",
+
       kind: "PUBLICATION_REQUEST",
     },
+
     {
       title: "Compliance pack",
+
       meta: "Registration, tax ID, ISO 37001",
+
       cta: "Download",
+
       kind: "PUBLICATION_REQUEST",
     },
   ],
+
   Careers: [
     {
       title: "Senior policy analyst",
+
       meta: "Cairo · Full time",
+
       cta: "Apply",
+
       kind: "JOB_APPLICATION",
     },
+
     {
       title: "LED field coordinator",
+
       meta: "Assiut · 12 months",
+
       cta: "Apply",
+
       kind: "JOB_APPLICATION",
     },
+
     {
       title: "Research intern (AAST)",
+
       meta: "Alexandria · 6 months",
+
       cta: "Apply",
+
       kind: "JOB_APPLICATION",
     },
   ],
+
   Tenders: [
     {
       title: "Urban mobility diagnostic",
+
       meta: "EOI · closes 30 Oct",
+
       cta: "Express interest",
+
       kind: "TENDER_INTEREST",
     },
+
     {
       title: "TVET governance review",
+
       meta: "RFP · closes 14 Nov",
+
       cta: "Express interest",
+
       kind: "TENDER_INTEREST",
     },
+
     {
       title: "SME finance access study",
+
       meta: "Open call · rolling",
+
       cta: "Express interest",
+
       kind: "TENDER_INTEREST",
     },
   ],
@@ -79,59 +123,83 @@ const lists: Record<string, {
 
 const listLabel: Record<string, string> = {
   "Expert network": "شبكة الخبراء",
+
   "Team with us": "شاركنا الفريق",
+
   Careers: "الوظائف",
+
   Tenders: "المناقصات",
 }
 
-const listsAr: Record<
-  string,
-  {
-    title: string
-    meta: string
-    cta: string
-  }[]
-> = {
+const listsAr: Record<string, {
+  title: string
+
+  meta: string
+
+  cta: string
+}[]> = {
   "Team with us": [
     {
       title: "شريك متخصص من الباطن لمكوّنات التنمية الاقتصادية والسياسات",
+
       meta: "المنهج + الانتشار المحلي + ملف الامتثال",
+
       cta: "اقترح شراكة",
     },
+
     {
       title: "بيان القدرات — للاستشاريين",
+
       meta: "PDF · الإصدار 3.1 · سبتمبر 2026",
+
       cta: "حمّل",
     },
+
     {
       title: "حزمة الامتثال",
+
       meta: "التسجيل، الرقم الضريبي، ISO 37001",
+
       cta: "حمّل",
     },
   ],
+
   Careers: [
     { title: "محلّل سياسات أول", meta: "القاهرة · دوام كامل", cta: "تقدّم" },
+
     {
       title: "منسّق ميداني للتنمية الاقتصادية المحلية",
+
       meta: "أسيوط · 12 شهرًا",
+
       cta: "تقدّم",
     },
+
     { title: "متدرب بحثي (AAST)", meta: "الإسكندرية · 6 أشهر", cta: "تقدّم" },
   ],
+
   Tenders: [
     {
       title: "تشخيص التنقل الحضري",
+
       meta: "إبداء اهتمام · يُغلق 30 أكتوبر",
+
       cta: "أبدِ اهتمامك",
     },
+
     {
       title: "مراجعة حوكمة التعليم الفني",
+
       meta: "RFP · يُغلق 14 نوفمبر",
+
       cta: "أبدِ اهتمامك",
     },
+
     {
       title: "دراسة الوصول إلى تمويل المشروعات الصغيرة والمتوسطة",
+
       meta: "دعوة مفتوحة · مستمرة",
+
       cta: "أبدِ اهتمامك",
     },
   ],
@@ -139,53 +207,84 @@ const listsAr: Record<
 
 const areas = [
   "Local economic development",
+
   "Policy",
+
   "TVET & skills",
+
   "Investment climate",
+
   "Social enterprise",
+
   "Public finance",
+
   "GIS & data",
 ]
+
 const areasAr = [
   "التنمية الاقتصادية المحلية",
+
   "السياسات",
+
   "التعليم الفني والمهارات",
+
   "مناخ الاستثمار",
+
   "المشروعات الاجتماعية",
+
   "المالية العامة",
+
   "نظم المعلومات الجغرافية والبيانات",
 ]
 
 export function Join({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const tabs = ["Expert network", ...Object.keys(lists)]
+
   const [tab, setTab] = useState("Expert network")
+
   const [step, setStep] = useState(0)
+
   const steps = ar
     ? ["الملف", "الخبرة", "السيرة", "الحالة"]
     : ["Profile", "Expertise", "CV", "Status"]
+
   const [name, setName] = useState("")
+
   const [email, setEmail] = useState("")
+
   const [location, setLocation] = useState("")
+
   const [linkedin, setLinkedin] = useState("")
+
   const [selAreas, setSelAreas] = useState<string[]>([])
+
   const [expertErr, setExpertErr] = useState("")
+
   const [sending, setSending] = useState(false)
+
   const [req, setReq] = useState<RequestConfig | null>(null)
+
   /* The public submissions API has no file field (it is a strict JSON schema),
      so a CV cannot be stored from the browser. We capture and validate the file
      name so the record shows an expert arrived with a CV, and the UI states the
      file itself is requested during review rather than pretending to upload it. */
+
   const [cvName, setCvName] = useState("")
+
   const [cvErr, setCvErr] = useState("")
 
   const areasShown = ar ? areasAr : areas
+
   const rowText = (t: string, i: number) =>
     ar
       ? listsAr[t][i]
       : {
           title: lists[t][i].title,
+
           meta: lists[t][i].meta,
+
           cta: lists[t][i].cta,
         }
 
@@ -195,28 +294,38 @@ export function Join({ lang }: { lang: Lang }) {
     )
 
   const MAX_CV_BYTES = 10 * 1024 * 1024
+
   const onCvChange = (f: File | undefined) => {
     setCvErr("")
+
     if (!f) {
       setCvName("")
+
       return
     }
+
     if (!/\.(pdf|docx?)$/i.test(f.name)) {
       setCvErr(
         ar
           ? "يرجى اختيار ملف PDF أو DOCX."
           : "Please choose a PDF or DOCX file.",
       )
+
       setCvName("")
+
       return
     }
+
     if (f.size > MAX_CV_BYTES) {
       setCvErr(
         ar ? "الملف أكبر من 10 ميغابايت." : "That file is larger than 10 MB.",
       )
+
       setCvName("")
+
       return
     }
+
     setCvName(f.name)
   }
 
@@ -225,23 +334,35 @@ export function Join({ lang }: { lang: Lang }) {
       setExpertErr(
         ar ? "البريد الإلكتروني مطلوب." : "An email address is required.",
       )
+
       return
     }
+
     setExpertErr("")
+
     setSending(true)
+
     try {
       await api.submit({
         kind: "EXPERT_REGISTRATION",
+
         email: email.trim(),
+
         name: name.trim() || undefined,
+
         source: "site",
+
         payload: {
           location,
+
           linkedin,
+
           areas: selAreas,
+
           ...(cvName ? { cvFileName: cvName } : {}),
         },
       })
+
       setStep(3)
     } catch (err) {
       setExpertErr(
@@ -290,7 +411,7 @@ export function Join({ lang }: { lang: Lang }) {
           ))}
         </div>
         {tab === "Expert network" ? (
-          <div className="mt-10 grid gap-10 lg:grid-cols-[1fr_1.4fr]">
+          <div className="mt-10 grid gap-10 lg:grid-split-tall">
             <div>
               <p className="max-w-sm text-ivory/70">
                 {ar
@@ -325,12 +446,16 @@ export function Join({ lang }: { lang: Lang }) {
                       (ar
                         ? [
                             "من أنت؟",
+
                             "ما الذي تعرفه بعمق؟",
+
                             "ارفع سيرتك الذاتية",
                           ]
                         : [
                             "Who are you?",
+
                             "What do you know deeply?",
+
                             "Upload your CV",
                           ])[step]
                     }
@@ -410,7 +535,10 @@ export function Join({ lang }: { lang: Lang }) {
                             : "The file itself is requested securely during review — it is not stored here."}
                         </p>
                         {cvErr && (
-                          <p role="alert" className="eyebrow mt-3 text-gold-light">
+                          <p
+                            role="alert"
+                            className="eyebrow mt-3 text-gold-light"
+                          >
                             {cvErr}
                           </p>
                         )}
@@ -435,7 +563,7 @@ export function Join({ lang }: { lang: Lang }) {
                       onClick={() =>
                         step === 2 ? void finishExpert() : setStep(step + 1)
                       }
-                      className="bg-gold-light px-6 py-3 text-xs tracking-[0.2em] text-navy uppercase transition hover:bg-ivory disabled:opacity-60 rtl:normal-case rtl:tracking-normal"
+                      className="bg-gold-light px-6 py-3 text-xs tracking-cta text-navy uppercase transition hover:bg-ivory disabled:opacity-60 rtl:normal-case rtl:tracking-normal"
                     >
                       {step === 2
                         ? sending
@@ -452,7 +580,7 @@ export function Join({ lang }: { lang: Lang }) {
                   </div>
                 </>
               ) : (
-                <div style={{ animation: "fadeup .6s both" }}>
+                <div className="animate-fade-up">
                   <p className="eyebrow text-gold-light">
                     <span className="pulse-dot me-2 inline-block h-2 w-2 rounded-full bg-gold-light" />
                     {ar
@@ -470,12 +598,19 @@ export function Join({ lang }: { lang: Lang }) {
                   <button
                     onClick={() => {
                       setStep(0)
+
                       setSelAreas([])
+
                       setName("")
+
                       setEmail("")
+
                       setLocation("")
+
                       setLinkedin("")
+
                       setCvName("")
+
                       setCvErr("")
                     }}
                     className="eyebrow mt-6 border-b border-gold-light pb-1"
@@ -490,23 +625,29 @@ export function Join({ lang }: { lang: Lang }) {
           <ul key={tab} className="mt-6 divide-y divide-ivory/10">
             {lists[tab].map((row, i) => {
               const rt = rowText(tab, i)
+
               return (
                 <li
                   key={row.title}
-                  style={{ animation: `fadeup .5s ${i * 0.08}s both` }}
+                  className="animate-fade-up"
+                  style={{ animationDelay: `${i * 0.08}s` }}
                 >
                   <button
                     type="button"
                     onClick={() =>
                       setReq({
                         kind: row.kind,
+
                         title: `${rt.cta} — ${rt.title}`,
+
                         intro: rt.meta,
+
                         context: { item: row.title, category: tab },
+
                         submitLabel: rt.cta,
                       })
                     }
-                    className="group grid w-full cursor-pointer items-center gap-2 py-6 text-start transition hover:bg-ivory/5 md:grid-cols-[1fr_280px_180px] md:px-4"
+                    className="group grid w-full cursor-pointer items-center gap-2 py-6 text-start transition hover:bg-ivory/5 md:grid-vacancy md:px-4"
                   >
                     <span className="font-display text-2xl transition-transform duration-500 group-hover:translate-x-2 rtl:group-hover:-translate-x-2">
                       {rt.title}

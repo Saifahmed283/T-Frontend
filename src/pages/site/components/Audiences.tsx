@@ -61,7 +61,7 @@ function Audiences({ lang }: { lang: Lang }) {
           }
         />
 
-        <div className="mt-14 grid items-center gap-14 lg:grid-cols-[1.15fr_1fr]">
+        <div className="mt-14 grid items-center gap-14 lg:grid-split-even">
           {/* Orbit */}
           <div className="orbit-wrap relative mx-auto hidden aspect-square w-full max-w-[620px] md:block">
             {/* static rings */}
@@ -72,13 +72,17 @@ function Audiences({ lang }: { lang: Lang }) {
               {/* Radial gradient instead of `blur-2xl`: a backdrop of that size
                   has to be rasterised and blurred as its own layer, while a
                   gradient is painted once. */}
-              <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(196,168,104,.30),transparent_68%)]" />
+              <div className="absolute inset-0 rounded-full glow-gold" />
               <Globe />
             </div>
             {/* rotating ring of doors — only rotates while section is visible and on
                 non-mobile (screens with less GPU/memory benefit most from this
                 perpetual spin; mobile also tends to get a scroll-limiting jitter). */}
-            <div className={`orbit absolute inset-0 ${visible ? "md:motion-safe:block motion-reduce:hidden" : "hidden"}`}>
+            <div
+              className={`orbit absolute inset-0 ${
+                visible ? "md:motion-safe:block motion-reduce:hidden" : "hidden"
+              }`}
+            >
               <svg
                 viewBox="0 0 100 100"
                 className="absolute inset-0 h-full w-full overflow-visible"
@@ -143,7 +147,7 @@ function Audiences({ lang }: { lang: Lang }) {
                         <span
                           className={`relative grid h-14 w-14 place-items-center rounded-full border font-display text-lg transition-all duration-500 ${
                             on
-                              ? "border-gold bg-navy text-gold-light shadow-[0_0_0_6px_rgba(196,168,104,.18)]"
+                              ? "border-gold bg-navy text-gold-light shadow-gold-ring"
                               : "border-navy/20 bg-ivory text-navy group-hover/b:border-navy"
                           }`}
                         >
@@ -153,7 +157,7 @@ function Audiences({ lang }: { lang: Lang }) {
                           0{i + 1}
                         </span>
                         <span
-                          className={`text-[0.78rem] leading-tight tracking-wide transition-colors ${
+                          className={`text-label leading-tight tracking-wide transition-colors ${
                             on ? "text-navy" : "text-slate"
                           }`}
                         >
@@ -195,18 +199,18 @@ function Audiences({ lang }: { lang: Lang }) {
                 {ar ? "من 07" : "of 07"}
               </span>
             </div>
-            <h3 className="mt-6 text-[clamp(2.2rem,4vw,3.6rem)] leading-[1] font-medium">
+            <h3 className="mt-6 text-h2 font-medium">
               <SplitText text={lang === "ar" ? a.ar : a.label} />
             </h3>
-            <p className="mt-5 max-w-md text-lg leading-relaxed text-navy-2 animate-[slideup_.8s_.2s_both]">
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-navy-2 animate-slide-up-late">
               {lang === "ar" ? a.lineAr : a.line}
             </p>
             <ul className="mt-8 space-y-3 border-s border-gold/50 ps-5">
               {(lang === "ar" ? a.qAr : a.q).map((q, k) => (
                 <li
                   key={q}
-                  className="text-sm text-slate"
-                  style={{ animation: `slideup .7s ${0.3 + k * 0.1}s both` }}
+                  className="animate-slide-up text-sm text-slate"
+                  style={{ animationDelay: `${0.3 + k * 0.1}s` }}
                 >
                   <span className="me-3 font-display text-gold-strong">
                     {k + 1}.
@@ -216,12 +220,12 @@ function Audiences({ lang }: { lang: Lang }) {
               ))}
             </ul>
             <div
-              className="mt-10 flex flex-wrap items-center gap-6"
-              style={{ animation: "slideup .7s .6s both" }}
+              className="animate-slide-up mt-10 flex flex-wrap items-center gap-6"
+              style={{ animationDelay: ".6s" }}
             >
               <Magnetic
                 href={`/hub/${a.slug}`}
-                className="group bg-navy px-7 py-4 text-[0.75rem] font-medium tracking-[0.22em] text-ivory uppercase rtl:normal-case rtl:tracking-normal"
+                className="group bg-navy px-7 py-4 text-label font-medium tracking-cta text-ivory uppercase rtl:normal-case rtl:tracking-normal"
               >
                 {lang === "ar" ? a.actionAr : a.action}
                 <span className="inline-block h-px w-6 bg-gold-light transition-all group-hover:w-10" />

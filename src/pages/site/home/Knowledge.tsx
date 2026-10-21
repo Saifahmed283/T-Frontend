@@ -1,70 +1,111 @@
 import { useState } from "react"
+
 import { knowledge } from "@/content/data"
+
 import { Contours } from "@/components/motion/fx"
+
 import { Head } from "./Head"
+
 import {
   RequestDialog,
   type RequestConfig,
 } from "@/pages/site/components/RequestDialog"
+
 import type { Lang } from "../types"
 
-/* ——— 05 Knowledge: mixed types, type + language named, free toolkit folded in ——— */
+// Knowledge: mixed types, type + language named, free toolkit folded in
+
 export const library = [
   ...knowledge.map((k) => ({ ...k, free: false })),
+
   {
     type: "Toolkit",
+
     typeAr: "حزمة أدوات",
+
     lang: "AR/EN",
+
     title: "LED diagnostic toolkit — open licence",
+
     titleAr: "حزمة تشخيص التنمية الاقتصادية المحلية — رخصة مفتوحة",
+
     meta: "PDF · 32 pp",
+
     metaAr: "PDF · 32 ص",
+
     free: true,
   },
+
   {
     type: "Toolkit",
+
     typeAr: "حزمة أدوات",
+
     lang: "EN",
+
     title: "Mandate note template",
+
     titleAr: "قالب مذكرة التفويض",
+
     meta: "DOCX · 4 pp",
+
     metaAr: "DOCX · 4 ص",
+
     free: true,
   },
 ]
 
 const typeAr: Record<string, string> = {
   All: "الكل",
+
   "Policy brief": "موجز سياسات",
+
   "Working paper": "ورقة عمل",
+
   "Practice note": "ملاحظة تطبيقية",
+
   Podcast: "بودكاست",
+
   Toolkit: "حزمة أدوات",
 }
 
 export function Knowledge({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const types = ["All", ...new Set(library.map((k) => k.type))]
+
   const [f, setF] = useState("All")
+
   const [lang2, setLang2] = useState<"All" | "AR" | "EN">("All")
+
   const list = library.filter(
     (k) =>
       (f === "All" || k.type === f) &&
       (lang2 === "All" || k.lang.includes(lang2)),
   )
+
   const [hover, setHover] = useState(0)
+
   const [req, setReq] = useState<RequestConfig | null>(null)
+
   const feat = list[hover] ?? list[0]
+
   const typeLabel = (k: typeof library[number]) =>
     ar ? (k.typeAr ?? typeAr[k.type] ?? k.type) : k.type
+
   const titleShown = (k: typeof library[number]) =>
     ar ? (k.titleAr ?? k.title) : k.title
+
   const metaShown = (k: typeof library[number]) =>
     ar ? (k.metaAr ?? k.meta) : k.meta
+
   const requestFor = (k: typeof library[number]): RequestConfig => ({
     kind: "PUBLICATION_REQUEST",
+
     title: ar ? `طلب: ${titleShown(k)}` : `Request: ${k.title}`,
+
     context: { asset: k.title, free: k.free },
+
     submitLabel: ar
       ? k.free
         ? "أرسل رابط تحميل"
@@ -73,6 +114,7 @@ export function Knowledge({ lang }: { lang: Lang }) {
         ? "Send a download link"
         : "Request a copy",
   })
+
   return (
     <section className="border-t border-line">
       <div className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">
@@ -93,9 +135,10 @@ export function Knowledge({ lang }: { lang: Lang }) {
                 key={t}
                 onClick={() => {
                   setF(t)
+
                   setHover(0)
                 }}
-                className={`border px-4 py-2 text-xs tracking-[0.14em] uppercase transition ${
+                className={`border px-4 py-2 text-xs tracking-cta uppercase transition ${
                   f === t
                     ? "border-navy bg-navy text-ivory"
                     : "border-line hover:border-navy"
@@ -111,6 +154,7 @@ export function Knowledge({ lang }: { lang: Lang }) {
                 key={l}
                 onClick={() => {
                   setLang2(l)
+
                   setHover(0)
                 }}
                 className={`px-3 py-1.5 text-xs transition ${
@@ -124,14 +168,14 @@ export function Knowledge({ lang }: { lang: Lang }) {
             ))}
           </div>
         </div>
-        <div className="mt-8 grid gap-10 lg:grid-cols-[1.6fr_1fr]">
+        <div className="mt-8 grid gap-10 lg:grid-split-wide">
           <ul className="divide-y divide-line border-y border-line">
             {list.map((k, i) => (
               <li key={k.title} onMouseEnter={() => setHover(i)}>
                 <button
                   type="button"
                   onClick={() => setReq(requestFor(k))}
-                  className={`group grid w-full cursor-pointer items-center gap-3 py-6 text-start transition-colors md:grid-cols-[160px_1fr_32px] md:px-4 ${
+                  className={`group grid w-full cursor-pointer items-center gap-3 py-6 text-start transition-colors md:grid-list md:px-4 ${
                     i === hover ? "bg-ivory-2" : ""
                   }`}
                 >
@@ -175,8 +219,7 @@ export function Knowledge({ lang }: { lang: Lang }) {
               <p
                 key={feat.title}
                 dir={feat.lang === "AR" ? "rtl" : undefined}
-                className="relative mt-6 font-display text-3xl leading-snug"
-                style={{ animation: "fadeup .5s both" }}
+                className="animate-fade-up relative mt-6 font-display text-3xl leading-snug"
               >
                 {titleShown(feat)}
               </p>

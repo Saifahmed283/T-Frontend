@@ -1,163 +1,273 @@
 import { useEffect, useRef, useState } from "react"
+
 import { SplitText } from "@/components/motion/fx"
+
 import { Dialog } from "@/components/ui"
+
 import { api, type SubmissionKind } from "@/lib/api"
+
 import { img } from "./shared"
+
 import type { Lang } from "../types"
 
-/* ——— What's new: swipeable picture banner → description, likes, four actions ——— */
+// What's new: swipeable picture banner → description, likes, four actions
+
 const news = [
   {
     id: "photo-1737816149139-ccdb2ce50715",
+
     tag: "Initiative",
+
     tagAr: "مبادرة",
+
     title: "Main Street Assiut — a living market pilot",
+
     titleAr: "الشارع الرئيسي بأسيوط — مشروع سوق حيّ",
+
     body: "We are reshaping one street into a working model of local economic development: vendors, municipality and residents designing the place together over twelve weeks.",
+
     bodyAr:
       "نُعيد تشكيل شارع واحد ليصبح نموذجًا عمليًا للتنمية الاقتصادية المحلية: الباعة والبلدية والسكان يصمّمون المكان معًا على مدى اثني عشر أسبوعًا.",
+
     date: "Oct 2026",
+
     dateAr: "أكتوبر 2026",
+
     likes: 128,
   },
+
   {
     id: "photo-1699197671498-ab6931ccce96",
+
     tag: "TerraMorph Learning",
+
     tagAr: "تعلّم TerraMorph",
+
     title: "Train-the-trainer cohort 04 opens",
+
     titleAr: "انطلاق الدفعة 04 من تدريب المدربين",
+
     body: "Twenty seats for practitioners who want to carry the G0–G7 method into their own institutions. Certification on completion.",
+
     bodyAr:
       "عشرون مقعدًا للممارسين الذين يرغبون في نقل منهج G0–G7 إلى مؤسساتهم. شهادة عند الإتمام.",
+
     date: "Nov 2026",
+
     dateAr: "نوفمبر 2026",
+
     likes: 86,
   },
+
   {
     id: "photo-1731024677293-2ca0c03bbf13",
+
     tag: "Research",
+
     tagAr: "بحث",
+
     title: "Heritage as an economic asset — field study",
+
     titleAr: "التراث كأصل اقتصادي — دراسة ميدانية",
+
     body: "A six-month study on how heritage sites can anchor local jobs without displacing the people who live beside them.",
+
     bodyAr:
       "دراسة على مدى ستة أشهر حول كيف يمكن للمواقع التراثية أن تُثبّت وظائف محلية دون تهجير من يعيشون بجوارها.",
+
     date: "Sep 2026",
+
     dateAr: "سبتمبر 2026",
+
     likes: 204,
   },
+
   {
     id: "photo-1709234052084-750ab82a0f26",
+
     tag: "Tender",
+
     tagAr: "مناقصة",
+
     title: "Urban mobility diagnostic — expressions of interest",
+
     titleAr: "تشخيص التنقل الحضري — إبداء الاهتمام",
+
     body: "We are teaming for a regional urban mobility diagnostic and seeking transport economists and GIS specialists.",
+
     bodyAr:
       "نتحالف من أجل تشخيص إقليمي للتنقل الحضري ونبحث عن خبراء اقتصاديات النقل ومتخصصي نظم المعلومات الجغرافية.",
+
     date: "Closes 30 Oct",
+
     dateAr: "يُغلق 30 أكتوبر",
+
     likes: 41,
   },
 ]
 
 type Action = {
   key: string
+
   kind: SubmissionKind
+
   action: string
+
   needsEmail: boolean
+
   label: string
+
   labelAr: string
+
   done: string
+
   doneAr: string
 }
 
 export function WhatsNew({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const [i, setI] = useState(0)
+
   const [open, setOpen] = useState<number | null>(null)
+
   const [liked, setLiked] = useState<Record<number, boolean>>({})
+
   const [email, setEmail] = useState("")
+
   const [busy, setBusy] = useState<string | null>(null)
+
   const [toast, setToast] = useState<{
     tone: "ok" | "risk"
+
     text: string
   } | null>(null)
+
   const startX = useRef<number | null>(null)
+
   useEffect(() => {
     if (open !== null) return
+
     const t = setInterval(() => setI((x) => (x + 1) % news.length), 6000)
+
     return () => clearInterval(t)
   }, [open])
+
   const go = (d: number) => setI((x) => (x + d + news.length) % news.length)
+
   const n = open !== null ? news[open] : null
+
   const actions: Action[] = [
     {
       key: "suggest",
+
       kind: "CONTRIBUTION",
+
       action: "suggest",
+
       needsEmail: false,
+
       label: "Suggest",
+
       labelAr: "اقترح",
+
       done: "Your suggestion has been noted",
+
       doneAr: "تم تسجيل اقتراحك",
     },
+
     {
       key: "join",
+
       kind: "CONTRIBUTION",
+
       action: "join",
+
       needsEmail: false,
+
       label: "Join the cause",
+
       labelAr: "انضم إلى القضية",
+
       done: "Welcome — you have joined the cause",
+
       doneAr: "مرحبًا — لقد انضممت إلى القضية",
     },
+
     {
       key: "reserve",
+
       kind: "SEAT_RESERVATION",
+
       action: "reserve",
+
       needsEmail: true,
+
       label: "Reserve a seat",
+
       labelAr: "احجز مقعدًا",
+
       done: "Seat reserved — check your inbox",
+
       doneAr: "تم حجز المقعد — تحقّق من بريدك",
     },
+
     {
       key: "contribute",
+
       kind: "CONTRIBUTION",
+
       action: "contribute",
+
       needsEmail: true,
+
       label: "Request a payment link",
+
       labelAr: "اطلب رابط دفع",
+
       done: "A partner will send you a secure link",
+
       doneAr: "سيرسل لك أحد الشركاء رابطًا آمنًا",
     },
   ]
+
   const submit = async (a: Action) => {
     if (a.needsEmail && !email.trim()) {
       setToast({
         tone: "risk",
+
         text: ar
           ? "يرجى إدخال بريدك الإلكتروني أولًا"
           : "Please add your email first",
       })
+
       return
     }
+
     setBusy(a.key)
+
     setToast(null)
+
     try {
       await api.submit({
         kind: a.kind,
+
         email: email.trim() || undefined,
+
         source: "whatsnew",
+
         message: `What's new · ${n?.title ?? ""}`,
+
         payload: { action: a.action, itemId: n?.id },
       })
+
       setToast({ tone: "ok", text: ar ? a.doneAr : a.done })
+
       setEmail("")
     } catch {
       setToast({
         tone: "risk",
+
         text: ar
           ? "تعذّر الإرسال — حاول لاحقًا"
           : "Could not send — please try again",
@@ -166,6 +276,7 @@ export function WhatsNew({ lang }: { lang: Lang }) {
       setBusy(null)
     }
   }
+
   return (
     <section
       id="new"
@@ -176,7 +287,7 @@ export function WhatsNew({ lang }: { lang: Lang }) {
           <p className="eyebrow text-gold-strong">
             {ar ? "الجديد — ما نقوم به" : "What's new — what we're up to"}
           </p>
-          <h2 className="mt-4 text-[clamp(2rem,4vw,3.4rem)] leading-none font-medium">
+          <h2 className="mt-4 text-h2 font-medium">
             <SplitText
               text={ar ? "الكثير يحدث." : "A whole lot is happening."}
             />
@@ -204,8 +315,11 @@ export function WhatsNew({ lang }: { lang: Lang }) {
         onPointerDown={(e) => (startX.current = e.clientX)}
         onPointerUp={(e) => {
           if (startX.current === null) return
+
           const dx = e.clientX - startX.current
+
           startX.current = null
+
           if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1)
         }}
       >
@@ -218,6 +332,7 @@ export function WhatsNew({ lang }: { lang: Lang }) {
             className="absolute inset-0 text-start transition-[opacity,transform] duration-[1200ms] ease-[cubic-bezier(.2,.8,.2,1)]"
             style={{
               opacity: k === i ? 1 : 0,
+
               transform: k === i ? "scale(1)" : "scale(1.06)",
             }}
           >
@@ -236,7 +351,7 @@ export function WhatsNew({ lang }: { lang: Lang }) {
               <p className="eyebrow text-gold-light">
                 {ar ? s.tagAr : s.tag} · {ar ? s.dateAr : s.date}
               </p>
-              <h3 className="mt-4 max-w-3xl text-[clamp(1.8rem,4vw,3.6rem)] leading-[1.02] font-medium">
+              <h3 className="mt-4 max-w-3xl text-h2 font-medium">
                 {ar ? s.titleAr : s.title}
               </h3>
               <span className="eyebrow mt-6 inline-block border-b border-gold-light pb-1">
@@ -252,6 +367,7 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                 className="block h-full bg-gold-light"
                 style={{
                   width: k === i ? "100%" : k < i ? "100%" : "0%",
+
                   transition:
                     k === i && open === null ? "width 6s linear" : "none",
                 }}
@@ -271,7 +387,7 @@ export function WhatsNew({ lang }: { lang: Lang }) {
         >
           <aside
             onClick={(e) => e.stopPropagation()}
-            className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-ivory animate-[slidein_.5s_cubic-bezier(.2,.8,.2,1)]"
+            className="flex h-full w-full max-w-xl flex-col overflow-y-auto bg-ivory animate-slide-in"
           >
             <div className="relative h-72 shrink-0 bg-navy">
               <img

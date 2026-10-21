@@ -2051,9 +2051,9 @@ export const PAGES_AR: Record<string, PageAr> = {
             href: "mailto:tenders@askterramorph.com",
           },
           {
-            label: "+20 100 000 0000",
+            label: "+20 115 000 0984",
             meta: "السنترال · الأحد–الخميس، 09:00–17:00 بتوقيت شرق أوروبا",
-            href: "tel:+201000000000",
+            href: "tel:+201150000984",
           },
           {
             label: "linkedin.com/company/terramorph",

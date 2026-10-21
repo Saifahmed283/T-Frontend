@@ -1,96 +1,142 @@
 import { useEffect, useState } from "react"
+
 import { Emblem, GoldLine, Reveal, Spotlight } from "@/components/motion/fx"
+
 import { labelPath } from "@/content/pages"
+
 import type { Lang } from "../types"
 
-/* ——— Who we are: logo + 3–5 lines, philosophy, partnerships, people, testimonials, awards ——— */
+// Who we are: logo + 3–5 lines, philosophy, partnerships, people, testimonials, awards
+
 const testimonials = [
   {
     q: "They worked inside our rules from day one. The procurement file was the cleanest we received.",
+
     qAr: "عملوا داخل قواعدنا من اليوم الأول. كان ملف المشتريات الأكثر نظافة ممّا استلمناه.",
+
     who: "Director, governorate planning unit",
+
     whoAr: "مدير، وحدة تخطيط المحافظة",
   },
+
   {
     q: "Small team, serious method. We extended the contract twice.",
+
     qAr: "فريق صغير، منهج جاد. مدّدنا العقد مرتين.",
+
     who: "Programme lead, development partner",
+
     whoAr: "قائد برنامج، شريك تنمية",
   },
+
   {
     q: "Easy to work with, and impossible to rush into a bad decision.",
+
     qAr: "سهل التعامل معهم، ويصعب جرّهم إلى قرار سيئ.",
+
     who: "Founder, social enterprise",
+
     whoAr: "مؤسس، مشروع اجتماعي",
   },
 ]
 
 /* Each pillar links to the page that proves it, so the hover is real navigation. */
+
 const pillars: [string, string, string, string, string][] = [
   [
     "Philosophy",
+
     "الفلسفة",
+
     "Leverage for good: small, well-placed force for large public outcomes.",
+
     "رافعة للخير: قوة صغيرة محكمة لنتائج عامة كبيرة.",
+
     labelPath["Why a small firm"] ?? "/about",
   ],
+
   [
     "Partnerships",
+
     "الشراكات",
+
     "Development partners, academies and primes who team with us on bids.",
+
     "شركاء تنمية وأكاديميات وشركات كبرى تتحالف معنا في المناقصات.",
+
     labelPath["Associates & experts"] ?? "/about",
   ],
+
   [
     "People",
+
     "الأفراد",
+
     "A named founder, a vetted associate bench and 214 experts on roster.",
+
     "مؤسس مسمّى، ومجموعة شركاء معتمدة، و214 خبيرًا في السجل.",
+
     labelPath["Founder & team"] ?? "/about",
   ],
+
   [
     "Clients",
+
     "العملاء",
+
     "Governorates, ministries, funds and enterprises across 11 countries.",
+
     "محافظات ووزارات وصناديق ومؤسسات في 11 دولة.",
+
     labelPath["Clients & references"] ?? "/evidence",
   ],
 ]
 
 const awards = [
   ["ISO 37001", "Anti-bribery management", "إدارة مكافحة الرشوة", "2026"],
+
   ["Devex", "Registered organisation", "منظمة مسجّلة", "2025"],
+
   ["AAST", "Academic training partner", "شريك تدريب أكاديمي", "2025"],
+
   [
     "Africa LED Award",
+
     "Shortlist — local development",
+
     "قائمة مختصرة — التنمية المحلية",
+
     "2024",
   ],
 ]
 
 export function WhoWeAre({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const [t, setT] = useState(0)
+
   useEffect(() => {
     const id = setInterval(
       () => setT((x) => (x + 1) % testimonials.length),
+
       5500,
     )
+
     return () => clearInterval(id)
   }, [])
+
   return (
     <section
       id="about"
       className="mx-auto max-w-[1320px] scroll-mt-40 px-5 py-24 md:px-10"
     >
-      <div className="grid gap-14 lg:grid-cols-[1fr_1.2fr]">
+      <div className="grid gap-14 lg:grid-split-narrow">
         <Reveal>
           <Emblem className="h-20 w-20" />
           <p className="eyebrow mt-8 text-gold-strong">
             {ar ? "مرحبًا! نحن TerraMorph" : "Hello! We are TerraMorph"}
           </p>
-          <h2 className="mt-4 text-[clamp(2.2rem,4.4vw,3.8rem)] leading-[1.02] font-medium">
+          <h2 className="mt-4 text-h2 font-medium">
             {ar
               ? "نحن مستشارون — سهل التعامل معنا جدًا، لكن يصعب خداعنا."
               : "We are consultants — and we are very easy to deal with, but very tough to mess with."}
@@ -133,7 +179,7 @@ export function WhoWeAre({ lang }: { lang: Lang }) {
         </div>
       </div>
       <GoldLine className="mt-16" />
-      <div className="mt-14 grid gap-12 lg:grid-cols-[1.5fr_1fr]">
+      <div className="mt-14 grid gap-12 lg:grid-split-wide">
         <div className="relative min-h-[220px]">
           <p className="eyebrow text-slate">
             {ar ? "آراء العملاء" : "Testimonials"}
@@ -144,11 +190,12 @@ export function WhoWeAre({ lang }: { lang: Lang }) {
               className="absolute inset-x-0 top-10 transition-transform duration-700"
               style={{
                 opacity: k === t ? 1 : 0,
+
                 transform: k === t ? "none" : "translateY(12px)",
               }}
               aria-hidden={k !== t}
             >
-              <p className="font-display text-[clamp(1.6rem,3vw,2.6rem)] leading-snug italic">
+              <p className="font-display text-h3 italic">
                 "{ar ? x.qAr : x.q}"
               </p>
               <footer className="eyebrow mt-6 text-gold-strong">
