@@ -63,7 +63,7 @@ export function Figure({
           <div className="absolute inset-0 grid place-items-center glow-navy">
             <span
               aria-hidden
-              className="absolute inset-0 opacity-[0.12] [background-image:repeating-linear-gradient(135deg,#FBF8F1_0_1px,transparent_1px_16px)]"
+              className="absolute inset-0 opacity-[0.12] bg-fine"
             />
             <span className="relative flex flex-col items-center gap-3">
               <Emblem className="h-12 w-12" tone="ivory" />

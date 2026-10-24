@@ -48,9 +48,7 @@ export default function Intro({
       role="presentation"
       onClick={skip}
       className={`fixed inset-0 z-[100] grid cursor-pointer place-items-center bg-navy-3 text-ivory transition-[clip-path] duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
-        phase === "lift"
-          ? "[clip-path:inset(0_0_100%_0)]"
-          : "[clip-path:inset(0_0_0_0)]"
+        phase === "lift" ? "reveal-closed" : "reveal-open"
       }`}
     >
       <div

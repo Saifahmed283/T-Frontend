@@ -350,9 +350,7 @@ function Header({
       {/* Mobile menu */}
       <div
         className={`fixed inset-0 z-40 bg-navy-3 pt-24 text-ivory transition-[clip-path] duration-700 ease-[cubic-bezier(.76,0,.24,1)] lg:hidden ${
-          open
-            ? "[clip-path:inset(0)]"
-            : "pointer-events-none [clip-path:inset(0_0_100%_0)]"
+          open ? "reveal-open" : "pointer-events-none reveal-closed"
         }`}
       >
         <nav className="flex h-full flex-col overflow-y-auto px-6 pb-10">

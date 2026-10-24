@@ -161,6 +161,13 @@
   top: calc(62svh - 68px);
 }
 
+/* Clip-path reveal states — replaced underscore-laden arbitrary values
+   (`clip-path:inset(0_0_100%_0)` / `clip-path:inset(0_0_0_0)`) that previously
+   lived in class attributes on the Intro and mobile menu. */
+@utility reveal-closed { clip-path: inset(0 0 100% 0); }
+@utility reveal-open { clip-path: inset(0); }
+@utility bg-fine { background-image: repeating-linear-gradient(135deg, #FBF8F1 0 1px, transparent 1px 16px); }
+
 /* Two-column editorial splits and data-row tracks, named by role. */
 @utility grid-split-even { grid-template-columns: 1.15fr 1fr; }
 @utility grid-split-hero { grid-template-columns: 1.1fr .9fr; }
