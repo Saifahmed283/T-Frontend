@@ -15,12 +15,6 @@ import type { Lang } from "../types"
 
 export const programmes = [
   {
-    d: "12",
-
-    m: "Nov",
-
-    mAr: "نوفمبر",
-
     title: "Local economic development — practitioner course",
 
     titleAr: "التنمية الاقتصادية المحلية — دورة تطبيقية",
@@ -37,12 +31,6 @@ export const programmes = [
   },
 
   {
-    d: "03",
-
-    m: "Dec",
-
-    mAr: "ديسمبر",
-
     title: "Train-the-trainer: the TerraMorph method",
 
     titleAr: "تدريب المدربين: منهج TerraMorph",
@@ -59,12 +47,6 @@ export const programmes = [
   },
 
   {
-    d: "14",
-
-    m: "Jan",
-
-    mAr: "يناير",
-
     title: "Tailored diagnostics for public institutions",
 
     titleAr: "تشخيصات مُخصّصة للمؤسسات العامة",
@@ -135,14 +117,6 @@ export function Learning({ lang }: { lang: Lang }) {
               delay={i * 80}
               className="group grid items-center gap-4 border-b border-navy/10 py-6 transition-colors hover:bg-ivory md:grid-programme md:px-4"
             >
-              <div className="flex items-baseline gap-2 md:block">
-                <span className="font-display text-5xl leading-none">
-                  {p.d}
-                </span>
-                <span className="eyebrow text-gold-strong md:mt-1 md:block">
-                  {ar ? p.mAr : p.m}
-                </span>
-              </div>
               <div>
                 <p className="font-display text-2xl font-medium">
                   {ar ? p.titleAr : p.title}
@@ -172,9 +146,7 @@ export function Learning({ lang }: { lang: Lang }) {
                       ? `احجز مقعدًا — ${p.titleAr}`
                       : `Reserve a seat — ${p.title}`,
 
-                    intro: `${p.d} ${ar ? p.mAr : p.m} · ${
-                      ar ? p.fmtAr : p.fmt
-                    } · ${ar ? p.priceAr : p.price}`,
+                    intro: `${ar ? p.fmtAr : p.fmt} · ${ar ? p.priceAr : p.price}`,
 
                     context: {
                       programme: p.title,

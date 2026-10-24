@@ -95,7 +95,7 @@ function Hero({ lang }: { lang: Lang }) {
       to: "/learning",
     },
     {
-      n: 214,
+      n: 6,
       en: "Experts on the vetted roster",
       ar: "خبيرًا في القائمة المعتمدة",
       to: "/join",

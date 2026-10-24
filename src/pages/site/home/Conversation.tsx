@@ -398,11 +398,75 @@ export function Conversation({ lang }: { lang: Lang }) {
                   ["هاتف", "+20 115 000 0984", "tel:+201150000984"],
 
                   [
+                    "استشاري",
+
+                    "advisory@askterramorph.com",
+
+                    "mailto:advisory@askterramorph.com",
+                  ],
+
+                  [
+                    "الشكاوى",
+
+                    "complain@askterramorph.com",
+
+                    "mailto:complain@askterramorph.com",
+                  ],
+
+                  [
+                    "المالية",
+
+                    "finance@askterramorph.com",
+
+                    "mailto:finance@askterramorph.com",
+                  ],
+
+                  [
                     "البريد",
 
                     "hello@askterramorph.com",
 
                     "mailto:hello@askterramorph.com",
+                  ],
+
+                  [
+                    "معلومات",
+
+                    "info@askterramorph.com",
+
+                    "mailto:info@askterramorph.com",
+                  ],
+
+                  [
+                    "استفسارات",
+
+                    "inquiry@askterramorph.com",
+
+                    "mailto:inquiry@askterramorph.com",
+                  ],
+
+                  [
+                    "المسؤول",
+
+                    "mbaraka@askterramorph.com",
+
+                    "mailto:mbaraka@askterramorph.com",
+                  ],
+
+                  [
+                    "التسجيل",
+
+                    "register@askterramorph.com",
+
+                    "mailto:register@askterramorph.com",
+                  ],
+
+                  [
+                    "دعم فني",
+
+                    "tsupport@askterramorph.com",
+
+                    "mailto:tsupport@askterramorph.com",
                   ],
 
                   ["LinkedIn", "/company/terramorph", "https://linkedin.com"],
@@ -418,13 +482,23 @@ export function Conversation({ lang }: { lang: Lang }) {
               : [
                   ["Phone", "+20 115 000 0984", "tel:+201150000984"],
 
-                  [
-                    "Email",
+                  ["Advisory", "advisory@askterramorph.com", "mailto:advisory@askterramorph.com"],
 
-                    "hello@askterramorph.com",
+                  ["Complaints", "complain@askterramorph.com", "mailto:complain@askterramorph.com"],
 
-                    "mailto:hello@askterramorph.com",
-                  ],
+                  ["Finance", "finance@askterramorph.com", "mailto:finance@askterramorph.com"],
+
+                  ["Email", "hello@askterramorph.com", "mailto:hello@askterramorph.com"],
+
+                  ["Info", "info@askterramorph.com", "mailto:info@askterramorph.com"],
+
+                  ["Inquiries", "inquiry@askterramorph.com", "mailto:inquiry@askterramorph.com"],
+
+                  ["Admin", "mbaraka@askterramorph.com", "mailto:mbaraka@askterramorph.com"],
+
+                  ["Registration", "register@askterramorph.com", "mailto:register@askterramorph.com"],
+
+                  ["Technical Support", "tsupport@askterramorph.com", "mailto:tsupport@askterramorph.com"],
 
                   ["LinkedIn", "/company/terramorph", "https://linkedin.com"],
 

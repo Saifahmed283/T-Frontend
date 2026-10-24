@@ -72,9 +72,9 @@ const pillars: [string, string, string, string, string][] = [
 
     "الأفراد",
 
-    "A named founder, a vetted associate bench and 214 experts on roster.",
+    "A named founder and a vetted associate bench.",
 
-    "مؤسس مسمّى، ومجموعة شركاء معتمدة، و214 خبيرًا في السجل.",
+    "مؤسس مسمّى ومجموعة شركاء معتمدة.",
 
     labelPath["Founder & team"] ?? "/about",
   ],
