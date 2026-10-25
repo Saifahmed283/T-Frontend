@@ -1,45 +1,66 @@
 import { useEffect, useState } from "react"
+
 import type { Lang } from "./types"
 
 /* Intro: the emblem is constructed — ring, meridians, columns rise one by one,
    wordmark resolves, then the navy ground lifts away like a lever releasing. */
+
 export default function Intro({
   onDone,
+
   onLift,
+
   lang,
 }: {
   onDone: () => void
+
   onLift: () => void
+
   lang: Lang
 }) {
   const ar = lang === "ar"
+
   const [phase, setPhase] = useState<"draw" | "word" | "lift">("draw")
+
   useEffect(() => {
     const reduced = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches
+
     if (reduced) {
       onLift()
+
       onDone()
+
       return
     }
+
     document.body.style.overflow = "hidden"
+
     const t = [
       setTimeout(() => setPhase("word"), 1500),
+
       setTimeout(() => {
         setPhase("lift")
+
         onLift()
       }, 2900),
+
       setTimeout(onDone, 3900),
     ]
+
     return () => {
       t.forEach(clearTimeout)
+
       document.body.style.overflow = ""
     }
   }, [onDone, onLift])
+
   const skip = () => {
     setPhase("lift")
+
     onLift()
+
     setTimeout(onDone, 900)
   }
 
@@ -166,10 +187,13 @@ export default function Intro({
                  re-rasterise all 12 glyphs every frame for 700ms, right when the
                  page is also trying to reach first paint. Transform + opacity are
                  compositor-only and read the same at this scale. */
+
               className="inline-block transition-[transform,opacity] duration-[700ms] ease-[cubic-bezier(.2,.8,.2,1)]"
               style={{
                 transitionDelay: `${i * 45}ms`,
+
                 transform: phase === "draw" ? "translateY(110%)" : "none",
+
                 opacity: phase === "draw" ? 0 : 1,
               }}
             >
@@ -188,6 +212,7 @@ export default function Intro({
       <button
         onClick={(e) => {
           e.stopPropagation()
+
           skip()
         }}
         className="eyebrow absolute end-6 bottom-6 text-ivory/65 transition hover:text-ivory"

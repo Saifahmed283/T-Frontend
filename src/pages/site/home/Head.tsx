@@ -17,7 +17,7 @@ export function Head({
 }) {
   return (
     <div id={id} className="scroll-mt-40">
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-4">
         <span
           className={`eyebrow ${dark ? "text-gold-light" : "text-gold-strong"}`}
         >
@@ -27,8 +27,8 @@ export function Head({
           {eyebrow}
         </span>
       </div>
-      <GoldLine className="mt-4" />
-      <div className="mt-8 flex flex-wrap items-end justify-between gap-6">
+      <GoldLine className="mt-3 sm:mt-4" />
+      <div className="mt-6 flex flex-wrap items-end justify-between gap-4 sm:mt-8 sm:gap-6">
         <h2 className="max-w-3xl text-h2 font-medium">
           <SplitText text={title} />
         </h2>

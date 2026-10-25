@@ -4,6 +4,14 @@ import { knowledge } from "@/content/data"
 
 import { Contours } from "@/components/motion/fx"
 
+import { EmptyState, LiveStatus } from "@/components/ui"
+
+import {
+  mapInstrument,
+  mapPublication,
+  usePublicCollection,
+} from "@/lib/publicContent"
+
 import { Head } from "./Head"
 
 import {
@@ -69,16 +77,85 @@ const typeAr: Record<string, string> = {
   Toolkit: "حزمة أدوات",
 }
 
+type LibraryItem = {
+  type: string
+
+  typeAr?: string
+
+  lang: string
+
+  title: string
+
+  titleAr?: string
+
+  meta: string
+
+  metaAr?: string
+
+  free?: boolean
+}
+
+/* The Knowledge library combines the CMS `publications` collection with the
+   open-licence `instruments`, and falls back to the static copy for whichever
+   feed is unavailable. */
+
+function useLibrary(): {
+  items: LibraryItem[]
+
+  live: boolean
+} {
+  const publications = usePublicCollection("publications", { pageSize: 50 })
+
+  const instruments = usePublicCollection("instruments", { pageSize: 50 })
+
+  const staticPublications: LibraryItem[] = library.filter(
+    (item) => item.type !== "Toolkit",
+  )
+
+  const staticToolkits: LibraryItem[] = library.filter(
+    (item) => item.type === "Toolkit",
+  )
+
+  /* Publications and instruments can name the same asset (the seeded
+     publications include the two open toolkits), so de-duplicate by title when
+     the live and fallback sources overlap. */
+  const seen = new Set<string>()
+
+  const items = [
+    ...(publications.live
+      ? publications.items.map(mapPublication)
+      : staticPublications),
+
+    ...(instruments.live
+      ? instruments.items.map(mapInstrument)
+      : staticToolkits),
+  ].filter((item) => {
+    if (seen.has(item.title)) return false
+
+    seen.add(item.title)
+
+    return true
+  })
+
+  return {
+    items,
+
+    live: publications.live || instruments.live,
+  }
+}
+
 export function Knowledge({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
 
-  const types = ["All", ...new Set(library.map((k) => k.type))]
+  const { items: merged, live } = useLibrary()
+
+  const types = ["All", ...new Set(merged.map((k) => k.type))]
 
   const [f, setF] = useState("All")
 
   const [lang2, setLang2] = useState<"All" | "AR" | "EN">("All")
 
-  const list = library.filter(
+  const list = merged.filter(
     (k) =>
       (f === "All" || k.type === f) &&
       (lang2 === "All" || k.lang.includes(lang2)),
@@ -90,16 +167,14 @@ export function Knowledge({ lang }: { lang: Lang }) {
 
   const feat = list[hover] ?? list[0]
 
-  const typeLabel = (k: typeof library[number]) =>
+  const typeLabel = (k: LibraryItem) =>
     ar ? (k.typeAr ?? typeAr[k.type] ?? k.type) : k.type
 
-  const titleShown = (k: typeof library[number]) =>
-    ar ? (k.titleAr ?? k.title) : k.title
+  const titleShown = (k: LibraryItem) => (ar ? (k.titleAr ?? k.title) : k.title)
 
-  const metaShown = (k: typeof library[number]) =>
-    ar ? (k.metaAr ?? k.meta) : k.meta
+  const metaShown = (k: LibraryItem) => (ar ? (k.metaAr ?? k.meta) : k.meta)
 
-  const requestFor = (k: typeof library[number]): RequestConfig => ({
+  const requestFor = (k: LibraryItem): RequestConfig => ({
     kind: "PUBLICATION_REQUEST",
 
     title: ar ? `طلب: ${titleShown(k)}` : `Request: ${k.title}`,
@@ -126,6 +201,17 @@ export function Knowledge({ lang }: { lang: Lang }) {
             ar
               ? "المكتبة — النوع واللغة مذكوران على كل عنصر."
               : "The library — type and language named on every item."
+          }
+        />
+        <LiveStatus
+          message={
+            live
+              ? ar
+                ? "تُعرض المكتبة الحية من مساحة المحتوى."
+                : "Showing the live knowledge library from the content workspace."
+              : ar
+                ? "تُعرض المكتبة الثابتة."
+                : "Showing the static knowledge library."
           }
         />
         <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
@@ -168,80 +254,97 @@ export function Knowledge({ lang }: { lang: Lang }) {
             ))}
           </div>
         </div>
-        <div className="mt-8 grid gap-10 lg:grid-split-wide">
-          <ul className="divide-y divide-line border-y border-line">
-            {list.map((k, i) => (
-              <li key={k.title} onMouseEnter={() => setHover(i)}>
+        {merged.length === 0 && live ? (
+          <div className="mt-8">
+            <EmptyState
+              eyebrow={ar ? "لا منشورات" : "No publications"}
+              title={
+                ar ? "المكتبة فارغة حاليًا." : "The library is empty right now."
+              }
+              body={
+                ar
+                  ? "انشر الإصدارات أو الأدوات من لوحة التحكم وستظهر هنا تلقائيًا."
+                  : "Publish publications or toolkits in the dashboard and they appear here automatically."
+              }
+            />
+          </div>
+        ) : (
+          <div className="mt-8 grid gap-10 lg:grid-split-wide">
+            <ul className="divide-y divide-line border-y border-line">
+              {list.map((k, i) => (
+                <li key={k.title} onMouseEnter={() => setHover(i)}>
+                  <button
+                    type="button"
+                    onClick={() => setReq(requestFor(k))}
+                    className={`group grid w-full cursor-pointer items-center gap-3 py-6 text-start transition-colors md:grid-list md:px-4 ${
+                      i === hover ? "bg-ivory-2" : ""
+                    }`}
+                  >
+                    <span className="eyebrow text-gold-strong">
+                      {typeLabel(k)} ·{" "}
+                      <span className="text-navy">{k.lang}</span>
+                      {k.free && (
+                        <span className="ms-2 bg-ok px-1.5 py-0.5 text-ivory">
+                          {ar ? "مجاني" : "Free"}
+                        </span>
+                      )}
+                    </span>
+                    <span
+                      dir={k.lang === "AR" ? "rtl" : undefined}
+                      className="font-display text-2xl font-medium transition-transform duration-500 group-hover:translate-x-2 rtl:group-hover:-translate-x-2"
+                    >
+                      {titleShown(k)}
+                    </span>
+                    <span className="hidden text-end transition-transform group-hover:-translate-y-0.5 md:block">
+                      ↗
+                    </span>
+                  </button>
+                </li>
+              ))}
+              {!list.length && (
+                <li className="py-10 text-center text-slate">
+                  {ar
+                    ? "لا يوجد شيء في هذا المزيج بعد — جرّب لغة أخرى."
+                    : "Nothing in this combination yet — try another language."}
+                </li>
+              )}
+            </ul>
+            {feat && (
+              <aside className="relative hidden overflow-hidden bg-navy p-8 text-ivory lg:flex lg:flex-col">
+                <Contours
+                  className="absolute inset-0 h-full w-full"
+                  opacity={0.1}
+                />
+                <p className="eyebrow relative text-gold-light">
+                  {typeLabel(feat)} · {feat.lang}
+                </p>
+                <p
+                  key={feat.title}
+                  dir={feat.lang === "AR" ? "rtl" : undefined}
+                  className="animate-fade-up relative mt-6 font-display text-3xl leading-snug"
+                >
+                  {titleShown(feat)}
+                </p>
+                <p className="relative mt-auto pt-10 text-sm text-ivory/60">
+                  {metaShown(feat)}
+                </p>
                 <button
                   type="button"
-                  onClick={() => setReq(requestFor(k))}
-                  className={`group grid w-full cursor-pointer items-center gap-3 py-6 text-start transition-colors md:grid-list md:px-4 ${
-                    i === hover ? "bg-ivory-2" : ""
-                  }`}
+                  onClick={() => setReq(requestFor(feat))}
+                  className="eyebrow relative mt-4 self-start cursor-pointer border-b border-gold-light pb-1"
                 >
-                  <span className="eyebrow text-gold-strong">
-                    {typeLabel(k)} · <span className="text-navy">{k.lang}</span>
-                    {k.free && (
-                      <span className="ms-2 bg-ok px-1.5 py-0.5 text-ivory">
-                        {ar ? "مجاني" : "Free"}
-                      </span>
-                    )}
-                  </span>
-                  <span
-                    dir={k.lang === "AR" ? "rtl" : undefined}
-                    className="font-display text-2xl font-medium transition-transform duration-500 group-hover:translate-x-2 rtl:group-hover:-translate-x-2"
-                  >
-                    {titleShown(k)}
-                  </span>
-                  <span className="hidden text-end transition-transform group-hover:-translate-y-0.5 md:block">
-                    ↗
-                  </span>
+                  {ar
+                    ? feat.free
+                      ? "حمّل مجانًا ←"
+                      : "اقرأ ←"
+                    : feat.free
+                      ? "Download free →"
+                      : "Read →"}
                 </button>
-              </li>
-            ))}
-            {!list.length && (
-              <li className="py-10 text-center text-slate">
-                {ar
-                  ? "لا يوجد شيء في هذا المزيج بعد — جرّب لغة أخرى."
-                  : "Nothing in this combination yet — try another language."}
-              </li>
+              </aside>
             )}
-          </ul>
-          {feat && (
-            <aside className="relative hidden overflow-hidden bg-navy p-8 text-ivory lg:flex lg:flex-col">
-              <Contours
-                className="absolute inset-0 h-full w-full"
-                opacity={0.1}
-              />
-              <p className="eyebrow relative text-gold-light">
-                {typeLabel(feat)} · {feat.lang}
-              </p>
-              <p
-                key={feat.title}
-                dir={feat.lang === "AR" ? "rtl" : undefined}
-                className="animate-fade-up relative mt-6 font-display text-3xl leading-snug"
-              >
-                {titleShown(feat)}
-              </p>
-              <p className="relative mt-auto pt-10 text-sm text-ivory/60">
-                {metaShown(feat)}
-              </p>
-              <button
-                type="button"
-                onClick={() => setReq(requestFor(feat))}
-                className="eyebrow relative mt-4 self-start cursor-pointer border-b border-gold-light pb-1"
-              >
-                {ar
-                  ? feat.free
-                    ? "حمّل مجانًا ←"
-                    : "اقرأ ←"
-                  : feat.free
-                    ? "Download free →"
-                    : "Read →"}
-              </button>
-            </aside>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       <RequestDialog request={req} onClose={() => setReq(null)} />
     </section>

@@ -1,47 +1,112 @@
 import { useEffect, useRef, useState } from "react"
+
 import { audiences } from "@/content/data"
+
 import { Contours, Magnetic, SplitText } from "@/components/motion/fx"
+
+import { mapAudience, usePublicCollection } from "@/lib/publicContent"
+
 import type { Lang } from "../types"
+
 import { Globe } from "./Globe"
+
 import { SectionHead } from "./SectionHead"
+
+type AudienceView = {
+  slug: string
+
+  label: string
+
+  ar: string
+
+  line: string
+
+  lineAr: string
+
+  action: string
+
+  actionAr: string
+
+  q: string[]
+
+  qAr: string[]
+}
 
 function Audiences({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+
   const [active, setActive] = useState(0)
+
   const [auto, setAuto] = useState(true)
+
+  /* CMS first: the seeded `audiences` collection replaces the static orbit once
+     the public API answers. If it is unreachable, the static seven keep
+     rendering exactly as before. */
+
+  const cms = usePublicCollection("audiences", { pageSize: 50 })
+
+  const cmsItems = cms.live
+    ? cms.items
+
+        .map(mapAudience)
+
+        .sort((a, b) => a.order - b.order)
+    : []
+
+  const items: AudienceView[] = cmsItems.length ? cmsItems : audiences
+
   /* Only advance the auto-rotate while the section is actually on screen.
      Left running it re-rendered the orbit, the globe and the whole detail
      panel every 4.2s even when the section was far below the fold. */
+
   const root = useRef<HTMLElement>(null)
+
   const [visible, setVisible] = useState(false)
+
   useEffect(() => {
     const el = root.current
+
     if (!el || typeof IntersectionObserver === "undefined") {
       setVisible(true)
+
       return
     }
+
     const io = new IntersectionObserver(
       (entries) => setVisible(entries[0]?.isIntersecting ?? false),
+
       { threshold: 0.05 },
     )
+
     io.observe(el)
+
     return () => io.disconnect()
   }, [])
+
+  const n = items.length
+
   useEffect(() => {
-    if (!auto || !visible) return
-    const id = setInterval(
-      () => setActive((x) => (x + 1) % audiences.length),
-      4200,
-    )
+    if (!auto || !visible || n === 0) return
+
+    const id = setInterval(() => setActive((x) => (x + 1) % n), 4200)
+
     return () => clearInterval(id)
-  }, [auto, visible])
+  }, [auto, visible, n])
+
+  useEffect(() => {
+    if (active >= n) setActive(0)
+  }, [active, n])
+
   const pick = (i: number) => {
     setAuto(false)
+
     setActive(i)
   }
-  const a = audiences[active]
-  const n = audiences.length
+
+  const a = items[active] ?? items[0]
+
   const angle = (i: number) => (i / n) * 360 - 90
+
   return (
     <section ref={root} className="relative overflow-hidden">
       <Contours
@@ -88,13 +153,17 @@ function Audiences({ lang }: { lang: Lang }) {
                 className="absolute inset-0 h-full w-full overflow-visible"
                 aria-hidden
               >
-                {audiences.map((_, i) => {
+                {items.map((_, i) => {
                   const r = (angle(i) * Math.PI) / 180
+
                   const on = i === active
+
                   const pt = (radius: number) =>
                     Math.round((50 + Math.cos(r) * radius) * 100) / 100
+
                   const ptY = (radius: number) =>
                     Math.round((50 + Math.sin(r) * radius) * 100) / 100
+
                   return (
                     <line
                       key={i}
@@ -124,11 +193,15 @@ function Audiences({ lang }: { lang: Lang }) {
                   }}
                 />
               </svg>
-              {audiences.map((x, i) => {
+              {items.map((x, i) => {
                 const r = (angle(i) * Math.PI) / 180
+
                 const on = i === active
+
                 const left = Math.round((50 + Math.cos(r) * 44) * 100) / 100
+
                 const top = Math.round((50 + Math.sin(r) * 44) * 100) / 100
+
                 return (
                   <div
                     key={x.slug}
@@ -173,7 +246,7 @@ function Audiences({ lang }: { lang: Lang }) {
 
           {/* Mobile chips */}
           <div className="no-scrollbar -mx-5 flex gap-2 overflow-x-auto px-5 md:hidden">
-            {audiences.map((x, i) => (
+            {items.map((x, i) => (
               <button
                 key={x.slug}
                 onClick={() => pick(i)}

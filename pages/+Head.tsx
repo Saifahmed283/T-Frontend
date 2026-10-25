@@ -64,6 +64,10 @@ const SECTIONS: Record<string, {
     title: "Dashboard | TerraMorph",
     description: "The TerraMorph client portal and content workspace.",
   },
+  "/reset-password": {
+    title: "Reset password | TerraMorph",
+    description: "Choose a new password for your TerraMorph account.",
+  },
 }
 
 type Resolved = {
@@ -83,7 +87,8 @@ function stripBrand(title: string): string {
 
 function resolve(pathname: string): Resolved {
   const path = pathname.replace(/\/+$/, "") || "/"
-  if (path === "/dashboard") return { ...SECTIONS["/dashboard"], noindex: true }
+  if (path === "/dashboard" || path === "/reset-password")
+    return { ...SECTIONS[path], noindex: true }
 
   const section = SECTIONS[path]
   if (section)

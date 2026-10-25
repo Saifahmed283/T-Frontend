@@ -14,8 +14,6 @@ import { ledger } from "./Evidence"
 
 import { library } from "./Knowledge"
 
-import { programmes } from "./Learning"
-
 import type { Lang } from "../types"
 
 const typeAr: Record<string, string> = {
@@ -83,14 +81,6 @@ export function SearchOverlay({
         title: ar ? (k.titleAr ?? k.title) : k.title,
 
         href: pathForSection("knowledge"),
-      })),
-
-      ...programmes.map((p) => ({
-        type: ar ? "دورة" : "Course",
-
-        title: ar ? p.titleAr : p.title,
-
-        href: pathForSection("learning"),
       })),
 
       ...PAGES.map((p) => ({

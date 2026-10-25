@@ -1,0 +1,38 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: frontend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      # Prerender must not depend on a live API in CI; an unreachable address
+      # makes the slug fetch fall back immediately to the static route list.
+      PUBLIC_API_URL: http://127.0.0.1:9
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.34.3
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # TypeScript + Vitest (api client, content editor, workspace auth gate,
+      # public content hooks).
+      - run: pnpm check
+
+      # Verifies Vike can prerender every route without a running backend.
+      - run: pnpm build

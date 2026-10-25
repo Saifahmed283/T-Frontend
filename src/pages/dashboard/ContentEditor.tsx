@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
+
 import {
   ArrowLeft,
   Check,
@@ -9,6 +10,7 @@ import {
   Smartphone,
   Trash2,
 } from "lucide-react"
+
 import {
   api,
   approverTargets,
@@ -16,7 +18,9 @@ import {
   type ContentItemDetail,
   type ContentStatus,
 } from "@/lib/api"
+
 import type { Collection, FieldDefinition } from "./content-model"
+
 import {
   Badge,
   Button,
@@ -30,31 +34,42 @@ import {
 
 type Localized = {
   en: string
+
   ar: string
 }
 
 const statusTone: Record<ContentStatus, "neutral" | "warning" | "success" | "brand"> =
   {
     DRAFT: "neutral",
+
     REVIEW: "warning",
+
     APPROVED: "brand",
+
     SCHEDULED: "brand",
+
     PUBLISHED: "success",
+
     UNPUBLISHED: "warning",
+
     ARCHIVED: "neutral",
   }
 
 function emptyData(fields: FieldDefinition[]): Record<string, unknown> {
   const out: Record<string, unknown> = {}
+
   for (const f of fields) out[f.key] = f.localized ? { en: "", ar: "" } : ""
+
   return out
 }
 
 function asLocalized(v: unknown): Localized {
   if (v && typeof v === "object") {
     const o = v as Record<string, unknown>
+
     return { en: String(o.en ?? ""), ar: String(o.ar ?? "") }
   }
+
   return { en: v == null ? "" : String(v), ar: "" }
 }
 
@@ -64,62 +79,98 @@ function asSeo(v: unknown): Record<string, unknown> {
 
 export function ContentEditor({
   collection,
+
   itemId,
+
   isApprover,
+
   onClose,
+
   onSaved,
 }: {
   collection: Collection
+
   itemId?: string
+
   isApprover: boolean
+
   onClose: () => void
+
   onSaved: () => void
 }) {
   const isEdit = Boolean(itemId)
 
   const [detail, setDetail] = useState<ContentItemDetail | null>(null)
+
   const [data, setData] = useState<Record<string, unknown>>(() =>
     emptyData(collection.fields),
   )
+
   const [seo, setSeo] = useState<Record<string, unknown>>({})
+
   const [slug, setSlug] = useState("")
+
   const [sourceReference, setSourceReference] = useState("")
+
   const [scheduledPublishAt, setScheduledPublishAt] = useState("")
+
   const [scheduledUnpublishAt, setScheduledUnpublishAt] = useState("")
+
   const [language, setLanguage] = useState<"en" | "ar">("en")
+
   const [tab, setTab] = useState<"Content" | "SEO" | "Publishing">("Content")
+
   const [preview, setPreview] = useState(false)
+
   const [device, setDevice] = useState<"desktop" | "mobile">("desktop")
+
   const [loading, setLoading] = useState(isEdit)
+
   const [busy, setBusy] = useState(false)
+
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!itemId) {
       setData(emptyData(collection.fields))
+
       setLoading(false)
+
       return
     }
+
     let active = true
+
     setLoading(true)
+
     const run = async () => {
       try {
         const item: ContentItemDetail | null = await api.contentGet(
           collection.id,
+
           itemId,
         )
+
         if (!active) return
+
         setDetail(item)
+
         setData(
           item
             ? { ...emptyData(collection.fields), ...item.data }
             : emptyData(collection.fields),
         )
+
         setSeo(asSeo(item?.seo))
+
         setSlug(item?.slug ?? "")
+
         setSourceReference(item?.sourceReference ?? "")
+
         setScheduledPublishAt(item?.scheduledPublishAt?.slice(0, 16) ?? "")
+
         setScheduledUnpublishAt(item?.scheduledUnpublishAt?.slice(0, 16) ?? "")
+
         setError(item ? null : "Record not found")
       } catch {
         if (active) setError("Failed to load record")
@@ -127,7 +178,9 @@ export function ContentEditor({
         if (active) setLoading(false)
       }
     }
+
     void run()
+
     return () => {
       active = false
     }
@@ -136,12 +189,14 @@ export function ContentEditor({
   const localizedRequired = collection.fields.filter(
     (f) => f.localized && f.required,
   )
+
   const languageComplete = (locale: "en" | "ar") =>
     localizedRequired.length > 0 &&
     localizedRequired.every((f) => asLocalized(data[f.key])[locale].trim())
 
   const titleValue = useMemo(() => {
     const t = asLocalized(data.title)
+
     return (
       (language === "ar" ? t.ar : t.en) ||
       (language === "ar" ? "عنوان المحتوى" : "Untitled content")
@@ -150,24 +205,33 @@ export function ContentEditor({
 
   const setField = (key: string, value: unknown) =>
     setData((d) => ({ ...d, [key]: value }))
+
   const setLocalized = (key: string, lang: "en" | "ar", value: string) =>
     setData((d) => ({ ...d, [key]: { ...asLocalized(d[key]), [lang]: value } }))
+
   const setSeoField = (key: string, value: unknown) =>
     setSeo((s) => ({ ...s, [key]: value }))
 
   const save = async () => {
     setBusy(true)
+
     setError(null)
+
     try {
       if (isEdit && itemId) {
         await api.contentUpdate(collection.id, itemId, {
           data,
+
           seo,
+
           slug: slug || undefined,
+
           sourceReference: sourceReference || null,
+
           scheduledPublishAt: scheduledPublishAt
             ? new Date(scheduledPublishAt).toISOString()
             : null,
+
           scheduledUnpublishAt: scheduledUnpublishAt
             ? new Date(scheduledUnpublishAt).toISOString()
             : null,
@@ -175,17 +239,23 @@ export function ContentEditor({
       } else {
         await api.contentCreate(collection.id, {
           data,
+
           seo,
+
           slug: slug || undefined,
+
           sourceReference: sourceReference || null,
+
           scheduledPublishAt: scheduledPublishAt
             ? new Date(scheduledPublishAt).toISOString()
             : null,
+
           scheduledUnpublishAt: scheduledUnpublishAt
             ? new Date(scheduledUnpublishAt).toISOString()
             : null,
         })
       }
+
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed")
@@ -196,10 +266,14 @@ export function ContentEditor({
 
   const transition = async (to: ContentStatus) => {
     if (!itemId) return
+
     setBusy(true)
+
     setError(null)
+
     try {
       await api.contentTransition(collection.id, itemId, to)
+
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Transition failed")
@@ -210,10 +284,14 @@ export function ContentEditor({
 
   const remove = async () => {
     if (!itemId) return
+
     setBusy(true)
+
     setError(null)
+
     try {
       await api.contentDelete(collection.id, itemId)
+
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Delete failed")
@@ -332,12 +410,16 @@ export function ContentEditor({
             <Heading level={1}>{titleValue}</Heading>
             <div className="preview-rule" />
             {collection.fields
+
               .filter((f) => f.key !== "title")
+
               .map((f) => {
                 const value = f.localized
                   ? asLocalized(data[f.key])[language]
                   : String(data[f.key] ?? "")
+
                 if (!value) return null
+
                 return (
                   <section key={f.key}>
                     <Heading level={3}>{f.label}</Heading>
@@ -357,6 +439,7 @@ export function ContentEditor({
             {collection.fields.map((f) => {
               if (f.localized) {
                 const val = asLocalized(data[f.key])[language]
+
                 return (
                   <Field
                     key={f.key}
@@ -394,7 +477,9 @@ export function ContentEditor({
                   </Field>
                 )
               }
+
               const value = data[f.key] == null ? "" : String(data[f.key])
+
               return (
                 <Field
                   key={f.key}
@@ -446,6 +531,7 @@ export function ContentEditor({
                 onChange={(e) =>
                   setSeoField("seoTitle", {
                     ...asLocalized(seo.seoTitle),
+
                     [language]: e.target.value,
                   })
                 }
@@ -459,6 +545,7 @@ export function ContentEditor({
                 onChange={(e) =>
                   setSeoField("seoDescription", {
                     ...asLocalized(seo.seoDescription),
+
                     [language]: e.target.value,
                   })
                 }
@@ -497,6 +584,7 @@ export function ContentEditor({
               <div className="publishing-actions">
                 {transitions.map((to) => {
                   const needsApprover = approverTargets.includes(to)
+
                   return (
                     <Button
                       key={to}

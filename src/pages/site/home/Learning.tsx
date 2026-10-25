@@ -2,6 +2,10 @@ import { useState } from "react"
 
 import { Reveal } from "@/components/motion/fx"
 
+import { EmptyState, LiveStatus } from "@/components/ui"
+
+import { mapCourse, usePublicCollection } from "@/lib/publicContent"
+
 import { Head } from "./Head"
 
 import {
@@ -11,89 +15,93 @@ import {
 
 import type { Lang } from "../types"
 
-// Learning: price-bearing, bookable programmes
+export type Course = {
+  id: string
+  title: string
+  titleAr: string
+  fmt: string
+  fmtAr: string
+  price: string
+  priceAr: string
+  seats: number
+  startDate?: string | null
+  booking?: string | null
+}
 
-export const programmes = [
-  {
-    title: "Local economic development — practitioner course",
-
-    titleAr: "التنمية الاقتصادية المحلية — دورة تطبيقية",
-
-    fmt: "In person · Cairo · 3 days",
-
-    fmtAr: "حضوري · القاهرة · 3 أيام",
-
-    price: "EGP 9,500",
-
-    priceAr: "9,500 ج.م",
-
-    seats: 6,
-  },
-
-  {
-    title: "Train-the-trainer: the TerraMorph method",
-
-    titleAr: "تدريب المدربين: منهج TerraMorph",
-
-    fmt: "Hybrid · 5 days · certification",
-
-    fmtAr: "مختلط · 5 أيام · شهادة",
-
-    price: "EGP 18,000",
-
-    priceAr: "18,000 ج.م",
-
-    seats: 3,
-  },
-
-  {
-    title: "Tailored diagnostics for public institutions",
-
-    titleAr: "تشخيصات مُخصّصة للمؤسسات العامة",
-
-    fmt: "Online · 4 × 2 h",
-
-    fmtAr: "أونلاين · 4 × ساعتان",
-
-    price: "EGP 4,200",
-
-    priceAr: "4,200 ج.م",
-
-    seats: 14,
-  },
-
-  {
-    d: "—",
-
-    m: "Open",
-
-    mAr: "مفتوح",
-
-    title: "Welcome method — onboarding for new teams",
-
-    titleAr: "منهج الترحيب — تهيئة للفرق الجديدة",
-
-    fmt: "Self-paced · AR/EN",
-
-    fmtAr: "وتيرتك الخاصة · عربي/إنجليزي",
-
-    price: "Free for NGOs",
-
-    priceAr: "مجاني للمنظمات غير الحكومية",
-
-    seats: 0,
-  },
-]
-
-export function Learning({ lang }: { lang: Lang }) {
+function Learning({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
 
   const [req, setReq] = useState<RequestConfig | null>(null)
 
+  const { items, live, loading } = usePublicCollection("courses", {
+    pageSize: 50,
+  })
+
+  const courses: Course[] = items.map(mapCourse)
+
+  const courseRows = courses.map((p, i) => (
+    <Reveal
+      as="li"
+      key={p.id}
+      delay={i * 80}
+      className="group flex flex-col gap-4 border border-line bg-ivory rounded-[7px] p-5 transition hover:bg-navy/5 hover:border-gold/30 sm:p-6 md:p-8"
+    >
+      <div>
+        <p className="font-display text-xl font-medium text-navy sm:text-2xl">
+          {ar ? p.titleAr : p.title}
+        </p>
+        <p className="mt-1 text-xs text-slate sm:text-sm">
+          {ar ? p.fmtAr : p.fmt}
+        </p>
+      </div>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 pt-6 sm:gap-4 sm:pt-8">
+        <p className="text-base sm:text-lg">{ar ? p.priceAr : p.price}</p>
+        {p.seats > 0 && (
+          <p
+            className={`text-xs ${
+              p.seats < 5 ? "text-warn-strong" : "text-slate"
+            }`}
+          >
+            {ar ? `متبقٍ ${p.seats} مقعد` : `${p.seats} seats left`}
+          </p>
+        )}
+      </div>
+      <button
+        onClick={() =>
+          setReq({
+            kind: "SEAT_RESERVATION",
+            title: ar
+              ? `احجز مقعدًا — ${p.titleAr}`
+              : `Reserve a seat — ${p.title}`,
+            intro: `${ar ? p.fmtAr : p.fmt} · ${ar ? p.priceAr : p.price}`,
+            context: {
+              programme: p.title,
+              date: p.startDate || "",
+              format: p.fmt,
+              price: p.price,
+              seatsLeft: p.seats,
+            },
+            submitLabel: ar ? "أكّد الحجز" : "Confirm reservation",
+          })
+        }
+        className="cursor-pointer justify-self-start border border-navy px-4 py-2.5 text-xs tracking-cta uppercase transition min-h-[44px] md:justify-self-end group-hover:bg-navy group-hover:text-ivory rtl:normal-case rtl:tracking-normal sm:px-5 sm:py-3"
+      >
+        {p.seats
+          ? ar
+            ? "احجز مقعدًا"
+            : "Reserve seat"
+          : ar
+            ? "ابدأ الآن"
+            : "Start now"}
+      </button>
+    </Reveal>
+  ))
+
   return (
-    <section id="learning" className="scroll-mt-40 bg-ivory-2">
-      <div className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">
+    <section id="learning" className="relative mx-auto container section-pad">
+      <div className="mx-auto max-w-[1320px] px-4 py-12 sm:px-5 sm:py-16 md:px-10 md:py-24">
         <Head
+          id="learning"
           n="05"
           eyebrow={ar ? "تعلّم TerraMorph" : "TerraMorph Learning"}
           title={
@@ -109,75 +117,64 @@ export function Learning({ lang }: { lang: Lang }) {
             </p>
           }
         />
-        <ul className="mt-12 border-t border-navy/20">
-          {programmes.map((p, i) => (
-            <Reveal
-              as="li"
-              key={p.title}
-              delay={i * 80}
-              className="group grid items-center gap-4 border-b border-navy/10 py-6 transition-colors hover:bg-ivory md:grid-programme md:px-4"
-            >
-              <div>
-                <p className="font-display text-2xl font-medium">
-                  {ar ? p.titleAr : p.title}
-                </p>
-                <p className="mt-1 text-sm text-slate">
-                  {ar ? p.fmtAr : p.fmt}
-                </p>
-              </div>
-              <div>
-                <p className="text-lg">{ar ? p.priceAr : p.price}</p>
-                {p.seats > 0 && (
-                  <p
-                    className={`text-xs ${
-                      p.seats < 5 ? "text-warn-strong" : "text-slate"
-                    }`}
-                  >
-                    {ar ? `متبقٍ ${p.seats} مقعد` : `${p.seats} seats left`}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() =>
-                  setReq({
-                    kind: "SEAT_RESERVATION",
-
-                    title: ar
-                      ? `احجز مقعدًا — ${p.titleAr}`
-                      : `Reserve a seat — ${p.title}`,
-
-                    intro: `${ar ? p.fmtAr : p.fmt} · ${ar ? p.priceAr : p.price}`,
-
-                    context: {
-                      programme: p.title,
-
-                      date: `${p.d} ${p.m}`,
-
-                      format: p.fmt,
-
-                      price: p.price,
-
-                      seatsLeft: p.seats,
-                    },
-
-                    submitLabel: ar ? "أكّد الحجز" : "Confirm reservation",
-                  })
+        <LiveStatus
+          message={
+            loading
+              ? ar
+                ? "جارٍ تحميل الدورات."
+                : "Loading courses."
+              : live
+                ? ar
+                  ? "تُعرض الدورات الحية من مساحة المحتوى."
+                  : "Showing live courses from the content workspace."
+                : ar
+                  ? "تعذّر تحميل الدورات."
+                  : "The course catalogue could not be loaded."
+          }
+        />
+        <ul className="mt-6 grid gap-4 sm:mt-8 sm:gap-6 md:mt-12 md:grid-cols-3 md:gap-8">
+          {loading &&
+            [0, 1, 2].map((i) => (
+              <li
+                key={i}
+                aria-hidden
+                className="min-h-[220px] animate-pulse rounded-[7px] border border-line bg-ivory-2"
+              />
+            ))}
+          {!loading && courses.length === 0 && (
+            <li className="md:col-span-3">
+              <EmptyState
+                eyebrow={ar ? "لا دورات منشورة" : "No courses published"}
+                title={
+                  ar
+                    ? "لا يوجد برنامج في التقويم بعد."
+                    : "Nothing on the calendar yet."
                 }
-                className="cursor-pointer justify-self-start border border-navy px-5 py-3 text-xs tracking-cta uppercase transition md:justify-self-end group-hover:bg-navy group-hover:text-ivory rtl:normal-case rtl:tracking-normal"
-              >
-                {p.seats
-                  ? ar
-                    ? "احجز مقعدًا"
-                    : "Reserve seat"
-                  : ar
-                    ? "ابدأ الآن"
-                    : "Start now"}
-              </button>
-            </Reveal>
-          ))}
+                body={
+                  ar
+                    ? "أضف الدورات في لوحة التحكم وستظهر هنا تلقائيًا مع السعر والموعد."
+                    : "Add courses in the dashboard and they appear here automatically, with their price and date."
+                }
+                action={
+                  live
+                    ? {
+                        label: ar ? "اطّلع على المنهج" : "Explore the method",
+                        href: "/method",
+                      }
+                    : {
+                        label: ar ? "تواصل معنا" : "Talk to us",
+                        href: "/contact",
+                      }
+                }
+              />
+            </li>
+          )}
+          {courses.length > 0 && courseRows}
         </ul>
       </div>
       <RequestDialog request={req} onClose={() => setReq(null)} />
     </section>
   )
 }
+
+export { Learning }

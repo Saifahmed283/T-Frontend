@@ -8,12 +8,17 @@ import {
   SplitText,
   Spotlight,
 } from "@/components/motion/fx"
-import { Badge, Figure } from "@/components/ui"
+import { Badge, Figure, LiveStatus } from "@/components/ui"
+import {
+  mapAudience,
+  usePublicItem,
+  type LiveAudience,
+} from "@/lib/publicContent"
 import type { Lang } from "../types"
 import { SectionHead } from "./SectionHead"
 import { RequestDialog, type RequestConfig } from "./RequestDialog"
 
-const container = "mx-auto max-w-[1320px] px-5 md:px-10"
+const container = "mx-auto max-w-[1320px] px-4 sm:px-5 md:px-10"
 
 function requestConfig(hub: HubContent, lang: Lang): RequestConfig {
   return {
@@ -25,22 +30,65 @@ function requestConfig(hub: HubContent, lang: Lang): RequestConfig {
   }
 }
 
+/* The CMS owns the audience headline, intro, kicker and CTA; the hub's offers,
+   stats, proof and FAQ stay in the static module. Only the live fields are
+   overlaid, so a half-seeded collection never blanks the page. */
+function withLiveAudience(
+  hub: HubContent,
+  live: LiveAudience,
+  ar: boolean,
+): HubContent {
+  return {
+    ...hub,
+
+    label: (ar ? live.ar : live.label) || hub.label,
+
+    kicker: (ar ? live.kickerAr : live.kicker) || hub.kicker,
+
+    line: live.line || hub.line,
+
+    ar: live.lineAr || hub.ar,
+
+    intro: (ar ? live.introAr : live.intro) || hub.intro,
+
+    cta: {
+      ...hub.cta,
+
+      label: (ar ? live.actionAr : live.action) || hub.cta.label,
+    },
+  }
+}
+
 function Hub({
   slug,
   lang,
 }: {
   slug: string
+
   lang: Lang
 }) {
-  const hub = localizedHub(hubBySlug[slug] ?? hubs[0], lang)
   const ar = lang === "ar"
   const [req, setReq] = useState<RequestConfig | null>(null)
+  const { item } = usePublicItem("audiences", slug)
+  const baseHub = localizedHub(hubBySlug[slug] ?? hubs[0], lang)
+  const hub = item ? withLiveAudience(baseHub, mapAudience(item), ar) : baseHub
 
   const primary =
     "inline-flex items-center gap-3 bg-navy px-7 py-4 text-label font-medium tracking-cta text-ivory uppercase transition-colors duration-300 hover:bg-navy-2 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold rtl:normal-case rtl:tracking-normal"
 
   return (
     <>
+      <LiveStatus
+        message={
+          item
+            ? ar
+              ? "تم تحديث محتوى هذه الفئة من مساحة المحتوى."
+              : "This audience page is updated from the content workspace."
+            : ar
+              ? "يُعرض محتوى الفئة الثابت."
+              : "Showing the static audience copy."
+        }
+      />
       {/* Hero — every audience opens on its own headline, intro and figure */}
       <section className="relative overflow-hidden border-b border-line">
         <Contours
@@ -48,28 +96,28 @@ function Hub({
           stroke="#132B45"
           opacity={0.06}
         />
-        <div className={`relative ${container} py-20`}>
+        <div className={`relative ${container} py-12 sm:py-16 md:py-20`}>
           <p className="eyebrow text-slate">
             <a href="/" className="hover:text-navy">
               {ar ? "الرئيسية" : "Home"}
             </a>{" "}
             › <span className="text-gold-strong">{hub.label}</span>
           </p>
-          <div className="mt-10 grid gap-12 lg:grid-split-hero lg:items-end">
+          <div className="mt-6 grid gap-8 lg:grid-split-hero lg:items-end lg:gap-12">
             <div>
               <p className="eyebrow text-gold-strong">{hub.kicker}</p>
-              <h1 className="mt-5 max-w-4xl text-h1 font-medium">
+              <h1 className="mt-3 max-w-4xl text-h1 font-medium sm:mt-5">
                 <SplitText text={lang === "ar" ? hub.ar : hub.line} immediate />
               </h1>
-              <p className="mt-7 max-w-2xl text-lg leading-relaxed text-slate">
+              <p className="mt-4 max-w-2xl text-base leading-relaxed text-slate sm:mt-6 sm:text-lg">
                 {hub.intro}
               </p>
-              <div className="mt-10 flex flex-wrap items-center gap-6">
+              <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-6">
                 {hub.cta.kind ? (
                   <button
                     type="button"
                     onClick={() => setReq(requestConfig(hub, lang))}
-                    className={`cursor-pointer ${primary}`}
+                    className={`cursor-pointer ${primary.replace("px-7 py-4", "px-5 py-3 sm:px-7 sm:py-4")} min-h-[44px]`}
                   >
                     {hub.cta.label} <span aria-hidden>↓</span>
                   </button>
@@ -77,7 +125,7 @@ function Hub({
                   <Reveal>
                     <Magnetic
                       href={hub.cta.href ?? "/"}
-                      className={`mt-0 ${primary}`}
+                      className={`mt-0 ${primary.replace("px-7 py-4", "px-5 py-3 sm:px-7 sm:py-4")} min-h-[44px]`}
                     >
                       {hub.cta.label} <span aria-hidden>→</span>
                     </Magnetic>

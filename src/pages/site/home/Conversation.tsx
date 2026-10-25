@@ -267,7 +267,7 @@ export function Conversation({ lang }: { lang: Lang }) {
       className="relative scroll-mt-40 overflow-hidden bg-navy-3 text-ivory"
     >
       <Contours className="absolute inset-0 h-full w-full" opacity={0.1} />
-      <div className="relative mx-auto grid max-w-[1320px] gap-14 px-5 py-24 md:px-10 lg:grid-split-wide">
+      <div className="relative mx-auto grid max-w-[1320px] gap-8 px-4 py-12 sm:gap-10 sm:px-5 sm:py-16 md:px-10 md:py-24 lg:grid-split-wide lg:gap-14">
         <div>
           <p className="eyebrow text-gold-light">
             {ar ? "08 · ابدأ محادثة" : "08 · Start a conversation"}
@@ -300,7 +300,7 @@ export function Conversation({ lang }: { lang: Lang }) {
           ) : (
             <form onSubmit={submit}>
               {ar ? (
-                <p className="mt-8 font-display text-h2 font-medium">
+                <p className="mt-6 font-display text-h2 font-medium sm:mt-8">
                   مرحبًا! أنا{" "}
                   <Pick value={role} options={rolesShown} onChange={pickRole} />
                   ، وأود أن{" "}
@@ -313,7 +313,7 @@ export function Conversation({ lang }: { lang: Lang }) {
                   <Pick value={fw} options={forwardShown} onChange={setFw} />.
                 </p>
               ) : (
-                <p className="mt-8 font-display text-h2 font-medium">
+                <p className="mt-6 font-display text-h2 font-medium sm:mt-8">
                   Hello! I am a{" "}
                   <Pick value={role} options={rolesShown} onChange={pickRole} />
                   , and I would like to{" "}
@@ -326,13 +326,13 @@ export function Conversation({ lang }: { lang: Lang }) {
                   <Pick value={fw} options={forwardShown} onChange={setFw} />.
                 </p>
               )}
-              <div className="mt-10">
+              <div className="mt-6 sm:mt-10">
                 <p className="eyebrow text-ivory/65">
                   {ar
                     ? "راسلني أيضًا عبر — اختر ما تقرؤه فقط"
                     : "Also write to me on — pick only what you'd read"}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                   {listsShown.map((l) => {
                     const on = sel.includes(l)
 
@@ -344,7 +344,7 @@ export function Conversation({ lang }: { lang: Lang }) {
                         onClick={() =>
                           setSel(on ? sel.filter((x) => x !== l) : [...sel, l])
                         }
-                        className={`border px-4 py-2 text-sm transition ${
+                        className={`border px-3 py-1.5 text-xs transition min-h-[40px] sm:px-4 sm:py-2 sm:text-sm ${
                           on
                             ? "border-gold-light bg-gold-light text-navy"
                             : "border-ivory/20 text-ivory/75 hover:border-ivory/60"
@@ -357,19 +357,19 @@ export function Conversation({ lang }: { lang: Lang }) {
                   })}
                 </div>
               </div>
-              <div className="mt-10 flex flex-wrap items-center gap-4 border-b border-ivory/30 focus-within:border-gold-light">
+              <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-ivory/30 focus-within:border-gold-light sm:mt-10 sm:gap-4">
                 <input
                   required
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@organisation.org"
-                  className="min-w-0 flex-1 bg-transparent py-4 text-lg placeholder:text-ivory/30 focus:outline-none"
+                  className="min-w-0 flex-1 bg-transparent py-3 text-base placeholder:text-ivory/30 focus:outline-none sm:py-4 sm:text-lg"
                 />
                 <button
                   type="submit"
                   disabled={sending}
-                  className="cursor-pointer eyebrow py-4 text-gold-light transition hover:text-ivory disabled:opacity-60"
+                  className="cursor-pointer eyebrow py-3 text-gold-light transition hover:text-ivory disabled:opacity-60 min-h-[44px] sm:py-4"
                 >
                   {sending
                     ? ar
@@ -388,126 +388,56 @@ export function Conversation({ lang }: { lang: Lang }) {
             </form>
           )}
         </div>
-        <aside className="self-end border border-ivory/15 p-8">
+        <aside className="self-start border border-ivory/15 p-5 sm:self-end sm:p-6 md:p-8">
           <p className="eyebrow text-gold-light">
             {ar ? "أو تواصل معنا مباشرة" : "Or reach us directly"}
           </p>
-          <ul className="mt-6 space-y-4">
+          <ul className="mt-4 space-y-3 sm:mt-6 sm:space-y-4">
             {(ar
               ? [
                   ["هاتف", "+20 115 000 0984", "tel:+201150000984"],
 
                   [
-                    "استشاري",
-
-                    "advisory@askterramorph.com",
-
-                    "mailto:advisory@askterramorph.com",
-                  ],
-
-                  [
-                    "الشكاوى",
-
-                    "complain@askterramorph.com",
-
-                    "mailto:complain@askterramorph.com",
-                  ],
-
-                  [
-                    "المالية",
-
-                    "finance@askterramorph.com",
-
-                    "mailto:finance@askterramorph.com",
-                  ],
-
-                  [
-                    "البريد",
-
-                    "hello@askterramorph.com",
-
-                    "mailto:hello@askterramorph.com",
-                  ],
-
-                  [
-                    "معلومات",
-
-                    "info@askterramorph.com",
-
-                    "mailto:info@askterramorph.com",
-                  ],
-
-                  [
-                    "استفسارات",
-
-                    "inquiry@askterramorph.com",
-
-                    "mailto:inquiry@askterramorph.com",
-                  ],
-
-                  [
                     "المسؤول",
-
                     "mbaraka@askterramorph.com",
-
                     "mailto:mbaraka@askterramorph.com",
                   ],
 
                   [
-                    "التسجيل",
-
-                    "register@askterramorph.com",
-
-                    "mailto:register@askterramorph.com",
+                    "لينكد إن",
+                    "terramorph LLC",
+                    "https://linkedin.com/company/terramorph",
                   ],
-
-                  [
-                    "دعم فني",
-
-                    "tsupport@askterramorph.com",
-
-                    "mailto:tsupport@askterramorph.com",
-                  ],
-
-                  ["LinkedIn", "/company/terramorph", "https://linkedin.com"],
 
                   [
                     "المكتب",
 
-                    "القاهرة الجديدة، مصر",
+                    "5 بغداد، هليوبوليس، القاهرة، EGY",
 
-                    "https://www.google.com/maps/search/New+Cairo,+Egypt",
+                    "https://www.google.com/maps/search/5+Baghdad+St.+Heliopolis+Cairo+Egypt",
                   ],
                 ]
               : [
                   ["Phone", "+20 115 000 0984", "tel:+201150000984"],
 
-                  ["Advisory", "advisory@askterramorph.com", "mailto:advisory@askterramorph.com"],
+                  [
+                    "Admin",
+                    "mbaraka@askterramorph.com",
+                    "mailto:mbaraka@askterramorph.com",
+                  ],
 
-                  ["Complaints", "complain@askterramorph.com", "mailto:complain@askterramorph.com"],
-
-                  ["Finance", "finance@askterramorph.com", "mailto:finance@askterramorph.com"],
-
-                  ["Email", "hello@askterramorph.com", "mailto:hello@askterramorph.com"],
-
-                  ["Info", "info@askterramorph.com", "mailto:info@askterramorph.com"],
-
-                  ["Inquiries", "inquiry@askterramorph.com", "mailto:inquiry@askterramorph.com"],
-
-                  ["Admin", "mbaraka@askterramorph.com", "mailto:mbaraka@askterramorph.com"],
-
-                  ["Registration", "register@askterramorph.com", "mailto:register@askterramorph.com"],
-
-                  ["Technical Support", "tsupport@askterramorph.com", "mailto:tsupport@askterramorph.com"],
-
-                  ["LinkedIn", "/company/terramorph", "https://linkedin.com"],
+                  [
+                    "LinkedIn",
+                    "terramorph LLC",
+                    "https://linkedin.com/company/terramorph",
+                  ],
 
                   [
                     "Office",
 
-                    "New Cairo, Egypt",
+                    "5 Baghdad St., Heliopolis, Cairo, EGY",
 
-                    "https://www.google.com/maps/search/New+Cairo,+Egypt",
+                    "https://www.google.com/maps/search/5+Baghdad+St.+Heliopolis+Cairo+Egypt",
                   ],
                 ]
             )
@@ -515,12 +445,12 @@ export function Conversation({ lang }: { lang: Lang }) {
               .map(([l, v, h]) => (
                 <li
                   key={l}
-                  className="flex items-baseline justify-between gap-4 border-b border-ivory/10 pb-4"
+                  className="flex flex-col items-start gap-1 border-b border-ivory/10 pb-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4 sm:pb-4"
                 >
                   <span className="eyebrow text-ivory/65">{l}</span>
                   <a
                     href={h}
-                    className="font-display text-xl transition hover:text-gold-light"
+                    className="font-display text-lg transition hover:text-gold-light sm:text-xl"
                   >
                     {v}
                   </a>

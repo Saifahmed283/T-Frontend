@@ -123,6 +123,44 @@ export type ContentActivity = {
 
 export type ContentItemDetail = ContentItem & { activities: ContentActivity[] }
 
+// Public (unauthenticated) read model served to the marketing site. It carries
+
+// only PUBLISHED rows and has internal fields stripped server-side.
+
+export type PublicContentItem = {
+  kind: string
+
+  slug: string
+
+  title: string
+
+  data: Record<string, unknown>
+
+  seo: Record<string, unknown> | null
+
+  publishedAt: string | null
+
+  updatedAt: string
+
+  collectionId: string | null
+}
+
+export type PublicContentList = {
+  collectionId: string
+
+  items: PublicContentItem[]
+
+  total: number
+
+  page: number
+
+  pageSize: number
+}
+
+export type PublicSlugs = {
+  collections: Record<string, string[]>
+}
+
 export type ContentCounts = {
   total: number
 
@@ -651,6 +689,66 @@ export const api = {
       }`,
     )
   },
+
+  publicContentList: (
+    collectionId: string,
+
+    params: {
+      search?: string
+
+      page?: number
+
+      pageSize?: number
+    } = {},
+  ) => {
+    const q = new URLSearchParams()
+
+    if (params.search) q.set("search", params.search)
+
+    if (params.page) q.set("page", String(params.page))
+
+    if (params.pageSize) q.set("pageSize", String(params.pageSize))
+
+    const qs = q.toString()
+
+    return request<PublicContentList>(
+      `/api/v1/public/content/${encodeURIComponent(collectionId)}${
+        qs ? `?${qs}` : ""
+      }`,
+      // The server sends max-age=60 for CDN caching. In the browser that cache
+      // can shadow a 60s poll by a few milliseconds, delaying a published edit
+      // to the next tick. Polls must always reach the API.
+      { cache: "no-store" },
+    )
+  },
+
+  publicContentGet: (collectionId: string, slug: string) =>
+    request<PublicContentItem>(
+      `/api/v1/public/content/${encodeURIComponent(collectionId)}/${encodeURIComponent(slug)}`,
+      { cache: "no-store" },
+    ),
+
+  publicSlugs: () =>
+    request<PublicSlugs>("/api/v1/public/slugs", { cache: "no-store" }),
+
+  publicSettings: () =>
+    request<Record<string, unknown>>("/api/v1/public/settings", {
+      cache: "no-store",
+    }),
+
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean }>("/api/v1/auth/password/forgot", {
+      method: "POST",
+
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, newPassword: string) =>
+    request<{ ok: boolean }>("/api/v1/auth/password/reset", {
+      method: "POST",
+
+      body: JSON.stringify({ token, newPassword }),
+    }),
 
   contentGet: (collectionId: string, id: string) =>
     request<ContentItemDetail>(

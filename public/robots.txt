@@ -1,5 +1,6 @@
 User-agent: *
 Allow: /
 Disallow: /dashboard
+Disallow: /reset-password
 
 Sitemap: https://askterramorph.com/sitemap.xml

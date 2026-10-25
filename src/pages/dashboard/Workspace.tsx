@@ -221,6 +221,8 @@ function SignInPage({
   const [password, setPassword] = useState("")
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState("")
+  const [mode, setMode] = useState<"signin" | "forgot">("signin")
+  const [sent, setSent] = useState("")
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     setBusy(true)
@@ -229,6 +231,24 @@ function SignInPage({
       await onLogin(email, password)
     } catch (ex) {
       setErr(ex instanceof ApiError ? ex.message : "Sign-in failed")
+      setBusy(false)
+    }
+  }
+  const submitForgot = async (e: FormEvent) => {
+    e.preventDefault()
+    setBusy(true)
+    setErr("")
+    setSent("")
+    try {
+      await api.forgotPassword(email)
+      setSent(
+        "If an account exists for that address, a reset link is on its way. Check your inbox and spam folder.",
+      )
+    } catch (ex) {
+      setErr(
+        ex instanceof ApiError ? ex.message : "Could not request a reset link",
+      )
+    } finally {
       setBusy(false)
     }
   }
@@ -242,12 +262,15 @@ function SignInPage({
             </div>
             <div className="brand-subline">CONTENT WORKSPACE</div>
           </div>
-          <Heading level={2}>Sign in</Heading>
+          <Heading level={2}>
+            {mode === "forgot" ? "Reset password" : "Sign in"}
+          </Heading>
           <p className="auth-lead">
-            This workspace is private. Sign in with your TerraMorph account to
-            manage content, media and submissions.
+            {mode === "forgot"
+              ? "Enter the email on your TerraMorph account and we will send a single-use reset link."
+              : "This workspace is private. Sign in with your TerraMorph account to manage content, media and submissions."}
           </p>
-          <form onSubmit={submit}>
+          <form onSubmit={mode === "forgot" ? submitForgot : submit}>
             <Field label="Email" required>
               <Input
                 type="email"
@@ -259,15 +282,17 @@ function SignInPage({
                 placeholder="you@askterramorph.com"
               />
             </Field>
-            <Field label="Password" required>
-              <Input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </Field>
+            {mode === "signin" && (
+              <Field label="Password" required>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </Field>
+            )}
             {err && (
               <p role="alert" className="auth-error text-error">
                 {err}
@@ -278,6 +303,11 @@ function SignInPage({
                 {notice}
               </p>
             )}
+            {sent && !err && (
+              <p role="status" className="auth-error text-ok">
+                {sent}
+              </p>
+            )}
             <Button
               variant="primary"
               type="submit"
@@ -285,13 +315,28 @@ function SignInPage({
               disabled={busy || checking}
             >
               <LockKeyhole size={15} />
-              {busy
-                ? "Signing in…"
-                : checking
-                  ? "Checking session…"
-                  : "Sign in"}
+              {mode === "forgot"
+                ? busy
+                  ? "Sending…"
+                  : "Send reset link"
+                : busy
+                  ? "Signing in…"
+                  : checking
+                    ? "Checking session…"
+                    : "Sign in"}
             </Button>
           </form>
+          <button
+            type="button"
+            className="mt-3 w-full text-center text-sm text-slate underline underline-offset-4 hover:text-navy"
+            onClick={() => {
+              setMode(mode === "forgot" ? "signin" : "forgot")
+              setErr("")
+              setSent("")
+            }}
+          >
+            {mode === "forgot" ? "Back to sign in" : "Forgot password?"}
+          </button>
           <p className="auth-foot">
             TerraMorph <span className="footer-dot">·</span> Leverage for Good.
           </p>
