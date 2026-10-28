@@ -2,14 +2,12 @@ import { useEffect, useState } from "react"
 
 import type { Lang } from "./types"
 
-/* Intro: the emblem is constructed — ring, meridians, columns rise one by one,
-   wordmark resolves, then the navy ground lifts away like a lever releasing. */
+/* Intro: fast, confident brand reveal. Ring draws → wordmark snaps in → ground lifts.
+   Total ~2s (was 3.9s). Skippable. Reduced-motion skips straight to the lift. */
 
 export default function Intro({
   onDone,
-
   onLift,
-
   lang,
 }: {
   onDone: () => void
@@ -29,58 +27,52 @@ export default function Intro({
 
     if (reduced) {
       onLift()
-
       onDone()
-
       return
     }
 
     document.body.style.overflow = "hidden"
 
     const t = [
-      setTimeout(() => setPhase("word"), 1500),
+      setTimeout(() => setPhase("word"), 700),
 
       setTimeout(() => {
         setPhase("lift")
-
         onLift()
-      }, 2900),
+      }, 1400),
 
-      setTimeout(onDone, 3900),
+      setTimeout(onDone, 2000),
     ]
 
     return () => {
       t.forEach(clearTimeout)
-
       document.body.style.overflow = ""
     }
   }, [onDone, onLift])
 
   const skip = () => {
     setPhase("lift")
-
     onLift()
-
-    setTimeout(onDone, 900)
+    setTimeout(onDone, 600)
   }
 
   return (
     <div
       role="presentation"
       onClick={skip}
-      className={`fixed inset-0 z-[100] grid cursor-pointer place-items-center bg-navy-3 text-ivory transition-[clip-path] duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
+      className={`fixed inset-0 z-[100] grid cursor-pointer place-items-center bg-navy-3 text-ivory transition-[clip-path] duration-[700ms] ease-[cubic-bezier(.76,0,.24,1)] ${
         phase === "lift" ? "reveal-closed" : "reveal-open"
       }`}
     >
       <div
         className="absolute inset-x-0 top-1/2 h-px origin-left bg-gold-light/30"
-        style={{ animation: "grow 1.4s cubic-bezier(.2,.8,.2,1) both" }}
+        style={{ animation: "grow 900ms cubic-bezier(.2,.8,.2,1) both" }}
       />
       <div
-        className={`relative flex flex-col items-center transition-transform duration-[900ms] ease-[cubic-bezier(.76,0,.24,1)] ${
+        className={`relative flex flex-col items-center transition-transform duration-[700ms] ease-[cubic-bezier(.76,0,.24,1)] ${
           phase === "lift" ? "-translate-y-24 opacity-0" : ""
         }`}
-        style={{ transitionProperty: "transform, opacity", minHeight: "300px" }}
+        style={{ transitionProperty: "transform, opacity", minHeight: "260px" }}
       >
         <svg
           width="128"
@@ -88,7 +80,7 @@ export default function Intro({
           viewBox="0 0 75 74"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
-          className="h-32 w-32 md:h-40 md:w-40"
+          className="h-28 w-28 md:h-36 md:w-36"
         >
           <path
             d="M37.3115 0.5C57.637 0.50001 74.1228 16.8119 74.123 36.9443C74.123 57.077 57.6371 73.3896 37.3115 73.3896C16.9859 73.3896 0.5 57.077 0.5 36.9443C0.50021 16.8119 16.986 0.5 37.3115 0.5Z"
@@ -103,7 +95,7 @@ export default function Intro({
             strokeOpacity="0.7"
             className="intro-draw"
             pathLength={1}
-            style={{ animationDelay: ".11s" }}
+            style={{ animationDelay: ".07s" }}
           />
           <path
             d="M37.3121 2.55078C43.7082 2.55093 49.4348 6.4948 53.5387 12.7383C57.6454 18.986 60.1686 27.5884 60.1686 37.0645C60.1685 46.5403 57.6452 55.142 53.5387 61.3896C49.4348 67.6331 43.7082 71.577 37.3121 71.5771C30.9159 71.5771 25.1895 67.6332 21.0856 61.3896C16.9789 55.142 14.4548 46.5403 14.4547 37.0645C14.4547 27.5884 16.9789 18.986 21.0856 12.7383C25.1895 6.49485 30.916 2.55078 37.3121 2.55078Z"
@@ -111,7 +103,7 @@ export default function Intro({
             strokeOpacity="0.6"
             className="intro-draw"
             pathLength={1}
-            style={{ animationDelay: ".18s" }}
+            style={{ animationDelay: ".11s" }}
           />
           <path
             d="M37.3113 2.55078C39.0653 2.55079 40.6525 3.64217 42.0212 5.41895C43.3954 7.2027 44.6117 9.75248 45.6238 12.8584C47.6497 19.0759 48.8943 27.6343 48.8943 37.0645C48.8943 46.4944 47.6496 55.0521 45.6238 61.2695C44.6117 64.3756 43.3954 66.9262 42.0212 68.71C40.6525 70.4866 39.0652 71.5771 37.3113 71.5771C35.5573 71.5771 33.9701 70.4866 32.6013 68.71C31.2271 66.9262 30.0109 64.3756 28.9988 61.2695C26.973 55.0521 25.7283 46.4944 25.7283 37.0645C25.7283 27.6342 26.9729 19.0759 28.9988 12.8584C30.0108 9.75247 31.2272 7.2027 32.6013 5.41895C33.9701 3.64216 35.5572 2.55078 37.3113 2.55078Z"
@@ -119,37 +111,37 @@ export default function Intro({
             strokeOpacity="0.4"
             className="intro-draw"
             pathLength={1}
-            style={{ animationDelay: ".22s" }}
+            style={{ animationDelay: ".14s" }}
           />
           <path
             d="M22.668 8.80371L52.1426 8.80371C52.3617 8.80368 52.5391 8.62538 52.5391 8.40625V5.09473C52.539 4.87565 52.3616 4.69827 52.1426 4.69824L22.668 4.69824C22.449 4.69824 22.2706 4.87563 22.2705 5.09473V8.40625C22.2705 8.62539 22.4488 8.80371 22.668 8.80371Z"
             fill="#FBF8F1"
             className="intro-rise"
-            style={{ animationDelay: ".3s" }}
+            style={{ animationDelay: ".18s" }}
           />
           <path
             d="M49.89 11.1216V9.33447L24.9203 9.33447V11.1216L49.89 11.1216Z"
             fill="#FBF8F1"
             className="intro-rise"
-            style={{ animationDelay: ".32s" }}
+            style={{ animationDelay: ".2s" }}
           />
           <path
             d="M47.2408 60.4673L47.2408 11.6528H27.5699L27.5699 60.4673H47.2408Z"
             fill="#FBF8F1"
             className="intro-rise"
-            style={{ animationDelay: ".35s" }}
+            style={{ animationDelay: ".22s" }}
           />
           <path
             d="M49.89 63.7788V60.6665H24.9203V63.7788H49.89Z"
             fill="#FBF8F1"
             className="intro-rise"
-            style={{ animationDelay: ".37s" }}
+            style={{ animationDelay: ".24s" }}
           />
           <path
             d="M22.0057 68.7466H52.8046C53.0237 68.7466 53.202 68.5683 53.202 68.3491V64.3755C53.202 64.1563 53.0237 63.979 52.8046 63.979H22.0057C21.7866 63.979 21.6083 64.1563 21.6083 64.3755V68.3491C21.6083 68.5683 21.7867 68.7466 22.0057 68.7466Z"
             fill="#FBF8F1"
             className="intro-rise"
-            style={{ animationDelay: ".4s" }}
+            style={{ animationDelay: ".26s" }}
           />
           <path
             d="M31.8096 14.938L31.8096 58.9519"
@@ -157,7 +149,7 @@ export default function Intro({
             strokeWidth="1.5"
             className="intro-draw"
             pathLength={1}
-            style={{ animationDelay: ".43s" }}
+            style={{ animationDelay: ".28s" }}
           />
           <path
             d="M37.6783 14.938L37.6783 58.9519"
@@ -165,7 +157,7 @@ export default function Intro({
             strokeWidth="1.5"
             className="intro-draw"
             pathLength={1}
-            style={{ animationDelay: ".47s" }}
+            style={{ animationDelay: ".3s" }}
           />
           <path
             d="M43.546 14.938L43.546 58.9519"
@@ -173,27 +165,20 @@ export default function Intro({
             strokeWidth="1.5"
             className="intro-draw"
             pathLength={1}
-            style={{ animationDelay: ".51s" }}
+            style={{ animationDelay: ".32s" }}
           />
         </svg>
         <p
-          className="mt-8 flex overflow-hidden font-display text-3xl font-semibold tracking-[0.3em] md:text-5xl"
+          className="mt-6 flex overflow-hidden font-display text-3xl font-semibold tracking-[0.3em] md:text-5xl"
           aria-label="TerraMorph"
         >
           {"TERRAMORPH".split("").map((c, i) => (
             <span
               key={i}
-              /* No `filter: blur()` here: animating a blur forces the browser to
-                 re-rasterise all 12 glyphs every frame for 700ms, right when the
-                 page is also trying to reach first paint. Transform + opacity are
-                 compositor-only and read the same at this scale. */
-
-              className="inline-block transition-[transform,opacity] duration-[700ms] ease-[cubic-bezier(.2,.8,.2,1)]"
+              className="inline-block transition-[transform,opacity] duration-[500ms] ease-[cubic-bezier(.2,.8,.2,1)]"
               style={{
-                transitionDelay: `${i * 45}ms`,
-
+                transitionDelay: `${i * 35}ms`,
                 transform: phase === "draw" ? "translateY(110%)" : "none",
-
                 opacity: phase === "draw" ? 0 : 1,
               }}
             >
@@ -202,7 +187,7 @@ export default function Intro({
           ))}
         </p>
         <p
-          className={`mt-4 text-micro font-medium tracking-[0.6em] text-gold-light transition-all delay-500 duration-700 ${
+          className={`mt-3 text-micro font-medium tracking-[0.6em] text-gold-light transition-all delay-300 duration-500 ${
             phase === "draw" ? "tracking-[1.2em] opacity-0" : ""
           }`}
         >
@@ -212,7 +197,6 @@ export default function Intro({
       <button
         onClick={(e) => {
           e.stopPropagation()
-
           skip()
         }}
         className="eyebrow absolute end-6 bottom-6 text-ivory/65 transition hover:text-ivory"

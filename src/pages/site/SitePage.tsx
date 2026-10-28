@@ -35,6 +35,10 @@ export default function SitePage(props: Props) {
       setLangState("ar"),
     )
   }, [])
-  return <Site lang={lang} setLang={setLang} {...props} />
-  return <TerraMorphChat lang={lang} />
+  return (
+  <>
+    <Site lang={lang} setLang={setLang} {...props} />
+    <TerraMorphChat lang={lang} />
+  </>
+)
 }
