@@ -3,6 +3,9 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "scripts": {
     "dev": "vike dev",
     "build": "node scripts/gen-sitemap.mjs && cross-env NODE_ENV=production vike build",

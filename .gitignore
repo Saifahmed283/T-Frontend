@@ -4,6 +4,9 @@ build/
 .cache/
 .env*
 !.env.example
+# Production build config is not secret (it only names the public API origin) and
+# must be present at build time, so it is tracked. See DEPLOY_HOSTINGER.md.
+!.env.production
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo

@@ -153,3 +153,9 @@
 # would be published as a 131-byte pointer instead of the image. Keep it as a
 # normal binary blob in git. (Overrides the broad *.png rule above.)
 public/og-image.png -filter -diff -merge -text
+
+# public/fonts/*.woff2 is copied verbatim into dist/client. Same reason as the
+# OG image: the Hostinger build checks out the repo without `git lfs pull`, so an
+# LFS-tracked font would be published as a pointer and every self-hosted face
+# would 404. Keep these eight files as normal binary blobs in git.
+public/fonts/*.woff2 -filter -diff -merge -text

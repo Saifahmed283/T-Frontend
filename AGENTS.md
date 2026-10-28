@@ -54,7 +54,7 @@ Routing is file-based via Vike: `pages/` contains `+Page.tsx` files (and `+confi
 - `src/lib/fonts.ts` - Arabic-font loader (`ARABIC_FONTS`, `ensureArabicFonts`) — injects the Google Fonts Arabic set + preconnects on demand
 - `src/styles/fonts.css` - Self-hosted Latin `@font-face` rules (variable weight ranges, `latin`/`latin-ext` unicode-range)
 - `.env.example` - Documents `VITE_API_URL` and `VITE_PROXY_TARGET`
-- `.env.production` - Sets `VITE_API_URL=https://api.askterramorph.com` for production builds
+- `.env.production` - Sets `VITE_API_URL=https://api.askterramorph.com` for production builds. Deliberately tracked in git (unlike `.env`/`.env.example`): the Hostinger build has no other source for it, and it contains no secrets. Without it the built dashboard calls same-origin `/api` and cannot authenticate.
 - `package.json` - Dependencies and scripts (`dev`, `build` = sitemap + vike build, `preview`, `format`, `a11y`, `sitemap`, `og-image`, `test`, `test:watch`, `check`)
 - `vitest.config.ts` - Vitest configuration: jsdom, React plugin, `@` alias and `src/test/setup.ts`
 - `src/test/setup.ts` - jest-dom matchers plus `<dialog>` polyfills for the dashboard modal tests
