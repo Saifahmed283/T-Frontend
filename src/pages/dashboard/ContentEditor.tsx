@@ -130,6 +130,8 @@ export function ContentEditor({
 
   const [error, setError] = useState<string | null>(null)
 
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
   useEffect(() => {
     if (!itemId) {
       setData(emptyData(collection.fields))
@@ -651,7 +653,7 @@ export function ContentEditor({
             <Button
               variant="ghost"
               disabled={busy}
-              onClick={() => void remove()}
+              onClick={() => setConfirmDelete(true)}
             >
               <Trash2 size={15} /> Delete
             </Button>
@@ -667,12 +669,40 @@ export function ContentEditor({
               "Save changes"
             ) : (
               <>
-                <Plus size={15} /> Create
+                <Plus size={15} /> Create {collection.singular.toLowerCase()}
               </>
             )}
           </Button>
         </div>
       </div>
+
+      {confirmDelete && (
+        <div className="modal-body border-t border-line pt-6 space-y-4" role="alertdialog" aria-label="Confirm deletion">
+          <Heading level={3}>Delete this record?</Heading>
+          <p className="text-sm text-slate-strong">
+            This action cannot be undone. The record will be removed from the
+            workspace and the public site.
+          </p>
+          <div className="flex gap-3">
+            <Button
+              variant="ghost"
+              onClick={() => setConfirmDelete(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              disabled={busy}
+              onClick={() => {
+                setConfirmDelete(false)
+                void remove()
+              }}
+            >
+              {busy ? "Deleting…" : "Delete permanently"}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {isEdit && detail && detail.activities.length > 0 && (
         <div
@@ -691,13 +721,6 @@ export function ContentEditor({
               </li>
             ))}
           </ul>
-        </div>
-      )}
-      {!preview && !isEdit && (
-        <div className="modal-foot">
-          <Button variant="primary" disabled={busy} onClick={() => void save()}>
-            Create {collection.singular.toLowerCase()} <Check size={16} />
-          </Button>
         </div>
       )}
     </Modal>

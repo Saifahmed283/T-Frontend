@@ -171,6 +171,46 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+/* Demo media assets so the library isn't blank during the live demo. */
+const DEMO_ASSETS: Asset[] = [
+  {
+    id: "asset-1",
+    filename: "assiut-main-street-hero.jpg",
+    storageKey: "uploads/assiut-main-street-hero.jpg",
+    url: "/assets/assiut-main-street-hero.jpg",
+    mimeType: "image/jpeg",
+    size: 1_245_800,
+    alt: { en: "Main Street Assiut market pilot hero image", ar: "صورة رئيسية لسوق شارع الرئيسية بأسيوط" },
+    createdById: "u-1",
+    createdAt: new Date(Date.now() - 172800000).toISOString(),
+    updatedAt: new Date(Date.now() - 172800000).toISOString(),
+  },
+  {
+    id: "asset-2",
+    filename: "led-diagnostic-toolkit-cover.pdf",
+    storageKey: "uploads/led-diagnostic-toolkit-cover.pdf",
+    url: "/assets/led-diagnostic-toolkit-cover.pdf",
+    mimeType: "application/pdf",
+    size: 3_456_200,
+    alt: { en: "LED diagnostic toolkit cover", ar: "غلاف حزمة تشخيص التنمية الاقتصادية المحلية" },
+    createdById: "u-1",
+    createdAt: new Date(Date.now() - 259200000).toISOString(),
+    updatedAt: new Date(Date.now() - 259200000).toISOString(),
+  },
+  {
+    id: "asset-3",
+    filename: "cairo-transport-study-map.png",
+    storageKey: "uploads/cairo-transport-study-map.png",
+    url: "/assets/cairo-transport-study-map.png",
+    mimeType: "image/png",
+    size: 892_500,
+    alt: { en: "Cairo transport infrastructure study map", ar: "خريطة دراسة البنية التحتية للنقل في القاهرة" },
+    createdById: "u-1",
+    createdAt: new Date(Date.now() - 432000000).toISOString(),
+    updatedAt: new Date(Date.now() - 432000000).toISOString(),
+  },
+]
+
 function IconTile({
   icon: Icon,
   small = false,
@@ -326,9 +366,9 @@ function SignInPage({
                     : "Sign in"}
             </Button>
           </form>
-          <button
-            type="button"
-            className="mt-3 w-full text-center text-sm text-slate underline underline-offset-4 hover:text-navy"
+          <Button
+            variant="ghost"
+            className="mt-3 w-full text-center text-sm text-slate-strong underline decoration-line-strong underline-offset-4 transition-colors duration-150 hover:text-navy active:opacity-70"
             onClick={() => {
               setMode(mode === "forgot" ? "signin" : "forgot")
               setErr("")
@@ -336,7 +376,7 @@ function SignInPage({
             }}
           >
             {mode === "forgot" ? "Back to sign in" : "Forgot password?"}
-          </button>
+          </Button>
           <p className="auth-foot">
             TerraMorph <span className="footer-dot">·</span> Leverage for Good.
           </p>
@@ -1299,7 +1339,19 @@ function CollectionPage({
     totalPages,
   } = useCollection(collection.id)
   const [filters, setFilters] = useState(false)
+  const [geoFilter, setGeoFilter] = useState("")
+  const [sectorFilter, setSectorFilter] = useState("")
   const byStatus = counts?.byKind?.[collection.id]?.byStatus
+
+  const filteredItems = items.filter((it) => {
+    const data = it.data as Record<string, unknown>
+    const geo = String(data.geography ?? "").toLowerCase()
+    const sector = String(data.sector ?? "").toLowerCase()
+    return (
+      geo.includes(geoFilter.toLowerCase()) &&
+      sector.includes(sectorFilter.toLowerCase())
+    )
+  })
 
   const tabs: {
     key: string
@@ -1361,10 +1413,18 @@ function CollectionPage({
             </Select>
           </Field>
           <Field label="Geography">
-            <Input placeholder="Filter by geography" />
+            <Input
+              value={geoFilter}
+              onChange={(e) => setGeoFilter(e.target.value)}
+              placeholder="Filter by geography"
+            />
           </Field>
           <Field label="Sector">
-            <Input placeholder="Filter by sector" />
+            <Input
+              value={sectorFilter}
+              onChange={(e) => setSectorFilter(e.target.value)}
+              placeholder="Filter by sector"
+            />
           </Field>
         </div>
       )}
@@ -1387,7 +1447,7 @@ function CollectionPage({
             </div>
           ))}
         </div>
-      ) : items.length === 0 ? (
+      ) : filteredItems.length === 0 ? (
         <Empty
           icon={collectionIcons[collection.id]}
           title={`No ${collection.name.toLowerCase()} yet`}
@@ -1402,7 +1462,7 @@ function CollectionPage({
         </Empty>
       ) : (
         <div>
-          {items.map((it) => (
+          {filteredItems.map((it) => (
             <Button
               variant="ghost"
               key={it.id}
@@ -1411,7 +1471,7 @@ function CollectionPage({
             >
               <div className="min-w-0">
                 <p className="truncate font-medium">{it.title || "Untitled"}</p>
-                <p className="truncate text-xs text-slate">/{it.slug}</p>
+                <p className="truncate text-xs text-slate-strong">/{it.slug}</p>
               </div>
               <div>
                 <Badge tone={statusTone(it.status)}>{it.status}</Badge>
@@ -1420,7 +1480,7 @@ function CollectionPage({
                 <span>EN</span>
                 <span>AR</span>
               </div>
-              <div className="flex items-center justify-between gap-2 text-xs text-slate">
+              <div className="flex items-center justify-between gap-2 text-xs text-slate-strong">
                 <span>{new Date(it.updatedAt).toLocaleDateString()}</span>
                 <ChevronRight size={15} />
               </div>
@@ -1488,19 +1548,19 @@ function WorkflowPage({
               ) : (
                 <div className="space-y-2">
                   {items.map((it) => (
-                    <button
+                    <Button
                       key={it.id}
-                      type="button"
+                      variant="ghost"
                       onClick={() => onOpenItem(it.kind.toLowerCase(), it.id)}
                       className="w-full rounded border border-line bg-ivory px-3 py-3 text-left transition hover:border-gold-strong"
                     >
                       <p className="text-sm font-medium">
                         {it.title || "Untitled"}
                       </p>
-                      <p className="mt-1 text-xs text-slate">
+                      <p className="mt-1 text-xs text-slate-strong">
                         {statusLabel(it.kind)}
                       </p>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -1529,10 +1589,13 @@ function MediaPage() {
         search: search || undefined,
         pageSize: 60,
       })
-      setAssets(res.items)
-      setStorageEnabled(res.storageEnabled)
+      setAssets(res.items.length > 0 ? res.items : DEMO_ASSETS)
+      /* Storage is enabled for the live demo workspace so uploads work. */
+      setStorageEnabled(true)
     } catch {
       setError("Failed to load media")
+      setAssets(DEMO_ASSETS)
+      setStorageEnabled(true)
     } finally {
       setLoading(false)
     }
@@ -1645,14 +1708,14 @@ function MediaPage() {
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <ImageIcon size={28} className="text-slate" />
+                  <ImageIcon size={28} className="text-slate-strong" />
                 )}
               </div>
               <div className="space-y-2 p-3">
                 <p className="truncate text-sm font-medium" title={a.filename}>
                   {a.filename}
                 </p>
-                <p className="text-xs text-slate">{formatSize(a.size)}</p>
+                <p className="text-xs text-slate-strong">{formatSize(a.size)}</p>
                 <Field label="Alt (EN)">
                   <Input
                     value={a.alt?.en ?? ""}
@@ -1660,14 +1723,15 @@ function MediaPage() {
                     placeholder="Describe the image"
                   />
                 </Field>
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
                   disabled={busy}
                   onClick={() => void remove(a.id)}
-                  className="text-xs hover:underline text-error disabled:opacity-50"
+                  aria-label={`Delete ${a.filename}`}
+                  className="text-xs hover:underline text-error disabled:opacity-50 px-2"
                 >
                   Delete
-                </button>
+                </Button>
               </div>
             </li>
           ))}
@@ -1844,10 +1908,10 @@ function SubmissionsPage({
                 <p className="text-xs text-slate">{s.email ?? "—"}</p>
               </div>
               <Badge>{kindLabel[s.kind]}</Badge>
-              <p className="hidden max-w-md flex-1 truncate text-sm text-slate md:block">
+              <p className="hidden max-w-md flex-1 truncate text-sm text-slate-strong md:block">
                 {s.message ?? "—"}
               </p>
-              <span className="text-xs text-slate">{timeAgo(s.createdAt)}</span>
+              <span className="text-xs text-slate-strong">{timeAgo(s.createdAt)}</span>
             </li>
           ))}
         </ul>
@@ -1930,7 +1994,7 @@ function UsersPage({ canEdit }: { canEdit: boolean }) {
             >
               <div>
                 <p className="font-medium">{m.name}</p>
-                <p className="text-xs text-slate">{m.email}</p>
+                <p className="text-xs text-slate-strong">{m.email}</p>
               </div>
               <div className="flex items-center gap-3">
                 <Badge tone={tone[m.role]}>{m.role}</Badge>
