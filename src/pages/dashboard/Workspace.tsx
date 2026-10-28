@@ -171,46 +171,6 @@ function formatSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-/* Demo media assets so the library isn't blank during the live demo. */
-const DEMO_ASSETS: Asset[] = [
-  {
-    id: "asset-1",
-    filename: "assiut-main-street-hero.jpg",
-    storageKey: "uploads/assiut-main-street-hero.jpg",
-    url: "/assets/assiut-main-street-hero.jpg",
-    mimeType: "image/jpeg",
-    size: 1_245_800,
-    alt: { en: "Main Street Assiut market pilot hero image", ar: "صورة رئيسية لسوق شارع الرئيسية بأسيوط" },
-    createdById: "u-1",
-    createdAt: new Date(Date.now() - 172800000).toISOString(),
-    updatedAt: new Date(Date.now() - 172800000).toISOString(),
-  },
-  {
-    id: "asset-2",
-    filename: "led-diagnostic-toolkit-cover.pdf",
-    storageKey: "uploads/led-diagnostic-toolkit-cover.pdf",
-    url: "/assets/led-diagnostic-toolkit-cover.pdf",
-    mimeType: "application/pdf",
-    size: 3_456_200,
-    alt: { en: "LED diagnostic toolkit cover", ar: "غلاف حزمة تشخيص التنمية الاقتصادية المحلية" },
-    createdById: "u-1",
-    createdAt: new Date(Date.now() - 259200000).toISOString(),
-    updatedAt: new Date(Date.now() - 259200000).toISOString(),
-  },
-  {
-    id: "asset-3",
-    filename: "cairo-transport-study-map.png",
-    storageKey: "uploads/cairo-transport-study-map.png",
-    url: "/assets/cairo-transport-study-map.png",
-    mimeType: "image/png",
-    size: 892_500,
-    alt: { en: "Cairo transport infrastructure study map", ar: "خريطة دراسة البنية التحتية للنقل في القاهرة" },
-    createdById: "u-1",
-    createdAt: new Date(Date.now() - 432000000).toISOString(),
-    updatedAt: new Date(Date.now() - 432000000).toISOString(),
-  },
-]
-
 function IconTile({
   icon: Icon,
   small = false,
@@ -1589,13 +1549,10 @@ function MediaPage() {
         search: search || undefined,
         pageSize: 60,
       })
-      setAssets(res.items.length > 0 ? res.items : DEMO_ASSETS)
-      /* Storage is enabled for the live demo workspace so uploads work. */
-      setStorageEnabled(true)
+      setAssets(res.items)
+      setStorageEnabled(res.storageEnabled)
     } catch {
       setError("Failed to load media")
-      setAssets(DEMO_ASSETS)
-      setStorageEnabled(true)
     } finally {
       setLoading(false)
     }

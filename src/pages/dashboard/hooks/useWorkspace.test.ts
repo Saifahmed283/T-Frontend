@@ -111,41 +111,19 @@ describe("useWorkspace", () => {
       error: null,
 
       data: {
-        session: {
-          user: { id: "demo-1", name: "Demo Administrator", email: "demo@terramorph.com" },
-          workspace: { id: "ws-demo", slug: "terramorph-demo" },
-          role: "admin",
-        },
+        session,
 
-        isAdmin: true,
+        isAdmin: false,
 
-        isApprover: true,
+        isApprover: false,
 
-        activity: expect.objectContaining({
-          items: expect.arrayContaining([
-            expect.objectContaining({ id: "act-1" }),
-            expect.objectContaining({ id: "act-2" }),
-            expect.objectContaining({ id: "act-3" }),
-          ]),
-        }),
+        activity,
 
         submissions: null,
 
-        contentCounts: expect.objectContaining({
-          total: 14,
-        }),
+        contentCounts,
 
-        workflowBoard: expect.objectContaining({
-          columns: expect.objectContaining({
-            DRAFT: expect.arrayContaining([expect.objectContaining({ id: "item-d1" })]),
-            REVIEW: expect.arrayContaining([expect.objectContaining({ id: "item-r1" })]),
-            APPROVED: expect.arrayContaining([expect.objectContaining({ id: "item-a1" })]),
-            PUBLISHED: expect.arrayContaining([
-              expect.objectContaining({ id: "item-p1" }),
-              expect.objectContaining({ id: "item-p2" }),
-            ]),
-          }),
-        }),
+        workflowBoard,
       },
     })
 
@@ -164,11 +142,7 @@ describe("useWorkspace", () => {
 
       isApprover: true,
 
-      submissions: expect.arrayContaining([
-        expect.objectContaining({ id: "sub-1" }),
-        expect.objectContaining({ id: "sub-2" }),
-        expect.objectContaining({ id: "sub-3" }),
-      ]),
+      submissions: [],
     })
 
     expect(mocks.submissions).toHaveBeenCalledWith({ pageSize: 100 })
