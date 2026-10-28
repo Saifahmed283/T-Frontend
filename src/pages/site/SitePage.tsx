@@ -4,6 +4,7 @@ import { ensureArabicFonts } from "@/lib/fonts"
 import { loadPagesAr } from "@/content/pages.i18n"
 import { loadHubsAr } from "@/content/hubs.i18n"
 import type { SectionId } from "@/lib/routes"
+import TerraMorphChat from '@/components/TerraMorphChat'
 
 type Props = {
   section?: SectionId
@@ -35,4 +36,5 @@ export default function SitePage(props: Props) {
     )
   }, [])
   return <Site lang={lang} setLang={setLang} {...props} />
+  return <TerraMorphChat lang={lang} />
 }

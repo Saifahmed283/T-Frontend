@@ -736,6 +736,21 @@ export const api = {
       cache: "no-store",
     }),
 
+  chat: (input: {
+    message: string
+
+    history: Array<{
+      role: "user" | "assistant"
+
+      text: string
+    }>
+  }) =>
+    request<{ reply: string }>("/api/v1/public/chat", {
+      method: "POST",
+
+      body: JSON.stringify(input),
+    }),
+
   forgotPassword: (email: string) =>
     request<{ ok: boolean }>("/api/v1/auth/password/forgot", {
       method: "POST",
