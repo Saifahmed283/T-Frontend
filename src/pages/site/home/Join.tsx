@@ -262,6 +262,12 @@ export function Join({ lang }: { lang: Lang }) {
 
   const [expertErr, setExpertErr] = useState("")
 
+  const [nameErr, setNameErr] = useState("")
+
+  const [emailErr, setEmailErr] = useState("")
+
+  const [linkedinErr, setLinkedinErr] = useState("")
+
   const [sending, setSending] = useState(false)
 
   const [req, setReq] = useState<RequestConfig | null>(null)
@@ -274,6 +280,10 @@ export function Join({ lang }: { lang: Lang }) {
   const [cvName, setCvName] = useState("")
 
   const [cvErr, setCvErr] = useState("")
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+  const URL_REGEX = /^https?:\/\/[^\s/$.?#].[^\s]*$/i
 
   const areasShown = ar ? areasAr : areas
 
@@ -330,15 +340,50 @@ export function Join({ lang }: { lang: Lang }) {
   }
 
   const finishExpert = async () => {
-    if (!email.trim()) {
-      setExpertErr(
-        ar ? "البريد الإلكتروني مطلوب." : "An email address is required.",
+    setNameErr("")
+    setEmailErr("")
+    setLinkedinErr("")
+    setExpertErr("")
+
+    const nameVal = name.trim()
+
+    const emailVal = email.trim()
+
+    const linkedinVal = linkedin.trim()
+
+    if (!nameVal) {
+      setNameErr(ar ? "الاسم الكامل مطلوب." : "Full name is required.")
+
+      return
+    }
+
+    if (nameVal.length < 2) {
+      setNameErr(ar ? "الاسم قصير جدًا." : "Name is too short.")
+
+      return
+    }
+
+    if (!emailVal) {
+      setEmailErr(ar ? "البريد الإلكتروني مطلوب." : "An email address is required.")
+
+      return
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+      setEmailErr(
+        ar ? "يرجى إدخال عنوان بريد إلكتروني صحيح." : "Please enter a valid email address.",
       )
 
       return
     }
 
-    setExpertErr("")
+    if (linkedinVal && !/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(linkedinVal)) {
+      setLinkedinErr(
+        ar ? "يرجى إدخال رابط LinkedIn صحيح." : "Please enter a valid LinkedIn URL.",
+      )
+
+      return
+    }
 
     setSending(true)
 
@@ -346,16 +391,16 @@ export function Join({ lang }: { lang: Lang }) {
       await api.submit({
         kind: "EXPERT_REGISTRATION",
 
-        email: email.trim(),
+        email: emailVal,
 
-        name: name.trim() || undefined,
+        name: nameVal || undefined,
 
         source: "site",
 
         payload: {
-          location,
+          location: location.trim() || undefined,
 
-          linkedin,
+          linkedin: linkedinVal || undefined,
 
           areas: selAreas,
 
@@ -469,6 +514,11 @@ export function Join({ lang }: { lang: Lang }) {
                           placeholder={ar ? "الاسم الكامل" : "Full name"}
                           className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
                         />
+                        {nameErr && (
+                          <p role="alert" className="eyebrow mt-1 text-error">
+                            {nameErr}
+                          </p>
+                        )}
                         <input
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -476,6 +526,11 @@ export function Join({ lang }: { lang: Lang }) {
                           placeholder="you@example.com"
                           className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
                         />
+                        {emailErr && (
+                          <p role="alert" className="eyebrow mt-1 text-error">
+                            {emailErr}
+                          </p>
+                        )}
                         <input
                           value={location}
                           onChange={(e) => setLocation(e.target.value)}
@@ -490,6 +545,11 @@ export function Join({ lang }: { lang: Lang }) {
                           placeholder={ar ? "رابط LinkedIn" : "LinkedIn URL"}
                           className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
                         />
+                        {linkedinErr && (
+                          <p role="alert" className="eyebrow mt-1 text-error">
+                            {linkedinErr}
+                          </p>
+                        )}
                       </>
                     )}
                     {step === 1 && (

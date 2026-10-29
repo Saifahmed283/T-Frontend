@@ -282,7 +282,7 @@ export const hubs: Hub[] = [
       {
         q: "Have you done this in Egypt?",
 
-        a: "Twenty-one public engagements across nine governorates, from investment maps in Assiut to a national investment-climate action plan.",
+        a: "Eight named, dated assignments on the public ledger — from investment maps in Assiut to a national investment-climate action plan.",
       },
 
       {
@@ -300,7 +300,7 @@ export const hubs: Hub[] = [
       title: "Download the procurement pack",
 
       intro:
-        "We will email the procurement pack and the compliance summary, mapped to standard eligibility fields.",
+        "Request the procurement pack and compliance summary — a partner will reach out within two working days.",
     },
 
     secondary: {
@@ -945,14 +945,6 @@ export const hubs: Hub[] = [
     stats: [
       { value: "ISO 37001", label: "Anti-bribery", note: "plus 27001 & 9001" },
 
-      {
-        value: "214",
-
-        label: "Experts on roster",
-
-        note: "named CVs on request",
-      },
-
       { value: "9", label: "Countries", note: "MENA & EU reach" },
 
       {
@@ -981,7 +973,7 @@ export const hubs: Hub[] = [
       {
         title: "Expert bench & named CVs",
 
-        body: "A vetted bench of 214 specialists with CVs you can put in the proposal — not anonymised placeholders.",
+        body: "A vetted bench of specialists with CVs you can put in the proposal — not anonymised placeholders.",
 
         meta: "Bench",
       },
@@ -1313,7 +1305,7 @@ export const hubs: Hub[] = [
     figure: {
       alt: "The TerraMorph vetted expert network across seven domains",
 
-      eyebrow: "Expert network · 214 on roster",
+      eyebrow: "Expert network",
 
       title:
         "Seven domains, one matching pool, a visible status at every step.",
@@ -1322,7 +1314,6 @@ export const hubs: Hub[] = [
     },
 
     stats: [
-      { value: "214", label: "Experts on roster", note: "vetted by domain" },
 
       { value: "7", label: "Practice areas", note: "LED to public finance" },
 

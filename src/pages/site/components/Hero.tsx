@@ -356,9 +356,9 @@ function Hero({ lang }: { lang: Lang }) {
             </div>
           </Reveal>
 
-          {/* scroll cue — plain in-page anchor, so no route is mutated */}
+          {/* scroll cue — links to the real /for route (the "who we serve" section) */}
           <a
-            href="#for"
+            href="/for"
             aria-label={
               ar
                 ? "ابدأ من هنا — انتقل إلى القسم التالي"

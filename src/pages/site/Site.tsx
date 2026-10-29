@@ -67,19 +67,25 @@ export default function Site(props: Props) {
 
   useEffect(() => {
     if (section) {
-      const el = document.getElementById(section)
+      const scrollToSection = (attempt = 0) => {
+        const el = document.getElementById(section)
 
-      if (el) {
-        const smooth =
-          mounted.current &&
-          !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        if (el) {
+          const smooth =
+            mounted.current &&
+            !window.matchMedia("(prefers-reduced-motion: reduce)").matches
 
-        el.scrollIntoView({
-          behavior: smooth ? "smooth" : "auto",
-
-          block: "start",
-        })
+          el.scrollIntoView({
+            behavior: smooth ? "smooth" : "auto",
+            block: "start",
+          })
+        } else if (attempt < 3) {
+          // Element may not be hydrated yet — retry on the next frame
+          requestAnimationFrame(() => scrollToSection(attempt + 1))
+        }
       }
+
+      requestAnimationFrame(() => scrollToSection())
     } else {
       window.scrollTo({ top: 0, behavior: "auto" })
     }
@@ -116,25 +122,25 @@ export default function Site(props: Props) {
             ) : (
               <Hero lang={props.lang} />
             )}
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="for">
               <Audiences lang={props.lang} />
             </div>
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="whats-new">
               <WhatsNew lang={props.lang} />
             </div>
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="evidence">
               <Evidence lang={props.lang} />
             </div>
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="cause">
               <CauseExhibition lang={props.lang} />
             </div>
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="knowledge">
               <Knowledge lang={props.lang} />
             </div>
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="learning">
               <Learning lang={props.lang} />
             </div>
-            <div className="tm-section">
+            <div className="tm-section scroll-mt-40" id="about">
               <WhoWeAre lang={props.lang} />
             </div>
             <div className="tm-section">

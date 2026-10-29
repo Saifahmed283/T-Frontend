@@ -8,9 +8,7 @@ import { EmptyState, LiveStatus } from "@/components/ui"
 
 import {
   mapCase,
-  mapLedgerRow,
   usePublicCollection,
-  type LiveLedgerRow,
 } from "@/lib/publicContent"
 
 import { Head } from "./Head"
@@ -181,29 +179,9 @@ export const ledger = [
   },
 ]
 
-const sectorLabel: Record<string, string> = {
-  "All sectors": "كل القطاعات",
-
-  "Social enterprise": "المشروعات الاجتماعية",
-
-  "Investment climate": "مناخ الاستثمار",
-
-  "Local economic development": "التنمية الاقتصادية المحلية",
-
-  "TVET & skills": "التعليم الفني والمهارات",
-
-  Policy: "السياسات",
-
-  Infrastructure: "البنية التحتية",
-}
+const sectorLabel: Record<string, string> = {}
 
 // The static ledger has no per-row detail link; CMS rows do.
-
-type LedgerRow = Omit<LiveLedgerRow, "href" | "sectorAr"> & {
-  href?: string
-
-  sectorAr?: string
-}
 
 type CaseView = {
   href: string
@@ -226,8 +204,6 @@ type CaseView = {
 export function Evidence({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
 
-  const [sec, setSec] = useState("All sectors")
-
   const [open, setOpen] = useState(false)
 
   /* CMS first, static fallback. The hook keeps the prerendered copy on screen
@@ -238,33 +214,11 @@ export function Evidence({ lang }: { lang: Lang }) {
 
   const cases = usePublicCollection("cases", { pageSize: 12 })
 
-  const liveRows: LedgerRow[] = assignments.live
-    ? assignments.items.map(mapLedgerRow)
-    : []
-
-  const allRows: LedgerRow[] = liveRows.length ? liveRows : ledger
-
-  const rows = allRows.filter((l) => sec === "All sectors" || l.sector === sec)
-
   const liveCases = cases.live ? cases.items.map(mapCase) : []
 
   const caseList: CaseView[] = liveCases.length
     ? liveCases
     : staticCases.map((c) => ({ ...c, href: "/evidence/case-studies" }))
-
-  const sectorOptions = [
-    "All sectors",
-
-    ...new Set(allRows.map((l) => l.sector).filter(Boolean)),
-  ]
-
-  const sLabel = (s: string) => {
-    if (!ar) return s
-
-    const fromRow = allRows.find((r) => r.sector === s)?.sectorAr
-
-    return fromRow ?? sectorLabel[s] ?? s
-  }
 
   const ledgerMessage = assignments.live
     ? ar
@@ -389,120 +343,6 @@ export function Evidence({ lang }: { lang: Lang }) {
           ))}
         </div>
       )}
-
-      <div className="mt-px border border-line bg-ivory-2">
-        <button
-          onClick={() => setOpen(!open)}
-          aria-expanded={open}
-          className="flex w-full items-center justify-between gap-4 px-8 py-6 text-start transition hover:bg-ivory"
-        >
-          <span>
-            <span className="eyebrow text-gold-strong">
-              {ar ? "سجل المهام" : "Assignment ledger"}
-            </span>
-            <span className="ms-4 font-display text-2xl">
-              {ar
-                ? `عرض ${allRows.length} قيود`
-                : `${allRows.length} entries shown`}
-            </span>
-          </span>
-          <span
-            className={`grid h-10 w-10 place-items-center rounded-full border border-navy transition-transform duration-500 ${
-              open ? "rotate-45 bg-navy text-ivory" : ""
-            }`}
-          >
-            +
-          </span>
-        </button>
-        <div
-          className={`grid transition-[grid-template-rows] duration-700 ease-[cubic-bezier(.2,.8,.2,1)] ${
-            open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-          }`}
-        >
-          <div className="overflow-hidden">
-            <div className="no-scrollbar flex gap-2 overflow-x-auto px-8 pb-4">
-              {sectorOptions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setSec(s)}
-                  className={`shrink-0 border px-3 py-1.5 text-xs tracking-wide transition ${
-                    sec === s
-                      ? "border-navy bg-navy text-ivory"
-                      : "border-line bg-ivory hover:border-navy"
-                  }`}
-                >
-                  {sLabel(s)}
-                </button>
-              ))}
-            </div>
-            {assignments.live && assignments.total === 0 ? (
-              <div className="px-8 pb-8">
-                <EmptyState
-                  eyebrow={ar ? "لا مهام منشورة" : "No assignments published"}
-                  title={
-                    ar ? "السجل فارغ حاليًا." : "The ledger is empty right now."
-                  }
-                  body={
-                    ar
-                      ? "انشر المهام من لوحة التحكم وستظهر هنا تلقائيًا."
-                      : "Publish assignments in the dashboard and they appear here automatically."
-                  }
-                />
-              </div>
-            ) : (
-              <div className="overflow-x-auto px-8 pb-8">
-                <table className="w-full min-w-[720px] text-sm">
-                  <thead>
-                    <tr className="eyebrow text-slate">
-                      {(ar
-                        ? ["السنة", "المهمة", "العميل", "البلد", "الحجم"]
-                        : ["Year", "Assignment", "Client", "Country", "Size"]
-                      )
-
-                        .map((h) => (
-                          <th key={h} className="py-3 text-start font-medium">
-                            {h}
-                          </th>
-                        ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((r) => (
-                      <tr
-                        key={r.title}
-                        className="border-t border-line transition hover:bg-ivory"
-                      >
-                        <td className="py-3 pe-4 font-display text-lg text-gold-strong">
-                          {r.y}
-                        </td>
-                        <td className="py-3 pe-4">
-                          {r.href ? (
-                            <a href={r.href} className="hover:text-gold-strong">
-                              {ar ? r.titleAr : r.title}
-                            </a>
-                          ) : (
-                            <p>{ar ? r.titleAr : r.title}</p>
-                          )}
-                          <p className="text-xs text-slate">
-                            {sLabel(r.sector)}
-                          </p>
-                        </td>
-                        <td className="py-3 pe-4 text-navy-2">
-                          {ar ? r.clientAr : r.client}
-                        </td>
-                        <td className="py-3 pe-4 text-slate">
-                          {ar ? r.geoAr : r.geo}
-                        </td>
-                        <td className="py-3 text-slate">{r.size}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
     </section>
   )
 }

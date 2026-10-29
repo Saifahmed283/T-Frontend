@@ -211,9 +211,13 @@ export function Conversation({ lang }: { lang: Lang }) {
 
   const [sel, setSel] = useState<string[]>([])
 
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   const [sent, setSent] = useState(false)
 
   const [email, setEmail] = useState("")
+
+  const [emailErr, setEmailErr] = useState("")
 
   const [sending, setSending] = useState(false)
 
@@ -222,13 +226,28 @@ export function Conversation({ lang }: { lang: Lang }) {
   const pickRole = (r: string) => {
     setRole(r)
 
-    setSel([listsShown[roleListIdx[rolesShown.indexOf(r)]]])
+    // Marketing consent is explicit opt-in only — never pre-select a list.
   }
+
+  const isValidEmail = (value: string): boolean => EMAIL_REGEX.test(value.trim())
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
 
     setError("")
+    setEmailErr("")
+
+    if (!isValidEmail(email)) {
+      setEmailErr(
+        ar
+          ? "يرجى إدخال عنوان بريد إلكتروني صحيح."
+          : "Please enter a valid email address.",
+      )
+
+      setSending(false)
+
+      return
+    }
 
     setSending(true)
 
@@ -236,7 +255,7 @@ export function Conversation({ lang }: { lang: Lang }) {
       await api.submit({
         kind: "CONTACT",
 
-        email,
+        email: email.trim(),
 
         source: "site",
 
@@ -366,9 +385,14 @@ export function Conversation({ lang }: { lang: Lang }) {
                   placeholder="you@organisation.org"
                   className="min-w-0 flex-1 bg-transparent py-3 text-base placeholder:text-ivory/30 focus:outline-none sm:py-4 sm:text-lg"
                 />
+                {emailErr && (
+                  <p role="alert" className="eyebrow mt-2 text-error">
+                    {emailErr}
+                  </p>
+                )}
                 <button
                   type="submit"
-                  disabled={sending}
+                  disabled={sending || !isValidEmail(email)}
                   className="cursor-pointer eyebrow py-3 text-gold-light transition hover:text-ivory disabled:opacity-60 min-h-[44px] sm:py-4"
                 >
                   {sending

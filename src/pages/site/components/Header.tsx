@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 
+import { usePageContext } from "vike-react/usePageContext"
+
 import { audiences } from "@/content/data"
 
 import {
@@ -34,6 +36,36 @@ const nav = [
 ]
 
 /* Each primary nav item reveals its column's dedicated pages on hover/focus. */
+
+/* Routes that render the full Site shell with all sections stacked. On these
+   pages, nav links use hash anchors so the browser scrolls directly to the
+   section instead of doing a full page reload (which would flash the hero
+   first, then scroll down). Everywhere else (detail pages, hubs, dashboard),
+   nav links use the full route path. */
+
+const sectionRoutes = new Set([
+  "/",
+
+  "/for",
+
+  "/evidence",
+
+  "/method",
+
+  "/knowledge",
+
+  "/learning",
+
+  "/about",
+
+  "/join",
+
+  "/contact",
+])
+
+function isSectionRoute(pathname: string): boolean {
+  return sectionRoutes.has(pathname.replace(/\/+$/, "") || "/")
+}
 
 const navColumn: Record<string, ColumnKey> = {
   evidence: "Evidence",
@@ -151,6 +183,13 @@ function Header({
 
   setLang: (l: Lang) => void
 }) {
+  const { urlPathname } = usePageContext()
+
+  const onSectionRoute = isSectionRoute(urlPathname)
+
+  const navHref = (n: { id: string; path: string }): string =>
+    onSectionRoute ? `#${n.id}` : n.path
+
   const [scrolled, setScrolled] = useState(false)
 
   const [open, setOpen] = useState(false)
@@ -270,7 +309,7 @@ function Header({
               return (
                 <div key={n.id} className="group relative">
                   <a
-                    href={n.path}
+                    href={navHref(n)}
                     aria-current={on ? "true" : undefined}
                     aria-haspopup={pages.length > 0 || undefined}
                     className={`relative flex items-center gap-1.5 px-4 py-2 text-label tracking-cta uppercase transition-colors ${
@@ -318,7 +357,7 @@ function Header({
                               </p>
                             </div>
                             <a
-                              href={n.path}
+                              href={navHref(n)}
                               className="shrink-0 border-b border-gold-light/40 pb-0.5 text-label whitespace-nowrap text-gold-light transition hover:border-gold-light"
                             >
                               {ar ? "القسم كاملًا" : "View section"}{" "}
@@ -455,7 +494,7 @@ function Header({
                 }}
               >
                 <a
-                  href={n.path}
+                  href={navHref(n)}
                   onClick={() => setOpen(false)}
                   className="flex items-baseline gap-4 font-display text-4xl"
                 >

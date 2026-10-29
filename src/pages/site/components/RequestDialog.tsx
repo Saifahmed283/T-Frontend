@@ -28,6 +28,9 @@ export function RequestDialog({
     "idle",
   )
   const [error, setError] = useState("")
+
+  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   const open = !!request
 
   useEffect(() => {
@@ -40,11 +43,21 @@ export function RequestDialog({
     }
   }, [open])
 
+  const isValidEmail = (value: string): boolean => EMAIL_REGEX.test(value.trim())
+
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!request) return
-    setPhase("sending")
+
     setError("")
+
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email address.")
+
+      return
+    }
+
+    setPhase("sending")
     try {
       await api.submit({
         kind: request.kind,
