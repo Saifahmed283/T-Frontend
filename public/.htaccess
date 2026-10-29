@@ -17,7 +17,10 @@
 # Real 404 status + prerendered error page (not a soft 404).
 ErrorDocument 404 /404.html
 
-# Hashed build assets are immutable - cache forever.
+# Caching. Only /assets/* is content-hashed, so only those files may be treated
+# as immutable. Fonts keep stable filenames (versioned with ?v= in fonts.css):
+# an immutable year-long cache on a stable URL once pinned a broken pointer file
+# in visitors' browsers, so they get a long-but-replaceable 30 days instead.
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType image/svg+xml "access plus 1 year"
@@ -25,15 +28,19 @@ ErrorDocument 404 /404.html
   ExpiresByType image/webp "access plus 1 year"
   ExpiresByType text/css "access plus 1 year"
   ExpiresByType application/javascript "access plus 1 year"
-  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 30 days"
   # HTML must stay fresh - short cache only.
   ExpiresByType text/html "access plus 0 seconds"
 </IfModule>
 
 <IfModule mod_headers.c>
-  # Long-lived immutable assets
-  <FilesMatch "\.(css|js|svg|png|webp|woff2)$">
+  # Long-lived immutable assets (hashed filenames under /assets/)
+  <FilesMatch "\.(css|js|svg|png|webp)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  # Fonts: cacheable, but not immutable - a replacement must be able to land.
+  <FilesMatch "\.woff2$">
+    Header set Cache-Control "public, max-age=2592000"
   </FilesMatch>
   # Prerendered HTML - revalidate every visit
   <FilesMatch "\.html$">

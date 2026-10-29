@@ -4,11 +4,17 @@ import vikeReact from "vike-react/config"
 /* The Latin families are self-hosted (see src/styles/fonts.css). The three faces
    used above the fold are preloaded so the hero headline paints in its final
    metrics instead of reflowing (CLS) when a late webfont swaps in. Arabic
-   families are still fetched from Google Fonts on demand — see src/lib/fonts.ts. */
+   families are still fetched from Google Fonts on demand — see src/lib/fonts.ts.
+
+   `?v=` must match src/styles/fonts.css exactly: a mismatched URL makes the
+   browser download the face twice instead of reusing the preload. Bump both
+   together when a font binary changes (fonts are not content-hashed). */
+const FONT_VERSION = "2"
+
 const PRELOAD_FONTS = [
-  "/fonts/cormorant-garamond-latin.woff2",
-  "/fonts/cormorant-garamond-italic-latin.woff2",
-  "/fonts/jost-latin.woff2",
+  `/fonts/cormorant-garamond-latin.woff2?v=${FONT_VERSION}`,
+  `/fonts/cormorant-garamond-italic-latin.woff2?v=${FONT_VERSION}`,
+  `/fonts/jost-latin.woff2?v=${FONT_VERSION}`,
 ]
 
 export default {
