@@ -259,7 +259,6 @@ export const knowledge = [
 
 export const footer: Record<string, string[]> = {
   Evidence: [
-    "Assignment ledger",
     "Case studies",
     "Impact report (annual)",
     "Clients & references",
@@ -267,7 +266,6 @@ export const footer: Record<string, string[]> = {
   ],
   Method: [
     "The LDIA architecture",
-    "G0–G7 lifecycle",
     "Instruments",
     "Glossary of domains",
     "Licensing & open terms",
@@ -314,7 +312,6 @@ export const footerHeadingAr: Record<string, string> = {
 /* Arabic footer link labels, aligned by index with the English arrays above. */
 export const footerAr: Record<string, string[]> = {
   Evidence: [
-    "سجل المهام",
     "دراسات الحالة",
     "تقرير الأثر (سنوي)",
     "العملاء والمراجع",
@@ -322,7 +319,6 @@ export const footerAr: Record<string, string[]> = {
   ],
   Method: [
     "معمارية LDIA",
-    "دورة حياة G0–G7",
     "الأدوات",
     "معجم المجالات",
     "الترخيص والشروط المفتوحة",

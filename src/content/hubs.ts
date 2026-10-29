@@ -208,7 +208,7 @@ export const hubs: Hub[] = [
 
     proofHeading: "Assignments a procurement reader can check.",
 
-    proofAside: "Named, dated, and verifiable against the assignment ledger.",
+    proofAside: "Named, dated, and verifiable against case studies.",
 
     proof: [
       {
@@ -216,7 +216,7 @@ export const hubs: Hub[] = [
 
         meta: "Assiut Governorate · 2025 · USD 100–250k",
 
-        href: "/evidence/assignment-ledger",
+        href: "/evidence/case-studies",
       },
 
       {
@@ -224,7 +224,7 @@ export const hubs: Hub[] = [
 
         meta: "Ministry of Planning · 2026 · USD 250–500k",
 
-        href: "/evidence/assignment-ledger",
+        href: "/evidence/case-studies",
       },
 
       {
@@ -304,9 +304,9 @@ export const hubs: Hub[] = [
     },
 
     secondary: {
-      label: "See the assignment ledger",
+      label: "See the case studies",
 
-      href: "/evidence/assignment-ledger",
+      href: "/evidence/case-studies",
     },
   },
 
@@ -422,7 +422,7 @@ export const hubs: Hub[] = [
 
         meta: "Development partner · Morocco · 2023",
 
-        href: "/evidence/assignment-ledger",
+        href: "/evidence/case-studies",
       },
 
       {

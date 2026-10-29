@@ -242,7 +242,7 @@ function Header({
           panel (see the dropdown below), not on the bar. */}
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 bg-navy-3/90 text-ivory"
+        className="fixed top-0 left-0 right-0 z-50 bg-navy-3 text-ivory"
       >
         <div
           aria-hidden

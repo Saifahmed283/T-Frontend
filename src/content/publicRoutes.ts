@@ -22,8 +22,6 @@ export const CMS_ROUTE_BASE: Record<string, string> = {
 
   instruments: "/method",
 
-  stages: "/method",
-
   courses: "/learning",
 
   experts: "/join",

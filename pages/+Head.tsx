@@ -18,7 +18,7 @@ const SECTIONS: Record<string, {
   "/": {
     title: "TerraMorph — Strategy, Policy & Transformation Advisory | Egypt",
     description:
-      "TerraMorph advises governments, institutions and social enterprises in Egypt and across borders on strategy, policy and transformation — with a dated, named assignment ledger behind every claim.",
+      "TerraMorph advises governments, institutions and social enterprises in Egypt and across borders on strategy, policy and transformation — with named, dated engagements behind every claim.",
   },
   "/for": {
     title: "Who we serve | TerraMorph",
@@ -28,7 +28,7 @@ const SECTIONS: Record<string, {
   "/evidence": {
     title: "Evidence | TerraMorph",
     description:
-      "The dated, named assignment ledger, case studies, impact reporting and client references behind every TerraMorph claim.",
+      "Named, dated case studies, impact reporting and client references behind every TerraMorph claim.",
   },
   "/method": {
     title: "Method | TerraMorph",

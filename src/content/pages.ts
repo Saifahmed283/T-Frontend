@@ -184,137 +184,6 @@ export type PageDef = {
 export const PAGES: PageDef[] = [
   // Evidence
   {
-    slug: "assignment-ledger",
-    path: "/evidence/assignment-ledger",
-    column: "Evidence",
-    label: "Assignment ledger",
-    eyebrow: "Evidence · Ledger",
-    title: "The assignment ledger.",
-    lede: "Every engagement we have ever run — client type, country, sector, year and size band. Named and dated, so a procurement reader can verify the whole record rather than take our word for it.",
-    meta: "The full TerraMorph assignment ledger: dated, named engagements with client type, country, sector and size band.",
-    tags: ["Ledger", "Transparency", "Procurement-ready"],
-    updated: "September 2026",
-    blocks: [
-      {
-        kind: "figure",
-        alt: "The assignment ledger rendered as a dated, filterable record",
-        eyebrow: "Evidence · 2019–2026",
-        title: "Fifty-eight engagements, dated and named.",
-        caption:
-          "A live record a procurement reader can filter and verify — not a selected list.",
-        credit: "TerraMorph · assignment ledger",
-      },
-      {
-        kind: "stats",
-        items: [
-          { value: "58", label: "Assignments delivered", note: "2019–2026" },
-          { value: "9", label: "Countries covered", note: "MENA & EU" },
-          {
-            value: "7",
-            label: "Practice areas",
-            note: "LED to social enterprise",
-          },
-          { value: "94%", label: "Repeat or referred", note: "of client base" },
-        ],
-      },
-      {
-        kind: "table",
-        heading: "Ledger entries",
-        aside:
-          "Sorted newest first. Size bands follow the client’s own tender thresholds where published.",
-        columns: ["Year", "Assignment", "Client", "Sector", "Country", "Size"],
-        rows: [
-          [
-            "2026",
-            "Blended-finance structure, women-led agri cooperative",
-            "Delta Impact Fund",
-            "Social enterprise",
-            "Egypt",
-            "< USD 100k",
-          ],
-          [
-            "2026",
-            "Investment climate action plan",
-            "Ministry of Planning",
-            "Investment climate",
-            "Egypt",
-            "USD 250–500k",
-          ],
-          [
-            "2025",
-            "Governorate investment map, phase I–II",
-            "Assiut Governorate",
-            "Local economic development",
-            "Egypt",
-            "USD 100–250k",
-          ],
-          [
-            "2025",
-            "Main-street LED pilot design",
-            "Municipal authority",
-            "Local economic development",
-            "Egypt",
-            "< USD 100k",
-          ],
-          [
-            "2024",
-            "Employer-validated curricula for 14 schools",
-            "GIZ programme",
-            "TVET & skills",
-            "Egypt",
-            "USD 100–250k",
-          ],
-          [
-            "2024",
-            "SME regulatory burden review",
-            "Chamber of commerce",
-            "Policy",
-            "Jordan",
-            "< USD 100k",
-          ],
-          [
-            "2023",
-            "Train-the-trainer certification framework",
-            "AAST Academy",
-            "TVET & skills",
-            "Egypt",
-            "< USD 100k",
-          ],
-          [
-            "2023",
-            "Regional logistics corridor pre-feasibility",
-            "Development partner",
-            "Infrastructure",
-            "Morocco",
-            "USD 100–250k",
-          ],
-        ],
-        note: "Client names are shown where the contract permits; sensitive clients are listed by type and country only.",
-      },
-      {
-        kind: "prose",
-        heading: "How the ledger stays honest.",
-        body: [
-          "The ledger is maintained under the same mandate note that governs every engagement — if we cannot name the client or the year, the row does not go in.",
-          "Where a client requires anonymity we publish the client type and country instead, and mark the row accordingly. No engagement is ever retro-fitted to a favourable size band.",
-        ],
-      },
-      {
-        kind: "cta",
-        title: "Need the ledger in your procurement format?",
-        body: "We export the ledger as a signed PDF and a machine-readable CSV, mapped to standard eligibility fields, on request within two working days.",
-        actions: [
-          {
-            label: "Request the signed ledger",
-            href: "/contact",
-            primary: true,
-          },
-          { label: "See case studies", href: "/evidence/case-studies" },
-        ],
-      },
-    ],
-  },
-  {
     slug: "case-studies",
     path: "/evidence/case-studies",
     column: "Evidence",
@@ -394,7 +263,6 @@ export const PAGES: PageDef[] = [
             href: "/contact",
             primary: true,
           },
-          { label: "Browse the ledger", href: "/evidence/assignment-ledger" },
         ],
       },
     ],
@@ -731,7 +599,7 @@ export const PAGES: PageDef[] = [
     label: "The LDIA architecture",
     eyebrow: "Method · LDIA architecture",
     title: "The LDIA architecture.",
-    lede: "Locate, Design, Implement, Assure — four layers that turn a mandate into a transferable result. LDIA is the spine that the G0–G7 lifecycle runs along.",
+    lede: "Locate, Design, Implement, Assure — four layers that turn a mandate into a transferable result. LDIA is the spine behind every engagement.",
     meta: "The TerraMorph LDIA architecture: Locate, Design, Implement, Assure — the four layers behind every engagement.",
     tags: ["LDIA", "Architecture", "Framework"],
     updated: "May 2026",
@@ -743,7 +611,7 @@ export const PAGES: PageDef[] = [
         title:
           "Locate, Design, Implement, Assure — one spine, every engagement.",
         caption:
-          "LDIA runs along the G0–G7 lifecycle, with a defined output and owner at each layer.",
+          "LDIA is the spine behind every engagement, with a defined output and owner at each layer.",
         credit: "TerraMorph method",
       },
       {
@@ -780,31 +648,31 @@ export const PAGES: PageDef[] = [
       },
       {
         kind: "timeline",
-        heading: "How LDIA maps to G0–G7",
+        heading: "How LDIA works in practice",
         items: [
           {
-            step: "G0–G1",
-            title: "Locate",
+            step: "Locate",
+            title: "Find the lever, not the list",
             meta: "Mandate + diagnose",
             body: "The mandate note fixes the question; the diagnostic names the constraint.",
           },
           {
-            step: "G2–G4",
-            title: "Design",
-            meta: "Lever → align",
+            step: "Design",
+            title: "Lever → align",
+            meta: "Lever → instrument → coalition",
             body: "The lever map becomes a costed instrument, then a recorded coalition.",
           },
           {
-            step: "G5",
-            title: "Implement",
+            step: "Implement",
+            title: "Deliver embedded, in place",
             meta: "Deliver",
-            body: "Embedded delivery with a monthly dashboard against agreed indicators.",
+            body: "We sit inside the client institution and report monthly against agreed indicators, so drift is visible early.",
           },
           {
-            step: "G6–G7",
-            title: "Assure",
+            step: "Assure",
+            title: "Verify, publish, transfer",
             meta: "Measure + transfer",
-            body: "Verified results published, method and tools handed to the client.",
+            body: "Outcomes are measured against baseline, published with method, and the capability is handed over to trained people.",
           },
         ],
       },
@@ -822,109 +690,6 @@ export const PAGES: PageDef[] = [
         body: "Bring a live question and we will map it to the four layers in a working session.",
         actions: [
           { label: "Book a working session", href: "/contact", primary: true },
-          { label: "See the G0–G7 lifecycle", href: "/method/lifecycle" },
-        ],
-      },
-    ],
-  },
-  {
-    slug: "lifecycle",
-    path: "/method/lifecycle",
-    column: "Method",
-    label: "G0–G7 lifecycle",
-    eyebrow: "Method · G0–G7 lifecycle",
-    title: "The G0–G7 lifecycle.",
-    lede: "Eight gates from mandate to transfer. Each gate has a duration, a named output and a decision owner — nothing advances on a slide.",
-    meta: "The TerraMorph G0–G7 delivery lifecycle: eight gates from mandate note to transfer kit, with outputs and timings.",
-    tags: ["Lifecycle", "Gates", "Delivery"],
-    updated: "May 2026",
-    blocks: [
-      {
-        kind: "timeline",
-        heading: "The eight gates",
-        aside:
-          "Typical durations; complex engagements expand G5 delivery under the same gates.",
-        items: [
-          {
-            step: "G0",
-            title: "Mandate",
-            meta: "1–2 wks",
-            body: "Fix the question, the client, the decision it serves and the rules it must live inside.",
-          },
-          {
-            step: "G1",
-            title: "Diagnose",
-            meta: "2–4 wks",
-            body: "Read the ground as it is and name the binding constraint, not list everything.",
-          },
-          {
-            step: "G2",
-            title: "Locate the lever",
-            meta: "1–2 wks",
-            body: "Find the smallest well-placed force that moves the largest outcome.",
-          },
-          {
-            step: "G3",
-            title: "Design",
-            meta: "3–6 wks",
-            body: "Costed options, owners and sequencing, each with its own risk register.",
-          },
-          {
-            step: "G4",
-            title: "Align",
-            meta: "2–4 wks",
-            body: "Build the coalition; record consultation and answer objections in writing.",
-          },
-          {
-            step: "G5",
-            title: "Deliver",
-            meta: "Variable",
-            body: "Embedded delivery with monthly dashboards against agreed indicators.",
-          },
-          {
-            step: "G6",
-            title: "Measure",
-            meta: "Quarterly",
-            body: "Verify outcomes against baseline and publish results with method.",
-          },
-          {
-            step: "G7",
-            title: "Transfer",
-            meta: "4–8 wks",
-            body: "Hand over method, tools and trained people — success is not needing us.",
-          },
-        ],
-      },
-      {
-        kind: "stats",
-        items: [
-          { value: "8", label: "Gates", note: "every engagement" },
-          {
-            value: "16–24",
-            label: "Typical weeks",
-            note: "diagnostic to delivery",
-          },
-          { value: "3", label: "Client sign-off points", note: "G1, G4, G7" },
-          {
-            value: "100%",
-            label: "Mandate notes",
-            note: "before any work starts",
-          },
-        ],
-      },
-      {
-        kind: "prose",
-        heading: "Gates are stops, not milestones.",
-        body: [
-          "A gate is a decision point where a client can stop, re-scope or continue. If the diagnostic in G1 does not identify a binding constraint, we say so and the engagement ends there rather than manufacturing a project.",
-        ],
-      },
-      {
-        kind: "cta",
-        title: "See where your question sits.",
-        body: "Most mandates enter at G0. Send us the decision you need to make and we will tell you the gate you are actually at.",
-        actions: [
-          { label: "Start at G0", href: "/contact", primary: true },
           { label: "See the instruments", href: "/method/instruments" },
         ],
       },

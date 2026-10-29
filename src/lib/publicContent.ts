@@ -570,5 +570,4 @@ export const collectionLabels = {
   vacancies: "vacancies",
   initiatives: "initiatives",
   audiences: "audiences",
-  stages: "method stages",
 } as const

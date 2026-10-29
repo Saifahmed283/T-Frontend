@@ -268,11 +268,11 @@ export function Evidence({ lang }: { lang: Lang }) {
 
   const ledgerMessage = assignments.live
     ? ar
-      ? "تم تحديث سجل المهام من مساحة المحتوى."
-      : "Showing the live assignment ledger from the content workspace."
+      ? "تم تحديث الأدلة من مساحة المحتوى."
+      : "Showing live evidence from the content workspace."
     : ar
-      ? "يُعرض سجل المهام الثابت."
-      : "Showing the static assignment ledger."
+      ? "يُعرض أدلة ثابتة."
+      : "Showing static evidence."
 
   return (
     <section className="mx-auto max-w-[1320px] px-5 py-24 md:px-10">

@@ -39,7 +39,7 @@ const CMS_SECTIONS: Record<string, {
 
   knowledge: { column: "Knowledge", collections: ["publications"] },
 
-  method: { column: "Method", collections: ["instruments", "stages"] },
+  method: { column: "Method", collections: ["instruments"] },
 
   learning: { column: "Learning", collections: ["courses"] },
 
@@ -68,8 +68,6 @@ const collectionLabelsAr: Record<string, string> = {
   initiatives: "المبادرات",
 
   audiences: "الجماهير",
-
-  stages: "مراحل المنهج",
 }
 
 const fieldLabelsAr: Record<string, string> = {

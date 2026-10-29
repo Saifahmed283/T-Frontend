@@ -54,12 +54,12 @@ export const HUBS_AR: Record<string, Hub> = {
       {
         title: "الخريطة الاستثمارية للمحافظة، المرحلة الأولى–الثانية",
         meta: "محافظة أسيوط · 2025 · USD 100–250k",
-        href: "/evidence/assignment-ledger",
+        href: "/evidence/case-studies",
       },
       {
         title: "خطة عمل مناخ الاستثمار",
         meta: "وزارة التخطيط · 2026 · USD 250–500k",
-        href: "/evidence/assignment-ledger",
+        href: "/evidence/case-studies",
       },
       {
         title: "مراجعة العبء التنظيمي على المنشآت الصغيرة والمتوسطة",
@@ -112,8 +112,8 @@ export const HUBS_AR: Record<string, Hub> = {
         "سنرسل عبر البريد حزمة المشتريات وملخص الامتثال، مطابقين لحقول الأهلية المعيارية.",
     },
     secondary: {
-      label: "اطّلع على سجل التكليفات",
-      href: "/evidence/assignment-ledger",
+      label: "اطّلع على دراسات الحالة",
+      href: "/evidence/case-studies",
     },
   },
 
@@ -179,7 +179,7 @@ export const HUBS_AR: Record<string, Hub> = {
       {
         title: "دراسة جدوى أولية لممر لوجستي إقليمي",
         meta: "شريك تنمية · المغرب · 2023",
-        href: "/evidence/assignment-ledger",
+        href: "/evidence/case-studies",
       },
       {
         title: "تقرير الأثر 2026 — مؤشرات متحقق منها",

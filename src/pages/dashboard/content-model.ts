@@ -246,20 +246,6 @@ export const collections: Collection[] = [
       { key: "booking", label: "Booking link", type: "url" },
     ],
   },
-  {
-    id: "stages",
-    name: "G0–G7 Stages",
-    singular: "Stage",
-    description: "Structured stages of the TerraMorph method",
-    group: "Knowledge",
-    fields: [
-      { ...title, label: "Name" },
-      description,
-      { key: "time", label: "Typical duration", localized: true },
-      { key: "output", label: "Output", localized: true },
-      { key: "order", label: "Order", type: "number" },
-    ],
-  },
 ]
 
 export const collectionGroups = [
