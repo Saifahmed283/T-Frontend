@@ -337,13 +337,9 @@ function Hero({ lang }: { lang: Lang }) {
               <button
                 type="button"
                 onClick={openDiagnostic}
-                className="group inline-flex w-full items-center justify-center gap-3 bg-gold-light px-5 py-3 text-label font-medium tracking-cta text-navy uppercase transition hover:bg-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light min-h-[44px] sm:w-auto sm:px-7 sm:py-4"
+                className="inline-flex w-full items-center justify-center bg-gold-light px-5 py-3 text-label font-medium tracking-cta text-navy uppercase transition hover:bg-ivory focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-gold-light min-h-[44px] sm:w-auto sm:px-7 sm:py-4"
               >
                 {ar ? "ابدأ تشخيص الجاهزية" : "Start the readiness diagnostic"}
-                <span
-                  aria-hidden
-                  className="inline-block h-px w-6 bg-navy transition-all duration-500 group-hover:w-10"
-                />
               </button>
               <a
                 href="/evidence"

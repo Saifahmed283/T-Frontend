@@ -298,10 +298,9 @@ function Audiences({ lang }: { lang: Lang }) {
             >
               <Magnetic
                 href={`/hub/${a.slug}`}
-                className="group bg-navy px-7 py-4 text-label font-medium tracking-cta text-ivory uppercase rtl:normal-case rtl:tracking-normal"
+                className="bg-navy px-7 py-4 text-label font-medium tracking-cta text-ivory uppercase rtl:normal-case rtl:tracking-normal"
               >
                 {lang === "ar" ? a.actionAr : a.action}
-                <span className="inline-block h-px w-6 bg-gold-light transition-all group-hover:w-10" />
               </Magnetic>
               <button
                 onClick={() => pick((active + 1) % n)}
