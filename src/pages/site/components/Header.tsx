@@ -234,10 +234,15 @@ function Header({
           No backdrop-blur: the sticky header sits above every scroll frame, so a
           full-width backdrop-filter forces a re-blur of the whole viewport on each
           scroll — the single most expensive thing a low-end GPU can be asked to do.
-          A near-opaque navy ground reads the same and costs nothing to composite. */}
+          A near-opaque navy ground reads the same and costs nothing to composite.
+
+          Keep backdrop-filter off this element: any backdrop-filter here makes the
+          header a backdrop root, so the dropdown panels nested inside it have nothing
+          to blur and render as flat see-through rectangles. The blur belongs on the
+          panel (see the dropdown below), not on the bar. */}
       <header
         ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 bg-navy-3/90 backdrop-blur-md text-ivory"
+        className="fixed top-0 left-0 right-0 z-50 bg-navy-3/90 text-ivory"
       >
         <div
           aria-hidden
@@ -291,7 +296,7 @@ function Header({
                   </a>
                   {pages.length > 0 && (
                     <div className="invisible absolute start-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition duration-300 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 rtl:translate-x-1/2">
-                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3/80 backdrop-blur-md shadow-overlay transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
+                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3 supports-[backdrop-filter:blur(1px)]:bg-navy-3/75 backdrop-blur-xl shadow-overlay transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
                         <div className="flex items-start justify-between gap-6 border-b border-ivory/10 px-6 py-5">
                           <div>
                             <p className="eyebrow text-gold-light">
