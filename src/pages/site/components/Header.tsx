@@ -295,55 +295,65 @@ function Header({
                     />
                   </a>
                   {pages.length > 0 && (
-                    <div className="invisible absolute start-1/2 top-full z-50 -translate-x-1/2 pt-3 opacity-0 transition duration-300 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 rtl:translate-x-1/2">
-                      <div className="w-[min(620px,90vw)] translate-y-1 border border-ivory/10 bg-navy-3 supports-[backdrop-filter:blur(1px)]:bg-navy-3/75 backdrop-blur-xl shadow-overlay transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
-                        <div className="flex items-start justify-between gap-6 border-b border-ivory/10 px-6 py-5">
-                          <div>
-                            <p className="eyebrow text-gold-light">
-                              {ar ? n.ar : column}
-                            </p>
-                            <p className="mt-2 max-w-xs text-sm leading-relaxed text-ivory/55">
-                              {ar
-                                ? columnMetaAr[column]
-                                : columnMeta[column].blurb}
-                            </p>
-                          </div>
-                          <a
-                            href={n.path}
-                            className="shrink-0 border-b border-gold-light/40 pb-0.5 text-label whitespace-nowrap text-gold-light transition hover:border-gold-light"
-                          >
-                            {ar ? "القسم كاملًا" : "View section"}{" "}
-                            <span
-                              aria-hidden
-                              className="inline-block rtl:rotate-180"
+                    <div className="invisible absolute start-1/2 top-full z-50 -translate-x-1/2 pt-3 group-hover:visible group-focus-within:visible rtl:translate-x-1/2">
+                      <div className="relative w-[min(620px,90vw)] translate-y-1 overflow-hidden border border-ivory/10 shadow-overlay transition-transform duration-300 group-hover:translate-y-0 group-focus-within:translate-y-0">
+                        {/* The frosted ground is its own layer, sibling to the fading
+                            content: backdrop-filter is skipped while an element (or
+                            its ancestor) animates opacity, so fading the panel itself
+                            made the blur pop in only after the 300ms fade. */}
+                        <div
+                          aria-hidden
+                          className="pointer-events-none absolute inset-0 bg-navy-3 supports-[backdrop-filter:blur(1px)]:bg-navy-3/75 backdrop-blur-xl"
+                        />
+                        <div className="relative opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100">
+                          <div className="flex items-start justify-between gap-6 border-b border-ivory/10 px-6 py-5">
+                            <div>
+                              <p className="eyebrow text-gold-light">
+                                {ar ? n.ar : column}
+                              </p>
+                              <p className="mt-2 max-w-xs text-sm leading-relaxed text-ivory/55">
+                                {ar
+                                  ? columnMetaAr[column]
+                                  : columnMeta[column].blurb}
+                              </p>
+                            </div>
+                            <a
+                              href={n.path}
+                              className="shrink-0 border-b border-gold-light/40 pb-0.5 text-label whitespace-nowrap text-gold-light transition hover:border-gold-light"
                             >
-                              →
-                            </span>
-                          </a>
-                        </div>
-                        <ul className="grid gap-0.5 p-2 sm:grid-cols-2">
-                          {pages.map((p) => (
-                            <li key={p.slug}>
-                              <a
-                                href={p.path}
-                                className="group/p flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-ivory/[0.06]"
+                              {ar ? "القسم كاملًا" : "View section"}{" "}
+                              <span
+                                aria-hidden
+                                className="inline-block rtl:rotate-180"
                               >
-                                <span className="flex items-center gap-2 text-sm tracking-normal text-ivory/85 normal-case transition-colors group-hover/p:text-ivory">
-                                  {p.label}
-                                  <span
-                                    aria-hidden
-                                    className="text-gold-light opacity-0 transition-all duration-300 group-hover/p:translate-x-1 group-hover/p:opacity-100 rtl:rotate-180"
-                                  >
-                                    →
+                                →
+                              </span>
+                            </a>
+                          </div>
+                          <ul className="grid gap-0.5 p-2 sm:grid-cols-2">
+                            {pages.map((p) => (
+                              <li key={p.slug}>
+                                <a
+                                  href={p.path}
+                                  className="group/p flex flex-col gap-1 px-4 py-3 transition-colors hover:bg-ivory/[0.06]"
+                                >
+                                  <span className="flex items-center gap-2 text-sm tracking-normal text-ivory/85 normal-case transition-colors group-hover/p:text-ivory">
+                                    {p.label}
+                                    <span
+                                      aria-hidden
+                                      className="text-gold-light opacity-0 transition-all duration-300 group-hover/p:translate-x-1 group-hover/p:opacity-100 rtl:rotate-180"
+                                    >
+                                      →
+                                    </span>
                                   </span>
-                                </span>
-                                <span className="line-clamp-2 text-xs leading-snug text-ivory/45">
-                                  {pageSummary(p)}
-                                </span>
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
+                                  <span className="line-clamp-2 text-xs leading-snug text-ivory/45">
+                                    {pageSummary(p)}
+                                  </span>
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
                     </div>
                   )}
