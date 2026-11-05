@@ -1,0 +1,211 @@
+import { useState } from "react"
+import { Check, ChevronRight, ListFilter, Plus, Search } from "lucide-react"
+
+import type { ContentCounts } from "@/lib/api"
+
+import type { Collection } from "../content-model"
+import { useCollection } from "../hooks/useCollection"
+import { Badge, Button, Field, Input } from "../ui"
+import { collectionIcons, Empty, recordLanguages, statusTone } from "../shared"
+
+/* Collection — one collection's records, with status tabs, search, filters and
+   pagination. The row grid mirrors the header grid so columns stay aligned. */
+
+export function CollectionPage({
+  collection,
+  counts,
+  onOpenItem,
+  onCreate,
+}: {
+  collection: Collection
+  counts: ContentCounts | null
+  onOpenItem: (itemId: string) => void
+  onCreate: () => void
+}) {
+  const {
+    items,
+    loading,
+    status,
+    setStatus,
+    search,
+    setSearch,
+    page,
+    setPage,
+    totalPages,
+  } = useCollection(collection.id)
+
+  const [filters, setFilters] = useState(false)
+  const [geoFilter, setGeoFilter] = useState("")
+  const [sectorFilter, setSectorFilter] = useState("")
+  const byStatus = counts?.byKind?.[collection.id]?.byStatus
+
+  const filteredItems = items.filter((it) => {
+    const data = it.data as Record<string, unknown>
+    const geo = String(data.geography ?? "").toLowerCase()
+    const sector = String(data.sector ?? "").toLowerCase()
+    return (
+      geo.includes(geoFilter.toLowerCase()) &&
+      sector.includes(sectorFilter.toLowerCase())
+    )
+  })
+
+  const tabs: { key: string; label: string }[] = [
+    { key: "All", label: "All content" },
+    { key: "DRAFT", label: "Draft" },
+    { key: "REVIEW", label: "Review" },
+    { key: "APPROVED", label: "Approved" },
+    { key: "PUBLISHED", label: "Published" },
+    { key: "ARCHIVED", label: "Archived" },
+  ]
+
+  return (
+    <section className="panel">
+      <div className="status-tabs">
+        {tabs.map((t) => (
+          <Button
+            key={t.key}
+            variant="ghost"
+            className={(status ?? "All") === t.key ? "selected" : ""}
+            onClick={() =>
+              setStatus(t.key === "All" ? undefined : (t.key as never))
+            }
+          >
+            {t.label}
+            <span>
+              {t.key === "All"
+                ? (counts?.byKind?.[collection.id]?.total ?? 0)
+                : (byStatus?.[t.key] ?? 0)}
+            </span>
+          </Button>
+        ))}
+      </div>
+
+      <div className="collection-toolbar">
+        <div className="search-field">
+          <Search size={16} />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={`Search ${collection.name.toLowerCase()}…`}
+            aria-label={`Search ${collection.name}`}
+          />
+        </div>
+        <Button
+          className={filters ? "selected" : ""}
+          onClick={() => setFilters(!filters)}
+          aria-expanded={filters}
+        >
+          <ListFilter size={15} />
+          Filters
+          {filters && <Check size={13} />}
+        </Button>
+      </div>
+
+      {filters && (
+        <div className="expanded-filters">
+          <Field label="Geography">
+            <Input
+              value={geoFilter}
+              onChange={(e) => setGeoFilter(e.target.value)}
+              placeholder="Filter by geography"
+            />
+          </Field>
+          <Field label="Sector">
+            <Input
+              value={sectorFilter}
+              onChange={(e) => setSectorFilter(e.target.value)}
+              placeholder="Filter by sector"
+            />
+          </Field>
+        </div>
+      )}
+
+      <div className="records-table-head">
+        <span>Title</span>
+        <span>Status</span>
+        <span>Languages</span>
+        <span>Last updated</span>
+      </div>
+
+      {loading ? (
+        <div>
+          {[0, 1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="flex items-center gap-4 border-b border-line px-5 py-4"
+            >
+              <div className="h-3.5 w-48 animate-pulse bg-ivory-2" />
+            </div>
+          ))}
+        </div>
+      ) : filteredItems.length === 0 ? (
+        <Empty
+          icon={collectionIcons[collection.id]}
+          title={`No ${collection.name.toLowerCase()} yet`}
+          action={
+            <Button className="mt-2" onClick={onCreate}>
+              <Plus size={15} />
+              Add {collection.singular.toLowerCase()}
+            </Button>
+          }
+        >
+          Create your first record to see it here.
+        </Empty>
+      ) : (
+        <div>
+          {filteredItems.map((it) => (
+            <Button
+              variant="ghost"
+              key={it.id}
+              onClick={() => onOpenItem(it.id)}
+              className="item-row"
+            >
+              <div className="min-w-0">
+                <p className="truncate">{it.title || "Untitled"}</p>
+                <p className="truncate">/{it.slug}</p>
+              </div>
+              <div>
+                <Badge tone={statusTone(it.status)}>{it.status}</Badge>
+              </div>
+              <div className="language-pills">
+                {recordLanguages(it, collection).map((l) => (
+                  <span key={l}>{l}</span>
+                ))}
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono text-[10px] tracking-wide text-slate-strong">
+                  {new Date(it.updatedAt).toLocaleDateString()}
+                </span>
+                <ChevronRight size={14} />
+              </div>
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="panel-foot" style={{ justifyContent: "space-between" }}>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}

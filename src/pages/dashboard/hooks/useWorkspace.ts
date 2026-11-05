@@ -39,6 +39,9 @@ export function useWorkspace() {
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
 
+    /* The session probe is authoritative. A confirmed 401 means “signed out”;
+       anything else (network, 429, 5xx) is a transient problem — we show a
+       retry state instead of throwing the visitor out of the workspace. */
     let session: SessionInfo
     try {
       session = await api.me()
@@ -60,43 +63,36 @@ export function useWorkspace() {
     const isAdmin = session.role === "admin"
     const isApprover = isAdmin || session.role === "lead"
 
-    try {
-      const [activity, submissions, contentCounts, workflowBoard] =
-        await Promise.all([
-          api.activity(20),
-          isAdmin
-            ? api.submissions({ pageSize: 100 })
-            : Promise.resolve({ items: [] as Submission[] }),
-          api.contentCounts(),
-          api.workflowBoard(),
-        ])
+    /* Each data source fails independently: a hiccup in one feed never takes
+       down the whole workspace. The shell renders around nulls. */
+    let activity: ActivityFeed = { items: [], nextCursor: null }
+    let submissions: Submission[] | null = null
+    let contentCounts: ContentCounts | null = null
+    let workflowBoard: WorkflowBoardPayload | null = null
 
-      setState({
-        data: {
-          session,
-          isAdmin,
-          isApprover,
-          activity,
-          submissions: isAdmin ? submissions.items : null,
-          contentCounts,
-          workflowBoard,
-        },
-        loading: false,
-        error: null,
-        needsAuth: false,
-      })
-    } catch (err) {
-      const apiErr =
-        err instanceof ApiError
-          ? err
-          : new ApiError(0, "Network error", "NETWORK_ERROR")
-      setState({
-        data: null,
-        loading: false,
-        error: apiErr.message,
-        needsAuth: false,
-      })
-    }
+    await Promise.all([
+      api.activity(20).then((a) => { activity = a }).catch(() => {}),
+      (isAdmin
+        ? api.submissions({ pageSize: 100 }).then((r) => { submissions = r.items })
+        : Promise.resolve()).catch(() => {}),
+      api.contentCounts().then((c) => { contentCounts = c }).catch(() => {}),
+      api.workflowBoard().then((b) => { workflowBoard = b }).catch(() => {}),
+    ])
+
+    setState({
+      data: {
+        session,
+        isAdmin,
+        isApprover,
+        activity,
+        submissions,
+        contentCounts,
+        workflowBoard,
+      },
+      loading: false,
+      error: null,
+      needsAuth: false,
+    })
   }, [])
 
   useEffect(() => {
@@ -116,6 +112,9 @@ export function useWorkspace() {
       } finally {
         setState({ ...initial, loading: false, needsAuth: true })
       }
+      /* Send the visitor to the dedicated login page so the dashboard URL is
+         never left sitting unauthenticated in the address bar. */
+      window.location.replace("/dashboard/login")
     },
   }
 }

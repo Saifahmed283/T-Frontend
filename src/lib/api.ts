@@ -884,4 +884,43 @@ export const api = {
 
       body: JSON.stringify({ role }),
     }),
+
+  suspendMember: (userId: string) =>
+    request<{
+      suspended: boolean
+
+      user: {
+        id: string
+
+        name: string
+
+        email: string
+      }
+    }>(`/api/v1/members/${encodeURIComponent(userId)}/suspend`, {
+      method: "POST",
+    }),
+
+  deleteMember: (userId: string) =>
+    request<{
+      id: string
+
+      deleted: boolean
+    }>(`/api/v1/members/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    }),
+
+  updateMemberInfo: (userId: string, data: { name: string; email: string }) =>
+    request<{
+      user: {
+        id: string
+
+        name: string
+
+        email: string
+      }
+    }>(`/api/v1/members/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+
+      body: JSON.stringify(data),
+    }),
 }

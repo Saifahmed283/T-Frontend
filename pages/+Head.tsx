@@ -64,6 +64,10 @@ const SECTIONS: Record<string, {
     title: "Dashboard | TerraMorph",
     description: "The TerraMorph client portal and content workspace.",
   },
+  "/dashboard/login": {
+    title: "Sign in | TerraMorph",
+    description: "Sign in to your TerraMorph content workspace.",
+  },
   "/reset-password": {
     title: "Reset password | TerraMorph",
     description: "Choose a new password for your TerraMorph account.",

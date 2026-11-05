@@ -24,6 +24,8 @@
   --color-gold-light: #c4a868;
   --color-gold-strong: #76602c;
   --color-slate: #5e6772;
+  --color-slate-strong: #434a54;
+  --color-muted: #5d646a;
 
   /* Status — plain variants sit on navy, `-strong` variants on ivory (WCAG AA) */
   --color-ok: #4a6b4e;
