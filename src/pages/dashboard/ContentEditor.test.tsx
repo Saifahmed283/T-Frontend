@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import type { ContentItemDetail } from "@/lib/api"
 
+import { ToastProvider } from "./ui"
 import ContentEditor from "./ContentEditor"
 import type { Collection } from "./content-model"
 
@@ -119,13 +120,15 @@ describe("ContentEditor", () => {
     const onSaved = vi.fn()
 
     render(
-      <ContentEditor
-        collection={collection}
-        isApprover={false}
-        isAdmin={true}
-        onClose={vi.fn()}
-        onSaved={onSaved}
-      />,
+      <ToastProvider>
+        <ContentEditor
+          collection={collection}
+          isApprover={false}
+          isAdmin={true}
+          onClose={vi.fn()}
+          onSaved={onSaved}
+        />
+      </ToastProvider>,
     )
 
     await user.type(screen.getByLabelText(/title · en/i), "Water reuse")
@@ -185,14 +188,16 @@ describe("ContentEditor", () => {
     const onSaved = vi.fn()
 
     const { rerender } = render(
-      <ContentEditor
-        collection={collection}
-        itemId="c1"
-        isApprover={false}
-        isAdmin={true}
-        onClose={vi.fn()}
-        onSaved={onSaved}
-      />,
+      <ToastProvider>
+        <ContentEditor
+          collection={collection}
+          itemId="c1"
+          isApprover={false}
+          isAdmin={true}
+          onClose={vi.fn()}
+          onSaved={onSaved}
+        />
+      </ToastProvider>,
     )
 
     const title = await screen.findByDisplayValue("Water reuse")
@@ -230,14 +235,16 @@ describe("ContentEditor", () => {
     ).toBeEnabled()
 
     rerender(
-      <ContentEditor
-        collection={collection}
-        itemId="c1"
-        isApprover
-        isAdmin={true}
-        onClose={vi.fn()}
-        onSaved={onSaved}
-      />,
+      <ToastProvider>
+        <ContentEditor
+          collection={collection}
+          itemId="c1"
+          isApprover
+          isAdmin={true}
+          onClose={vi.fn()}
+          onSaved={onSaved}
+        />
+      </ToastProvider>,
     )
 
     const publish = screen.getByRole("button", { name: /move to published/i })

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from "react"
 import { Clock3, ChevronDown } from "lucide-react"
 
 import { api, type ActivityFeed, type ActivityItem } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "../ui"
 import { Button, Heading } from "../ui"
 import { Empty, timeAgo } from "../shared"
 
@@ -11,9 +13,10 @@ export function ActivityPage() {
   const [items, setItems] = useState<ActivityItem[]>([])
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [hasMore, setHasMore] = useState(false)
+
+  const { error: toastError } = useToastActions()
 
   const load = useCallback(async (before?: string) => {
     try {
@@ -25,8 +28,13 @@ export function ActivityPage() {
       }
       setNextCursor(res.nextCursor ?? null)
       setHasMore(!!res.nextCursor)
-    } catch {
-      setError("Failed to load activity")
+    } catch (e) {
+      const { message } = messageForError(e)
+      if (before) {
+        toastError("Couldn't load more activity. The list you have is still valid.")
+      } else {
+        toastError(message)
+      }
     } finally {
       setLoading(false)
       setLoadingMore(false)
@@ -53,15 +61,6 @@ export function ActivityPage() {
         </div>
         <Clock3 size={18} strokeWidth={1.5} />
       </div>
-
-      {error && (
-        <p className="panel-foot is-error" role="alert">
-          {error}.{" "}
-          <Button variant="ghost" onClick={() => load()}>
-            Retry
-          </Button>
-        </p>
-      )}
 
       {loading ? (
         <div className="p-4">

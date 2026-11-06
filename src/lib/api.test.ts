@@ -7,6 +7,7 @@ function fetchResponse(payload: unknown, status = 200, statusText = "") {
     ok: status >= 200 && status < 300,
     status,
     statusText,
+    headers: new Headers(),
     text: async () =>
       typeof payload === "string" ? payload : JSON.stringify(payload),
   } as Response

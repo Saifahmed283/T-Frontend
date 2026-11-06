@@ -18,6 +18,8 @@ import {
   type ContentItemDetail,
   type ContentStatus,
 } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "./ui"
 
 import type { Collection, FieldDefinition } from "./content-model"
 
@@ -132,7 +134,7 @@ export function ContentEditor({
 
   const [busy, setBusy] = useState(false)
 
-  const [error, setError] = useState<string | null>(null)
+  const { success, error: toastError } = useToastActions()
 
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -190,10 +192,11 @@ export function ContentEditor({
         setScheduledPublishAt(item?.scheduledPublishAt?.slice(0, 16) ?? "")
 
         setScheduledUnpublishAt(item?.scheduledUnpublishAt?.slice(0, 16) ?? "")
-
-        setError(item ? null : "Record not found")
-      } catch {
-        if (active) setError("Failed to load record")
+      } catch (e) {
+        if (active) {
+          const { message } = messageForError(e)
+          toastError(message)
+        }
       } finally {
         if (active) setLoading(false)
       }
@@ -281,13 +284,11 @@ export function ContentEditor({
   const save = async () => {
     const validationError = validateRequired()
     if (validationError) {
-      setError(validationError)
+      toastError(validationError)
       return
     }
 
     setBusy(true)
-
-    setError(null)
 
     try {
       if (isEdit && itemId) {
@@ -329,9 +330,11 @@ export function ContentEditor({
       }
 
       setDirty(false)
+      success(isEdit ? "Changes saved" : "Content created")
       onSaved()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed")
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
     }
@@ -342,14 +345,14 @@ export function ContentEditor({
 
     setBusy(true)
 
-    setError(null)
-
     try {
       await api.contentTransition(collection.id, itemId, to)
 
+      success("Status updated")
       onSaved()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Transition failed")
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
     }
@@ -360,14 +363,14 @@ export function ContentEditor({
 
     setBusy(true)
 
-    setError(null)
-
     try {
       await api.contentDelete(collection.id, itemId)
 
+      success("Content deleted")
       onSaved()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Delete failed")
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
     }
@@ -702,11 +705,6 @@ export function ContentEditor({
               </Field>
             </div>
           </>
-        )}
-        {error && (
-          <p className="field-hint is-error" role="alert">
-            {error}
-          </p>
         )}
       </div>
 

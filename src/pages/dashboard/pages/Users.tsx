@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { ShieldCheck, Trash2, Edit3, Pause, Play, UserPlus, X } from "lucide-react"
 
 import { api, type Member, type MemberRole } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "../ui"
 
 import { Badge, Button, Field, Heading, Input, Modal, Select } from "../ui"
 import { Empty, initials } from "../shared"
@@ -15,7 +17,6 @@ const tone: Record<MemberRole, "brand" | "warning" | "neutral"> = {
 export function UsersPage({ canEdit }: { canEdit: boolean }) {
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   const [editOpen, setEditOpen] = useState(false)
   const [editMember, setEditMember] = useState<Member | null>(null)
@@ -36,13 +37,16 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
   const [inviteRole, setInviteRole] = useState<MemberRole>("member")
   const [inviteResult, setInviteResult] = useState<{ tempPassword: string | null } | null>(null)
 
+  const { success, error: toastError } = useToastActions()
+
   const load = async () => {
     setLoading(true)
     try {
       const res = await api.members()
       setMembers(res.items)
-    } catch {
-      setError("Failed to load members")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setLoading(false)
     }
@@ -58,8 +62,10 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
     )
     try {
       await api.updateMemberRole(m.userId, role)
-    } catch {
-      setError("Could not update role")
+      success("Role updated")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
       void load()
     }
   }
@@ -86,9 +92,11 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
             : x,
         ),
       )
+      success("Changes saved")
       setEditOpen(false)
-    } catch {
-      setError("Could not save changes")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setEditBusy(false)
     }
@@ -103,8 +111,10 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
           x.userId === m.userId ? { ...x, suspendedAt: res.suspendedAt } : x,
         ),
       )
-    } catch {
-      setError("Could not suspend member")
+      success("Member suspended")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setSuspendBusy(null)
     }
@@ -119,8 +129,10 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
           x.userId === m.userId ? { ...x, suspendedAt: res.suspendedAt } : x,
         ),
       )
-    } catch {
-      setError("Could not resume member")
+      success("Member resumed")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setSuspendBusy(null)
     }
@@ -137,9 +149,11 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
     try {
       await api.deleteMember(deleteTarget)
       setMembers((list) => list.filter((x) => x.userId !== deleteTarget))
+      success("Member removed")
       setDeleteOpen(false)
-    } catch {
-      setError("Could not delete member")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setDeleteBusy(false)
       setDeleteTarget(null)
@@ -160,9 +174,11 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
     try {
       const res = await api.inviteMember({ email: inviteEmail, name: inviteName, role: inviteRole })
       setInviteResult({ tempPassword: res.tempPassword })
+      success(res.tempPassword ? "Invitation sent — share the temporary password securely" : "Member added")
       await load()
-    } catch {
-      setError("Could not invite member")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setInviteBusy(false)
     }
@@ -186,11 +202,7 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
         <ShieldCheck size={18} strokeWidth={1.5} />
       </div>
 
-      {error ? (
-        <p className="panel-foot is-error" role="alert">
-          {error}
-        </p>
-      ) : loading ? (
+      {loading ? (
         <div className="p-4">
           {[0, 1, 2].map((i) => (
             <div

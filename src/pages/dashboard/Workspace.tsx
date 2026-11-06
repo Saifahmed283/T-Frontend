@@ -17,7 +17,7 @@ import {
 import { useWorkspace } from "./hooks/useWorkspace"
 import "@/styles/dashboard.css"
 import { collections, type Collection } from "./content-model"
-import { Button, Heading, Input, Modal } from "./ui"
+import { Alert, Button, Heading, Input, Modal, ToastProvider } from "./ui"
 import { ContentEditor } from "./ContentEditor"
 import {
   collectionIcons,
@@ -219,13 +219,14 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
   const sessionRole = data?.session?.role ?? "member"
 
   return (
-    <div className="tm-workspace">
-      <div className="app-shell">
-        {mobileNav && (
-          <div className="nav-scrim" onClick={() => setMobileNav(false)} />
-        )}
+    <ToastProvider>
+      <div className="tm-workspace">
+        <div className="app-shell">
+          {mobileNav && (
+            <div className="nav-scrim" onClick={() => setMobileNav(false)} />
+          )}
 
-        <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}>
+          <aside className={`sidebar ${mobileNav ? "sidebar-open" : ""}`}>
           <div className="brand">
             <img
               className="brand-logo"
@@ -407,16 +408,13 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
             </div>
 
             {error && (
-              <div className="connection-notice" role="alert">
-                <Database size={15} />
-                <p>
-                  <strong>Could not load workspace data.</strong> {error}
-                </p>
-                <Button variant="ghost" onClick={() => void reload()}>
-                  Retry
-                  <ArrowRight size={14} />
-                </Button>
-              </div>
+              <Alert
+                tone="error"
+                title="Could not load workspace data"
+                body={error}
+                retry={reload}
+                retryLabel="Retry"
+              />
             )}
 
             {loading && !data ? (
@@ -636,7 +634,8 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
             />
           )
         })()}
-    </div>
+      </div>
+    </ToastProvider>
   )
 }
 

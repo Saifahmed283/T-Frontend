@@ -2,6 +2,8 @@ import { useEffect, useState } from "react"
 import { LockKeyhole } from "lucide-react"
 
 import { api } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "../ui"
 
 import { Button, Field, Heading, Input, Textarea } from "../ui"
 
@@ -78,8 +80,8 @@ export function WebsitePage({ canEdit }: { canEdit: boolean }) {
   const [updatedAt, setUpdatedAt] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [saved, setSaved] = useState(false)
+
+  const { success, error: toastError } = useToastActions()
 
   const load = async () => {
     setLoading(true)
@@ -88,8 +90,9 @@ export function WebsitePage({ canEdit }: { canEdit: boolean }) {
       const data = res.data as SiteSettings
       setSettings({ ...defaults, ...data })
       setUpdatedAt(res.updatedAt)
-    } catch {
-      setError("Failed to load website settings")
+    } catch (ex) {
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       setLoading(false)
     }
@@ -104,7 +107,6 @@ export function WebsitePage({ canEdit }: { canEdit: boolean }) {
       ...prev,
       [section]: { ...prev[section], [field]: value },
     }))
-    setSaved(false)
   }
 
   const updateAnnouncement = (field: keyof Announcement, value: string | boolean) => {
@@ -112,20 +114,18 @@ export function WebsitePage({ canEdit }: { canEdit: boolean }) {
       ...prev,
       announcement: { ...prev.announcement, [field]: value },
     }))
-    setSaved(false)
   }
 
   const save = async () => {
     setBusy(true)
-    setError(null)
-    setSaved(false)
     try {
       const res = await api.updateSiteSettings(settings)
       setSettings(res.data as SiteSettings)
       setUpdatedAt(res.updatedAt)
-      setSaved(true)
+      success("Website settings saved")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Save failed")
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
     }
@@ -163,12 +163,6 @@ export function WebsitePage({ canEdit }: { canEdit: boolean }) {
           Only workspace admins and leads can edit website settings.
         </p>
       )}
-      {error && (
-        <p className="panel-foot is-error" role="alert">
-          {error}
-        </p>
-      )}
-      {saved && <p className="panel-foot is-ok">Website settings saved.</p>}
 
       {loading ? (
         <div className="m-4 h-80 animate-pulse rounded-lg border border-line bg-ivory-2" />

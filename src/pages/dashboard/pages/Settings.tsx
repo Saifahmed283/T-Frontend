@@ -1,6 +1,8 @@
 import { useState } from "react"
 
 import { api } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "../ui"
 
 import { Button, Field, Heading, Input } from "../ui"
 
@@ -17,28 +19,29 @@ export function SettingsPage({ session }: { session: Session }) {
   const [next, setNext] = useState("")
   const [confirm, setConfirm] = useState("")
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+
+  const { success, error: toastError } = useToastActions()
 
   const changePassword = async () => {
     // Match backend: 12+ chars, upper, lower, digit, special
-    if (next.length < 12) return setError("New password must be at least 12 characters")
-    if (!/[A-Z]/.test(next)) return setError("New password must contain an uppercase letter")
-    if (!/[a-z]/.test(next)) return setError("New password must contain a lowercase letter")
-    if (!/[0-9]/.test(next)) return setError("New password must contain a number")
-    if (!/[^A-Za-z0-9]/.test(next)) return setError("New password must contain a special character")
-    if (next !== confirm) return setError("New passwords do not match")
+    if (next.length < 12) return toastError("New password must be at least 12 characters")
+    if (!/[A-Z]/.test(next)) return toastError("New password must contain an uppercase letter")
+    if (!/[a-z]/.test(next)) return toastError("New password must contain a lowercase letter")
+    if (!/[0-9]/.test(next)) return toastError("New password must contain a number")
+    if (!/[^A-Za-z0-9]/.test(next)) return toastError("New password must contain a special character")
+    if (next !== confirm) return toastError("New passwords do not match")
     setBusy(true)
-    setError(null)
     setDone(false)
     try {
       await api.changePassword(current, next)
-      setDone(true)
+      success("Password updated")
       setCurrent("")
       setNext("")
       setConfirm("")
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not change password")
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
     }
@@ -107,12 +110,6 @@ export function SettingsPage({ session }: { session: Session }) {
               onChange={(e) => setConfirm(e.target.value)}
             />
           </Field>
-          {error && (
-            <p role="alert" className="is-error mb-3 text-xs">
-              {error}
-            </p>
-          )}
-          {done && <p className="is-ok mb-3 text-xs">Password updated.</p>}
           <Button
             variant="primary"
             disabled={busy}

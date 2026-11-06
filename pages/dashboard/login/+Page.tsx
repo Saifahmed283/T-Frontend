@@ -1,6 +1,7 @@
 import { useState } from "react"
 
 import { api, ApiError } from "@/lib/api"
+import { messageForError, getMessage } from "@/lib/messages"
 
 import { SignInPage } from "@/pages/dashboard/components/SignIn"
 
@@ -22,11 +23,8 @@ export default function LoginPage() {
       window.location.replace(returnTo)
     } catch (ex) {
       setBusy(false)
-      setError(
-        ex instanceof ApiError
-          ? ex.message
-          : "Sign-in failed. Please try again.",
-      )
+      const { message } = messageForError(ex)
+      setError(message)
     }
   }
 

@@ -4,6 +4,8 @@ import { Inbox, Download, Trash2, ChevronLeft, ChevronRight, Eye, X } from "luci
 import type { Submission, SubmissionKind, SubmissionStatus } from "@/lib/api"
 import { api } from "@/lib/api"
 import { useSubmissions } from "../hooks/useSubmissions"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "../ui"
 import { SkeletonRegion, SkeletonRows } from "@/components/ui"
 import { Badge, Button, Field, Heading, Modal, Textarea } from "../ui"
 import { Empty, timeAgo } from "../shared"
@@ -52,7 +54,8 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
   const [statusBusy, setStatusBusy] = useState<string | null>(null)
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null)
   const [exportBusy, setExportBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+
+  const { success, error: toastError } = useToastActions()
 
   // Load stats on mount
   useEffect(() => {
@@ -78,8 +81,9 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
     try {
       const full = await api.submissionGet(s.id)
       setDetailItem(full)
-    } catch {
-      setError("Could not load submission")
+    } catch (e) {
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setDetailLoading(false)
     }
@@ -94,8 +98,10 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
       await reload()
       const newStats = await api.submissionStats()
       setStats(newStats)
-    } catch {
-      setError("Could not update status")
+      success("Status updated")
+    } catch (e) {
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setStatusBusy(null)
     }
@@ -110,8 +116,10 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
       await reload()
       const newStats = await api.submissionStats()
       setStats(newStats)
-    } catch {
-      setError("Could not delete submission")
+      success("Submission deleted")
+    } catch (e) {
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setDeleteBusy(null)
     }
@@ -121,6 +129,10 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
     setExportBusy(true)
     try {
       const all = await api.submissions({ kind, pageSize: 10000 })
+      if (all.items.length === 0) {
+        toastError("No submissions match the current filters")
+        return
+      }
       const headers = ["ID", "Kind", "Status", "Name", "Email", "Message", "Source", "Created At"]
       const rows = all.items.map((s) => [
         s.id,
@@ -140,8 +152,10 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
       a.download = `submissions-${new Date().toISOString().slice(0, 10)}.csv`
       a.click()
       URL.revokeObjectURL(url)
-    } catch {
-      setError("Could not export CSV")
+      success("CSV exported")
+    } catch (e) {
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setExportBusy(false)
     }
@@ -181,15 +195,6 @@ export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
           </Button>
         ))}
       </div>
-
-      {error && (
-        <p className="panel-foot is-error" role="alert">
-          {error}.{" "}
-          <Button variant="ghost" onClick={() => void reload()}>
-            Retry
-          </Button>
-        </p>
-      )}
 
       {loading && items.length === 0 ? (
         <SkeletonRegion label="Loading submissions">

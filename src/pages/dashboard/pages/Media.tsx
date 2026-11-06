@@ -4,8 +4,10 @@ import { Image as ImageIcon, Plus, Search, Copy, X, ChevronLeft, ChevronRight } 
 import { SkeletonCard, SkeletonRegion } from "@/components/ui"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { api, type Asset } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { useToastActions } from "../ui"
 
-import { Button, Field, Heading, Input, Modal } from "../ui"
+import { Alert, Button, Field, Heading, Input, Modal } from "../ui"
 import { Empty, formatSize } from "../shared"
 
 const PAGE_SIZE = 24
@@ -28,7 +30,6 @@ const ALLOWED_TYPES = [
 export function MediaPage({ canEdit }: { canEdit: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
@@ -42,6 +43,8 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
   const [previewOpen, setPreviewOpen] = useState(false)
   const [previewAsset, setPreviewAsset] = useState<Asset | null>(null)
 
+  const { success, error: toastError } = useToastActions()
+
   const debouncedSearch = useDebouncedValue(search, 300)
 
   useEffect(() => {
@@ -51,7 +54,6 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
   const load = useCallback(async () => {
     const id = ++requestId.current
     setLoading(true)
-    setError(null)
     try {
       const res = await api.assets({
         search: debouncedSearch || undefined,
@@ -62,9 +64,10 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
       setAssets(res.items)
       setTotalPages(res.pagination.totalPages)
       setStorageEnabled(res.storageEnabled)
-    } catch {
+    } catch (ex) {
       if (id !== requestId.current) return
-      setError("Failed to load media")
+      const { message } = messageForError(ex)
+      toastError(message)
     } finally {
       if (id === requestId.current) setLoading(false)
     }
@@ -88,7 +91,7 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
     const fileArray = Array.from(files)
     const invalid = fileArray.map(validateFile).filter(Boolean)
     if (invalid.length > 0) {
-      setError(invalid.join("\n"))
+      toastError(invalid.join("\n"))
       return
     }
     setBusy(true)
@@ -96,9 +99,11 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
       for (const file of fileArray) {
         await api.assetUpload(file)
       }
+      success("Files uploaded")
       await load()
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Upload failed")
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
       if (inputRef.current) inputRef.current.value = ""
@@ -129,8 +134,10 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
       setAssets((a) => a.filter((x) => x.id !== id))
       if (assets.length === 1 && page > 1) setPage((p) => p - 1)
       else await load()
-    } catch {
-      setError("Delete failed")
+      success("File deleted")
+    } catch (e) {
+      const { message } = messageForError(e)
+      toastError(message)
     } finally {
       setBusy(false)
     }
@@ -142,18 +149,19 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
     setAssets((a) => a.map((x) => (x.id === asset.id ? { ...x, alt } : x)))
     try {
       await api.assetUpdateAlt(asset.id, alt)
-    } catch {
-      setError("Could not save alt text")
+      success("Alt text saved")
+    } catch (e) {
+      const { message } = messageForError(e)
+      toastError(message)
     }
   }
 
   const copyUrl = async (url: string) => {
     try {
       await navigator.clipboard.writeText(url)
-      setError("URL copied to clipboard")
-      setTimeout(() => setError(null), 2000)
+      success("URL copied to clipboard")
     } catch {
-      setError("Could not copy URL")
+      toastError("Could not copy URL")
     }
   }
 
@@ -189,14 +197,11 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
       </div>
 
       {!storageEnabled && (
-        <p className="panel-foot is-error">
-          Storage is not configured on this environment, so uploads stay disabled.
-        </p>
-      )}
-      {error && (
-        <p className="panel-foot is-error" role="alert">
-          {error}
-        </p>
+        <Alert
+          tone="warning"
+          title="Media storage not configured"
+          body="Storage is not configured on this environment, so uploads stay disabled."
+        />
       )}
 
       <div

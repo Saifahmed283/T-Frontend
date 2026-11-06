@@ -7,6 +7,8 @@
  * target a different origin (for example, a deployed API).
  */
 
+import { messageForError } from "./messages"
+
 export type ApiStatus = "ON_TRACK" | "AT_RISK" | "BLOCKED"
 
 export type ApiStage = "G0" | "G1" | "G2" | "G3" | "G4" | "G5" | "G6" | "G7"
@@ -380,7 +382,13 @@ export class ApiError extends Error {
 
   code?: string
 
-  constructor(status: number, message: string, code?: string) {
+  details?: unknown
+
+  requestId?: string
+
+  retryAfter?: number
+
+  constructor(status: number, message: string, code?: string, details?: unknown, requestId?: string, retryAfter?: number) {
     super(message)
 
     this.name = "ApiError"
@@ -388,6 +396,12 @@ export class ApiError extends Error {
     this.status = status
 
     this.code = code
+
+    this.details = details
+
+    this.requestId = requestId
+
+    this.retryAfter = retryAfter
   }
 }
 
@@ -471,17 +485,23 @@ async function performRequest<T>(
     const env = (payload ?? {}) as {
       error?: {
         code?: string
-
         message?: string
+        details?: unknown
+        requestId?: string
       }
     }
 
+    // Extract Retry-After header for rate limits
+    const retryAfterHeader = res.headers.get("Retry-After")
+    const retryAfter = retryAfterHeader ? parseInt(retryAfterHeader, 10) : undefined
+
     throw new ApiError(
       res.status,
-
       env.error?.message ?? res.statusText,
-
       env.error?.code,
+      env.error?.details,
+      env.error?.requestId,
+      retryAfter,
     )
   }
 
@@ -875,4 +895,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+
+  /** Get a user-friendly error message from any caught error. */
+  errorMessage: (err: unknown, fallback?: string) => {
+    const { message } = messageForError(err)
+    return fallback ?? message
+  },
+
+  /** Extract field-level validation errors from a VALIDATION_ERROR. */
+  fieldErrors: (err: unknown) => {
+    const { fieldErrors: extractFieldErrors } = require("./messages")
+    return extractFieldErrors(err)
+  },
 }

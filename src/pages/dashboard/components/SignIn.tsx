@@ -8,6 +8,7 @@ import {
 
 import { api } from "@/lib/api"
 import { ensureArabicFonts } from "@/lib/fonts"
+import { messageForError, getMessage } from "@/lib/messages"
 
 import "@/styles/dashboard.css"
 
@@ -215,7 +216,10 @@ export function SignInPage({
       api
         .forgotPassword(email.trim())
         .then(() => setNotice(t.sent))
-        .catch(() => setResetError(t.resetFailed))
+        .catch((ex) => {
+          const { message } = messageForError(ex, ar ? "ar" : "en")
+          setResetError(message)
+        })
         .finally(() => setResetBusy(false))
     },
     [canSubmit, email, mode, onLogin, password, t.resetFailed, t.sent],
