@@ -169,3 +169,55 @@ describe("api request", () => {
     expect(init).toMatchObject({ cache: "no-store" })
   })
 })
+
+describe("api request hardening", () => {
+  it("shares one in-flight GET between concurrent callers", async () => {
+    const session: SessionInfo = {
+      user: { id: "u1", name: "Mona", email: "mona@example.com" },
+      workspace: { id: "w1", slug: "terramorph" },
+      role: "admin",
+    }
+
+    let resolveFetch!: (value: Response) => void
+
+    fetchMock.mockImplementation(
+      () =>
+        new Promise<Response>((resolve) => {
+          resolveFetch = resolve
+        }),
+    )
+
+    const first = api.me()
+    const second = api.me()
+
+    /* Two components asking at the same moment (StrictMode, shell + page)
+       must not produce two requests. */
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+
+    resolveFetch(fetchResponse(session))
+
+    await expect(Promise.all([first, second])).resolves.toEqual([
+      session,
+      session,
+    ])
+
+    /* De-duplication only: the entry is gone once settled, so the next read
+       hits the network again rather than serving a stale copy. */
+    fetchMock.mockResolvedValue(fetchResponse(session))
+
+    await api.me()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it("reports a timeout distinctly from an unreachable API", async () => {
+    fetchMock.mockRejectedValue(
+      new DOMException("The operation timed out.", "TimeoutError"),
+    )
+
+    const error = await api.me().catch((e) => e)
+
+    expect(error).toBeInstanceOf(ApiError)
+    expect(error).toMatchObject({ status: 0, code: "TIMEOUT" })
+  })
+})

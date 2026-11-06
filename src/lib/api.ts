@@ -477,7 +477,25 @@ export class ApiError extends Error {
 
 const BASE = import.meta.env.VITE_API_URL ?? ""
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+/** Requests that hang forever make the dashboard feel broken. */
+const REQUEST_TIMEOUT_MS = 20_000
+
+/* Uploads are exempt from the short deadline: a large file over a slow uplink
+   can legitimately take minutes, and aborting it would lose the whole transfer. */
+const UPLOAD_TIMEOUT_MS = 5 * 60_000
+
+/*
+ * In-flight GET de-duplication. Two components asking for the same URL at the
+ * same moment (for example React StrictMode's double effect, or the shell and a
+ * page both loading the same collection) share one network request. Completed
+ * requests are removed immediately, so this is de-duplication, not caching.
+ */
+const inflight = new Map<string, Promise<unknown>>()
+
+async function performRequest<T>(
+  path: string,
+  init: RequestInit,
+): Promise<T> {
   let res: Response
 
   const isForm =
@@ -485,21 +503,27 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   try {
     res = await fetch(`${BASE}${path}`, {
-      credentials: "include",
-
-      // FormData bodies must let the browser set the multipart boundary.
-
-      ...(isForm ? {} : { headers: { "Content-Type": "application/json" } }),
-
       ...init,
 
+      credentials: "include",
+
+      // The browser must set the multipart boundary itself.
       headers: {
         ...(isForm ? {} : { "Content-Type": "application/json" }),
 
         ...(init.headers ?? {}),
       },
+
+      signal:
+        init.signal ??
+        AbortSignal.timeout(isForm ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS),
     })
-  } catch {
+  } catch (err) {
+    // A timeout and an unreachable host are different problems for the user
+    // and for whoever is reading the logs.
+    if (err instanceof DOMException && err.name === "TimeoutError") {
+      throw new ApiError(0, "The API took too long to respond", "TIMEOUT")
+    }
     throw new ApiError(0, "Cannot reach the API", "NETWORK_ERROR")
   }
 
@@ -536,6 +560,29 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   return payload as T
+}
+
+function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const method = (init.method ?? "GET").toUpperCase()
+
+  if (method !== "GET") return performRequest<T>(path, init)
+
+  const key = `${method} ${path}`
+
+  const pending = inflight.get(key)
+
+  if (pending) return pending as Promise<T>
+
+  let promise: Promise<T>
+
+  promise = performRequest<T>(path, init).finally(() => {
+    // Only delete our own entry: a newer request may have replaced it.
+    if (inflight.get(key) === promise) inflight.delete(key)
+  })
+
+  inflight.set(key, promise)
+
+  return promise
 }
 
 export const api = {

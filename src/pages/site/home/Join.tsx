@@ -13,7 +13,7 @@ import {
 
 import type { Lang } from "../types"
 
-// Join: two doors (partners, experts) + careers & tenders, one place
+// Join: two doors (partners, experts) + careers, one place
 
 const lists: Record<string, {
   title: string
@@ -24,7 +24,7 @@ const lists: Record<string, {
 
   kind: SubmissionKind
 }[]> = {
-  "Team with us": [
+  "PR Partner": [
     {
       title: "Specialist sub-partner for LED & policy lots",
 
@@ -88,47 +88,14 @@ const lists: Record<string, {
     },
   ],
 
-  Tenders: [
-    {
-      title: "Urban mobility diagnostic",
-
-      meta: "EOI · closes 30 Oct",
-
-      cta: "Express interest",
-
-      kind: "TENDER_INTEREST",
-    },
-
-    {
-      title: "TVET governance review",
-
-      meta: "RFP · closes 14 Nov",
-
-      cta: "Express interest",
-
-      kind: "TENDER_INTEREST",
-    },
-
-    {
-      title: "SME finance access study",
-
-      meta: "Open call · rolling",
-
-      cta: "Express interest",
-
-      kind: "TENDER_INTEREST",
-    },
-  ],
 }
 
 const listLabel: Record<string, string> = {
   "Expert network": "شبكة الخبراء",
 
-  "Team with us": "شاركنا الفريق",
+  "PR Partner": "شريك علاقات عامة",
 
   Careers: "الوظائف",
-
-  Tenders: "المناقصات",
 }
 
 const listsAr: Record<string, {
@@ -138,7 +105,7 @@ const listsAr: Record<string, {
 
   cta: string
 }[]> = {
-  "Team with us": [
+  "PR Partner": [
     {
       title: "شريك متخصص من الباطن لمكوّنات التنمية الاقتصادية والسياسات",
 
@@ -178,31 +145,6 @@ const listsAr: Record<string, {
     { title: "متدرب بحثي (AAST)", meta: "الإسكندرية · 6 أشهر", cta: "تقدّم" },
   ],
 
-  Tenders: [
-    {
-      title: "تشخيص التنقل الحضري",
-
-      meta: "إبداء اهتمام · يُغلق 30 أكتوبر",
-
-      cta: "أبدِ اهتمامك",
-    },
-
-    {
-      title: "مراجعة حوكمة التعليم الفني",
-
-      meta: "RFP · يُغلق 14 نوفمبر",
-
-      cta: "أبدِ اهتمامك",
-    },
-
-    {
-      title: "دراسة الوصول إلى تمويل المشروعات الصغيرة والمتوسطة",
-
-      meta: "دعوة مفتوحة · مستمرة",
-
-      cta: "أبدِ اهتمامك",
-    },
-  ],
 }
 
 const areas = [
@@ -435,8 +377,8 @@ export function Join({ lang }: { lang: Lang }) {
           eyebrow={ar ? "انضم" : "Join"}
           title={
             ar
-              ? "خبراء وشركاء وأفراد ومناقصات — باب واحد لكلٍّ."
-              : "Experts, partners, people and tenders — one door each."
+              ? "خبراء وشركاء وأفراد — باب واحد لكلٍّ."
+              : "Experts, partners and people — one door each."
           }
         />
         <div className="no-scrollbar mt-10 flex gap-1 overflow-x-auto border-b border-ivory/15">

@@ -1,13 +1,17 @@
-import { useMemo, useState } from "react"
 import { Inbox } from "lucide-react"
 
-import type { Submission, SubmissionKind } from "@/lib/api"
+import type { SubmissionKind } from "@/lib/api"
+import { SkeletonRegion, SkeletonRows } from "@/components/ui"
 
+import { useSubmissions } from "../hooks/useSubmissions"
 import { Badge, Button } from "../ui"
 import { Empty, timeAgo } from "../shared"
 
 /* Submissions — incoming contact, tender, registration and newsletter forms
-   from the public site. Admin-only. */
+   from the public site. Admin-only.
+
+   The inbox is fetched one page at a time and only once an admin opens this
+   view, so the rest of the workspace never pays for it. */
 
 const kindLabel: Record<SubmissionKind, string> = {
   CONTACT: "Contact",
@@ -21,20 +25,18 @@ const kindLabel: Record<SubmissionKind, string> = {
   CONTRIBUTION: "Contribution",
 }
 
-export function SubmissionsPage({
-  submissions,
-  isAdmin,
-}: {
-  submissions: Submission[] | null
-  isAdmin: boolean
-}) {
-  const [kind, setKind] = useState<"All" | SubmissionKind>("All")
-
-  const kindsPresent = useMemo(() => {
-    const set = new Set<SubmissionKind>()
-    for (const s of submissions ?? []) set.add(s.kind)
-    return Array.from(set)
-  }, [submissions])
+export function SubmissionsPage({ isAdmin }: { isAdmin: boolean }) {
+  const {
+    items,
+    loading,
+    error,
+    kind,
+    setKind,
+    page,
+    setPage,
+    totalPages,
+    reload,
+  } = useSubmissions(isAdmin)
 
   if (!isAdmin) {
     return (
@@ -47,21 +49,17 @@ export function SubmissionsPage({
     )
   }
 
-  const rows = (submissions ?? []).filter(
-    (s) => kind === "All" || s.kind === kind,
-  )
-
   return (
     <section className="panel">
       <div className="status-tabs">
         <Button
           variant="ghost"
-          className={kind === "All" ? "selected" : ""}
-          onClick={() => setKind("All")}
+          className={kind === undefined ? "selected" : ""}
+          onClick={() => setKind(undefined)}
         >
-          All <span>{submissions?.length ?? 0}</span>
+          All
         </Button>
-        {kindsPresent.map((k) => (
+        {(Object.keys(kindLabel) as SubmissionKind[]).map((k) => (
           <Button
             key={k}
             variant="ghost"
@@ -69,20 +67,30 @@ export function SubmissionsPage({
             onClick={() => setKind(k)}
           >
             {kindLabel[k]}
-            <span>
-              {(submissions ?? []).filter((s) => s.kind === k).length}
-            </span>
           </Button>
         ))}
       </div>
 
-      {rows.length === 0 ? (
+      {error && (
+        <p className="panel-foot is-error" role="alert">
+          {error}.{" "}
+          <Button variant="ghost" onClick={() => void reload()}>
+            Retry
+          </Button>
+        </p>
+      )}
+
+      {loading && items.length === 0 ? (
+        <SkeletonRegion label="Loading submissions">
+          <SkeletonRows rows={6} />
+        </SkeletonRegion>
+      ) : items.length === 0 ? (
         <Empty icon={Inbox} title="Nothing here yet">
           New submissions from the public site will appear here.
         </Empty>
       ) : (
-        <ul>
-          {rows.map((s) => (
+        <ul aria-busy={loading}>
+          {items.map((s) => (
             <li
               key={s.id}
               className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 last:border-0"
@@ -103,6 +111,30 @@ export function SubmissionsPage({
             </li>
           ))}
         </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="panel-foot" style={{ justifyContent: "space-between" }}>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1 || loading}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages || loading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       )}
     </section>
   )

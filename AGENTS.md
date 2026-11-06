@@ -36,14 +36,15 @@ Routing is file-based via Vike: `pages/` contains `+Page.tsx` files (and `+confi
 - `src/pages/dashboard/pages/` - One module per view: `Overview` (pulse band, metric cards, collections table, pipeline, activity, publishing card), `Content`, `Collection` (records table + status tabs), `Workflow` (board), `Media`, `Website`, `Submissions`, `Users`, `Activity`, `Settings`
 - `src/pages/dashboard/ContentEditor.tsx` - Content item editor overlay (T-Dashboard styled): localized `{en,ar}` fields, Content/SEO/Publishing tabs, layout preview, create/update/transition/delete via `api`, history. Rendered inside `ui.tsx`'s `<Modal wide>`
 - `src/pages/dashboard/content-model.ts` - Content model for the CMS: the `collections` list (10 collections with their fields) plus `collectionById` and `collectionGroups` helpers
-- `src/pages/dashboard/hooks/useWorkspace.ts` - Content workspace data hook: session/auth, content counts, workflow board, submissions, activity, sign-in/out and reload; a 401 from `auth/me` sets `needsAuth`, and there is no demo/sample-data fallback
+- `src/pages/dashboard/hooks/useWorkspace.ts` - Content workspace data hook: session/auth, content counts, workflow board, activity, sign-in/out and reload; a 401 from `auth/me` sets `needsAuth`, and there is no demo/sample-data fallback. Submissions are deliberately not loaded here: the inbox fetches its own page on open via `useSubmissions.ts` (server-paginated, 20 rows)
 - `src/pages/dashboard/hooks/useCollection.ts` - Per-collection content list/detail hook (search, status filter, pagination) used by `CollectionPage`/`ContentEditor`
 - `src/pages/dashboard/ui.tsx` - Dashboard-local UI primitives styled with the scoped T-Dashboard classes (`Button`, `Input`, `Textarea`, `Select`, `Field`, `Heading`, `Badge`, `Modal` — a `<dialog>`-based modal)
 - `src/pages/NotFound.tsx` - Fallback for unknown routes
 - `src/components/motion/fx.tsx` - Animation primitives (SplitText, CountUp, Reveal, Magnetic, Contours, Logo, Emblem, Spotlight, GoldLine, Decrypt, useInView)
-- `src/components/ui/` - Shared UI primitives (`Badge`, `Breadcrumbs`, `EmptyState`, `SegmentedControl`, `Dialog` with focus trap, `LiveStatus`) plus `index.tsx` barrel; imports via `@/components/ui`
+- `src/components/ui/` - Shared UI primitives (`Badge`, `Breadcrumbs`, `EmptyState`, `SegmentedControl`, `Dialog` with focus trap, `LiveStatus`, `Skeleton`/`SkeletonRows`/`SkeletonCard`/`SkeletonRegion`/`DashboardSkeleton`) plus `index.tsx` barrel; imports via `@/components/ui`
+- `src/hooks/useDebouncedValue.ts` - Debounce primitive used by dashboard search boxes (300 ms), so typing costs one request rather than one per keystroke
 - `src/hooks/useMetrics.ts` - sessionStorage UX KPI counters (`tm.t3t`, `tm.priv.commits`, `tm.priv.undos`, `tm.priv.cancels`)
-- `src/lib/api.ts` - Typed API client for the Terramorph backend (auth incl. password change, dashboard summary, assignments + detail, experts, submissions, activity); same-origin in dev via the `/api` proxy; `VITE_API_URL` overrides the base
+- `src/lib/api.ts` - Typed API client for the Terramorph backend (auth incl. password change, dashboard summary, assignments + detail, experts, submissions, activity); same-origin in dev via the `/api` proxy; `VITE_API_URL` overrides the base. Requests carry a 20 s timeout (5 min for uploads) and identical in-flight GETs share one request
 - `src/lib/routes.ts` - `SectionId` type and section path maps
 - `src/content/pages.ts` - Footer detail page content (`PAGES`, `columnMeta`, `pageBySlug`, `pageForPath`, `labelPath`)
 - `src/content/hubs.ts` - Audience hub content (`hubs`, `hubBySlug`)

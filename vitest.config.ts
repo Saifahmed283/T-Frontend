@@ -14,5 +14,6 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     restoreMocks: true,
     clearMocks: true,
+    exclude: ["**/node_modules/**", "**/tests/**", "**/*.spec.ts"],
   },
 })

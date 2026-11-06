@@ -1,7 +1,8 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Check, ChevronRight, ListFilter, Plus, Search } from "lucide-react"
 
 import type { ContentCounts } from "@/lib/api"
+import { SkeletonRows } from "@/components/ui"
 
 import type { Collection } from "../content-model"
 import { useCollection } from "../hooks/useCollection"
@@ -25,6 +26,7 @@ export function CollectionPage({
   const {
     items,
     loading,
+    error,
     status,
     setStatus,
     search,
@@ -39,15 +41,19 @@ export function CollectionPage({
   const [sectorFilter, setSectorFilter] = useState("")
   const byStatus = counts?.byKind?.[collection.id]?.byStatus
 
-  const filteredItems = items.filter((it) => {
-    const data = it.data as Record<string, unknown>
-    const geo = String(data.geography ?? "").toLowerCase()
-    const sector = String(data.sector ?? "").toLowerCase()
-    return (
-      geo.includes(geoFilter.toLowerCase()) &&
-      sector.includes(sectorFilter.toLowerCase())
-    )
-  })
+  const filteredItems = useMemo(
+    () =>
+      items.filter((it) => {
+        const data = it.data as Record<string, unknown>
+        const geo = String(data.geography ?? "").toLowerCase()
+        const sector = String(data.sector ?? "").toLowerCase()
+        return (
+          geo.includes(geoFilter.toLowerCase()) &&
+          sector.includes(sectorFilter.toLowerCase())
+        )
+      }),
+    [items, geoFilter, sectorFilter],
+  )
 
   const tabs: { key: string; label: string }[] = [
     { key: "All", label: "All content" },
@@ -127,17 +133,14 @@ export function CollectionPage({
         <span>Last updated</span>
       </div>
 
-      {loading ? (
-        <div>
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="flex items-center gap-4 border-b border-line px-5 py-4"
-            >
-              <div className="h-3.5 w-48 animate-pulse bg-ivory-2" />
-            </div>
-          ))}
-        </div>
+      {error && (
+        <p className="panel-foot is-error" role="alert">
+          {error}
+        </p>
+      )}
+
+      {loading && items.length === 0 ? (
+        <SkeletonRows rows={5} />
       ) : filteredItems.length === 0 ? (
         <Empty
           icon={collectionIcons[collection.id]}

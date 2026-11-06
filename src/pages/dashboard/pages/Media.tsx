@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Image as ImageIcon, Plus, Search } from "lucide-react"
 
+import { SkeletonCard, SkeletonRegion } from "@/components/ui"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { api, type Asset } from "@/lib/api"
 
 import { Button, Field, Input } from "../ui"
@@ -8,38 +10,57 @@ import { Empty, formatSize } from "../shared"
 
 /* Media — the shared asset library. Uploads are disabled when the API reports
    that object storage is not configured, and we say so rather than failing
-   silently. */
+   silently. Search is debounced and the list is paginated, so a large library
+   never downloads or renders in one go. */
+
+const PAGE_SIZE = 24
 
 export function MediaPage() {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const [storageEnabled, setStorageEnabled] = useState(true)
   const [busy, setBusy] = useState(false)
   /* Alt text is edited locally and written on blur: one request per edit, not
      one per keystroke. English and Arabic are independent. */
   const [altDraft, setAltDraft] = useState<Record<string, { en: string; ar: string }>>({})
   const inputRef = useRef<HTMLInputElement>(null)
+  const requestId = useRef(0)
 
-  const load = async () => {
+  const debouncedSearch = useDebouncedValue(search, 300)
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedSearch])
+
+  const load = useCallback(async () => {
+    const id = ++requestId.current
     setLoading(true)
     setError(null)
     try {
-      const res = await api.assets({ search: search || undefined, pageSize: 60 })
+      const res = await api.assets({
+        search: debouncedSearch || undefined,
+        page,
+        pageSize: PAGE_SIZE,
+      })
+      if (id !== requestId.current) return
       setAssets(res.items)
+      setTotalPages(res.pagination.totalPages)
       setStorageEnabled(res.storageEnabled)
     } catch {
+      if (id !== requestId.current) return
       setError("Failed to load media")
     } finally {
-      setLoading(false)
+      if (id === requestId.current) setLoading(false)
     }
-  }
+  }, [debouncedSearch, page])
 
   useEffect(() => {
     void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search])
+  }, [load])
 
   const upload = async (file: File) => {
     setBusy(true)
@@ -59,6 +80,9 @@ export function MediaPage() {
     try {
       await api.assetDelete(id)
       setAssets((a) => a.filter((x) => x.id !== id))
+      // The last item on a page leaves an empty page behind; step back.
+      if (assets.length === 1 && page > 1) setPage((p) => p - 1)
+      else await load()
     } catch {
       setError("Delete failed")
     } finally {
@@ -119,21 +143,18 @@ export function MediaPage() {
         </p>
       )}
 
-      {loading ? (
-        <div className="media-grid">
-          {[0, 1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-56 animate-pulse rounded-xl border border-line bg-ivory-2"
-            />
+      {loading && assets.length === 0 ? (
+        <SkeletonRegion label="Loading media" className="media-grid">
+          {Array.from({ length: 6 }, (_, i) => (
+            <SkeletonCard key={i} className="h-56" />
           ))}
-        </div>
+        </SkeletonRegion>
       ) : assets.length === 0 ? (
         <Empty icon={ImageIcon} title="No files yet">
           Upload images and documents to reuse them across your content.
         </Empty>
       ) : (
-        <ul className="media-grid">
+        <ul className="media-grid" aria-busy={loading}>
           {assets.map((a) => (
             <li key={a.id} className="media-card">
               <div className="media-thumb">
@@ -142,6 +163,7 @@ export function MediaPage() {
                     src={a.url}
                     alt={a.alt?.en ?? a.filename}
                     loading="lazy"
+                    decoding="async"
                   />
                 ) : (
                   <ImageIcon size={24} strokeWidth={1.4} />
@@ -203,6 +225,30 @@ export function MediaPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {totalPages > 1 && (
+        <div className="panel-foot" style={{ justifyContent: "space-between" }}>
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => setPage(Math.max(1, page - 1))}
+              disabled={page <= 1 || loading}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setPage(Math.min(totalPages, page + 1))}
+              disabled={page >= totalPages || loading}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
       )}
     </section>
   )

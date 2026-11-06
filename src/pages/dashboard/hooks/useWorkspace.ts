@@ -5,7 +5,6 @@ import {
   type ActivityFeed,
   type ContentCounts,
   type SessionInfo,
-  type Submission,
   type WorkflowBoardPayload,
 } from "@/lib/api"
 
@@ -14,7 +13,6 @@ export type WorkspaceData = {
   isAdmin: boolean
   isApprover: boolean
   activity: ActivityFeed
-  submissions: Submission[] | null
   contentCounts: ContentCounts | null
   workflowBoard: WorkflowBoardPayload | null
 }
@@ -66,15 +64,14 @@ export function useWorkspace() {
     /* Each data source fails independently: a hiccup in one feed never takes
        down the whole workspace. The shell renders around nulls. */
     let activity: ActivityFeed = { items: [], nextCursor: null }
-    let submissions: Submission[] | null = null
     let contentCounts: ContentCounts | null = null
     let workflowBoard: WorkflowBoardPayload | null = null
 
+    /* Submissions are deliberately not loaded here: the inbox fetches its own
+       page when an admin opens it, instead of every dashboard visit paying for
+       a queue most people never look at. */
     await Promise.all([
       api.activity(20).then((a) => { activity = a }).catch(() => {}),
-      (isAdmin
-        ? api.submissions({ pageSize: 100 }).then((r) => { submissions = r.items })
-        : Promise.resolve()).catch(() => {}),
       api.contentCounts().then((c) => { contentCounts = c }).catch(() => {}),
       api.workflowBoard().then((b) => { workflowBoard = b }).catch(() => {}),
     ])
@@ -85,7 +82,6 @@ export function useWorkspace() {
         isAdmin,
         isApprover,
         activity,
-        submissions,
         contentCounts,
         workflowBoard,
       },

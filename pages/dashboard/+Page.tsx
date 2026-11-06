@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect } from "react"
 
+import { DashboardSkeleton } from "@/components/ui/Skeleton"
 import { ensureArabicFonts } from "@/lib/fonts"
 import { useWorkspace } from "@/pages/dashboard/hooks/useWorkspace"
 
@@ -30,7 +31,7 @@ export default function Page() {
   }, [loading, needsAuth])
 
   if (loading || (!data && !error)) {
-    return <div className="min-h-screen bg-ivory" />
+    return <DashboardSkeleton />
   }
 
   if (!data) {
@@ -114,7 +115,7 @@ export default function Page() {
   }
 
   return (
-    <Suspense fallback={<div className="min-h-screen bg-ivory" />}>
+    <Suspense fallback={<DashboardSkeleton />}>
       <Workspace ws={ws} />
     </Suspense>
   )

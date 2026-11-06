@@ -8,8 +8,6 @@ const mocks = vi.hoisted(() => ({
 
   activity: vi.fn(),
 
-  submissions: vi.fn(),
-
   contentCounts: vi.fn(),
 
   workflowBoard: vi.fn(),
@@ -62,12 +60,6 @@ beforeEach(() => {
 
   mocks.activity.mockResolvedValue(activity)
 
-  mocks.submissions.mockResolvedValue({
-    items: [],
-
-    pagination: { page: 1, pageSize: 100, total: 0, totalPages: 0 },
-  })
-
   mocks.contentCounts.mockResolvedValue(contentCounts)
 
   mocks.workflowBoard.mockResolvedValue(workflowBoard)
@@ -119,18 +111,14 @@ describe("useWorkspace", () => {
 
         activity,
 
-        submissions: null,
-
         contentCounts,
 
         workflowBoard,
       },
     })
-
-    expect(mocks.submissions).not.toHaveBeenCalled()
   })
 
-  it("loads the submission queue for an admin", async () => {
+  it("derives admin capabilities without loading the submission inbox", async () => {
     mocks.me.mockResolvedValue({ ...session, role: "admin" })
 
     const { result } = renderHook(() => useWorkspace())
@@ -141,11 +129,10 @@ describe("useWorkspace", () => {
       isAdmin: true,
 
       isApprover: true,
-
-      submissions: [],
     })
 
-    expect(mocks.submissions).toHaveBeenCalledWith({ pageSize: 100 })
+    /* The inbox owns its own request, made only when it is opened. */
+    expect(result.current.data).not.toHaveProperty("submissions")
   })
 
   it("surfaces a non-auth load failure instead of the auth gate", async () => {

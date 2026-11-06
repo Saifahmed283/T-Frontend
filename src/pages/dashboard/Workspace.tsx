@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import {
   ArrowRight,
   Bell,
@@ -39,6 +39,20 @@ import { SubmissionsPage } from "./pages/Submissions"
 import { UsersPage } from "./pages/Users"
 import { ActivityPage } from "./pages/Activity"
 import { SettingsPage } from "./pages/Settings"
+
+/* The pages own page-local state. Memoising them keeps a shell-level change
+   (opening the search modal, toggling the mobile nav) from re-rendering a table
+   of records that did not change. */
+const MemoOverview = memo(OverviewPage)
+const MemoContent = memo(ContentPage)
+const MemoCollection = memo(CollectionPage)
+const MemoWorkflow = memo(WorkflowPage)
+const MemoMedia = memo(MediaPage)
+const MemoWebsite = memo(WebsitePage)
+const MemoSubmissions = memo(SubmissionsPage)
+const MemoUsers = memo(UsersPage)
+const MemoActivity = memo(ActivityPage)
+const MemoSettings = memo(SettingsPage)
 
 /* Workspace — the authenticated shell at /dashboard.
 
@@ -94,23 +108,42 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
   const currentCollection = collections.find((c) => c.id === page)
   const isCollectionPage = Boolean(currentCollection) && page !== "content"
 
-  const navigate = (id: string) => {
+  const navigate = useCallback((id: string) => {
     setPage(id)
     setMobileNav(false)
     setQuery("")
     window.scrollTo({ top: 0, behavior: "smooth" })
-  }
+  }, [])
 
-  const openEditor = (collectionId: string, itemId?: string) => {
+  const openEditor = useCallback((collectionId: string, itemId?: string) => {
     if (!collections.some((c) => c.id === collectionId)) return
     setEditor({ collectionId, itemId })
     setModal(null)
-  }
-  const closeEditor = () => setEditor(null)
-  const afterSave = () => {
+  }, [])
+  const closeEditor = useCallback(() => setEditor(null), [])
+  const afterSave = useCallback(() => {
     setEditor(null)
     void reload()
-  }
+  }, [reload])
+
+  /* Stable callbacks for the memoised pages: an inline arrow would change on
+     every shell render and defeat the memo comparison. */
+  const openCollectionItem = useCallback(
+    (itemId: string) => {
+      if (currentCollection) openEditor(currentCollection.id, itemId)
+    },
+    [currentCollection, openEditor],
+  )
+  const createCollectionItem = useCallback(() => {
+    if (currentCollection) openEditor(currentCollection.id)
+  }, [currentCollection, openEditor])
+  const openWorkflowItem = useCallback(
+    (item: { id: string; kind: string }) => {
+      const collectionId = collectionIdByKind[item.kind]
+      if (collectionId) openEditor(collectionId, item.id)
+    },
+    [openEditor],
+  )
 
   const visibleCollections = useMemo(() => {
     let list = collections.filter(
@@ -361,14 +394,14 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
                 ))}
               </div>
             ) : page === "overview" ? (
-              <OverviewPage
+              <MemoOverview
                 counts={counts}
                 activity={data?.activity.items ?? []}
                 onNavigate={navigate}
                 onOpenEditor={openEditor}
               />
             ) : page === "content" ? (
-              <ContentPage
+              <MemoContent
                 collections={visibleCollections}
                 counts={counts}
                 query={query}
@@ -380,40 +413,32 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
                 onNavigate={navigate}
               />
             ) : isCollectionPage && currentCollection ? (
-              <CollectionPage
+              <MemoCollection
                 collection={currentCollection}
                 counts={counts}
-                onOpenItem={(itemId) =>
-                  openEditor(currentCollection.id, itemId)
-                }
-                onCreate={() => openEditor(currentCollection.id)}
+                onOpenItem={openCollectionItem}
+                onCreate={createCollectionItem}
               />
             ) : page === "workflow" ? (
-              <WorkflowPage
+              <MemoWorkflow
                 board={data?.workflowBoard ?? null}
-                onOpenItem={(item) => {
-                  const collectionId = collectionIdByKind[item.kind]
-                  if (collectionId) openEditor(collectionId, item.id)
-                }}
+                onOpenItem={openWorkflowItem}
               />
             ) : page === "media" ? (
-              <MediaPage />
+              <MemoMedia />
             ) : page === "website" ? (
-              <WebsitePage canEdit={data?.isAdmin ?? false} />
+              <MemoWebsite canEdit={data?.isAdmin ?? false} />
             ) : page === "submissions" ? (
-              <SubmissionsPage
-                submissions={data?.submissions ?? null}
-                isAdmin={data?.isAdmin ?? false}
-              />
+              <MemoSubmissions isAdmin={data?.isAdmin ?? false} />
             ) : page === "users" ? (
-              <UsersPage canEdit={data?.isAdmin ?? false} />
+              <MemoUsers canEdit={data?.isAdmin ?? false} />
             ) : page === "activity" ? (
-              <ActivityPage
+              <MemoActivity
                 items={data?.activity.items ?? []}
                 loading={loading}
               />
             ) : (
-              <SettingsPage session={data?.session ?? null} />
+              <MemoSettings session={data?.session ?? null} />
             )}
 
             <footer className="main-footer">
