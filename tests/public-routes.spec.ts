@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test'
 
+// Run in a fresh unauthenticated context to avoid polluting the
+// authenticated browser context used by other test files.
+test.use({ storageState: undefined })
 test.describe('Public routes', () => {
   const routes = [
     { path: '/', title: 'TerraMorph — Strategy, Policy & Transformation Advisory' },

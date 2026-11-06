@@ -7,7 +7,7 @@
  * target a different origin (for example, a deployed API).
  */
 
-import { messageForError } from "./messages"
+import { fieldErrors as extractFieldErrors, messageForError } from "./messages"
 
 export type ApiStatus = "ON_TRACK" | "AT_RISK" | "BLOCKED"
 
@@ -903,8 +903,5 @@ export const api = {
   },
 
   /** Extract field-level validation errors from a VALIDATION_ERROR. */
-  fieldErrors: (err: unknown) => {
-    const { fieldErrors: extractFieldErrors } = require("./messages")
-    return extractFieldErrors(err)
-  },
+  fieldErrors: (err: unknown) => extractFieldErrors(err),
 }

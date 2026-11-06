@@ -192,6 +192,18 @@ const AR_MESSAGES: Record<string, { en: string; ar: string }> = {
     en: "Content not found.",
     ar: "المحتوى غير موجود.",
   },
+  "content.collection_not_found": {
+    en: "That content collection doesn't exist.",
+    ar: "مجموعة المحتوى هذه غير موجودة.",
+  },
+  "content.invalid_transition": {
+    en: "That status change isn't allowed from the current state.",
+    ar: "تغيير الحالة هذا غير مسموح من الحالة الحالية.",
+  },
+  "content.incomplete": {
+    en: "Some required fields are missing. Complete them before continuing.",
+    ar: "بعض الحقول المطلوبة مفقودة. أكملها قبل المتابعة.",
+  },
   "content.schedule_required": {
     en: "Set a scheduled publish time before scheduling this item.",
     ar: "عيّن وقت نشر مجدول قبل جدولة هذا العنصر.",
@@ -230,17 +242,25 @@ const AR_MESSAGES: Record<string, { en: string; ar: string }> = {
     en: "Couldn't save alt text. Retry or refresh.",
     ar: "تعذر حفظ النص البديل. أعد المحاولة أو حدّث الصفحة.",
   },
+  "media.not_found": {
+    en: "File not found. It may have been deleted.",
+    ar: "الملف غير موجود. قد يكون قد حُذف.",
+  },
   "media.storage_disabled": {
     en: "Media storage isn't configured. Uploads are disabled.",
     ar: "تخزين الوسائط غير مُعد. الرفع معطل.",
   },
   "media.file_too_large": {
-    en: "File exceeds the 50 MB limit.",
-    ar: "حجم الملف يتجاوز الحد المسموح 50 ميجابايت.",
+    en: "File exceeds the 15 MB limit.",
+    ar: "حجم الملف يتجاوز الحد المسموح 15 ميجابايت.",
   },
   "media.file_type_invalid": {
     en: "File type not allowed. Use images, PDFs, or Office documents.",
     ar: "نوع الملف غير مسموح. استخدم صوراً أو PDF أو مستندات Office.",
+  },
+  "media.file_type_unsupported": {
+    en: "That file type isn't supported. Try an image, PDF, or Office document.",
+    ar: "نوع الملف هذا غير مدعوم. جرّب صورة أو PDF أو مستند Office.",
   },
   "media.upload_success": {
     en: "File uploaded.",
@@ -291,6 +311,10 @@ const AR_MESSAGES: Record<string, { en: string; ar: string }> = {
   "submissions.deleted": {
     en: "Submission deleted.",
     ar: "تم حذف النموذج.",
+  },
+  "submissions.not_found": {
+    en: "Submission not found. It may have been deleted.",
+    ar: "النموذج غير موجود. قد يكون قد حُذف.",
   },
   "submissions.exported": {
     en: "CSV exported.",
@@ -367,6 +391,14 @@ const AR_MESSAGES: Record<string, { en: string; ar: string }> = {
   "common.not_found": {
     en: "Not found.",
     ar: "غير موجود.",
+  },
+  "common.assignment_not_found": {
+    en: "Assignment not found.",
+    ar: "المهمة غير موجودة.",
+  },
+  "common.validation_error": {
+    en: "Check the highlighted fields and try again.",
+    ar: "تحقق من الحقول المميزة وحاول مرة أخرى.",
   },
   "common.unsaved_changes": {
     en: "You have unsaved changes. Leave without saving?",
@@ -454,24 +486,42 @@ export function messageForError(
           return { key: "members.already_suspended", message: getMessage("members.already_suspended", lang) };
         case "NOT_SUSPENDED":
           return { key: "members.not_suspended", message: getMessage("members.not_suspended", lang) };
+        case "MEMBER_NOT_FOUND":
+          return { key: "members.not_found", message: getMessage("members.not_found", lang) };
         case "NOT_FOUND":
-          // Could be member, content, asset, submission — caller may override
+          // Generic 404 from the framework (unmatched route). Domain services
+          // use a specific code so the copy can name what is missing.
           return { key: "common.not_found", message: getMessage("common.not_found", lang) };
+        case "CONTENT_NOT_FOUND":
+          return { key: "content.not_found", message: getMessage("content.not_found", lang) };
+        case "COLLECTION_NOT_FOUND":
+          return { key: "content.collection_not_found", message: getMessage("content.collection_not_found", lang) };
+        case "ASSET_NOT_FOUND":
+          return { key: "media.not_found", message: getMessage("media.not_found", lang) };
+        case "SUBMISSION_NOT_FOUND":
+          return { key: "submissions.not_found", message: getMessage("submissions.not_found", lang) };
+        case "ASSIGNMENT_NOT_FOUND":
+          return { key: "common.assignment_not_found", message: getMessage("common.assignment_not_found", lang) };
         case "SCHEDULE_REQUIRED":
           return { key: "content.schedule_required", message: getMessage("content.schedule_required", lang) };
-        case "FORBIDDEN": // duplicate above
-          return { key: "content.forbidden_transition", message: getMessage("content.forbidden_transition", lang) };
+        case "INVALID_TRANSITION":
+          return { key: "content.invalid_transition", message: getMessage("content.invalid_transition", lang) };
+        case "INCOMPLETE_CONTENT":
+          return { key: "content.incomplete", message: getMessage("content.incomplete", lang) };
         case "STORAGE_NOT_CONFIGURED":
           return { key: "media.storage_disabled", message: getMessage("media.storage_disabled", lang) };
         case "FILE_TOO_LARGE":
           return { key: "media.file_too_large", message: getMessage("media.file_too_large", lang) };
         case "INVALID_FILE_TYPE":
           return { key: "media.file_type_invalid", message: getMessage("media.file_type_invalid", lang) };
+        case "UNSUPPORTED_MEDIA_TYPE":
+          return { key: "media.file_type_unsupported", message: getMessage("media.file_type_unsupported", lang) };
         case "NO_FILE":
           return { key: "media.failed_upload", message: getMessage("media.failed_upload", lang) };
         case "VALIDATION_ERROR": {
-          // Zod details available in e.details — caller should use fieldErrors()
-          return { key: "common.validation_error", message: getMessage("common.validation_error", lang) || "Invalid input. Check the fields and try again." };
+          // Zod details available in e.details — callers render them under the
+          // matching fields with fieldErrors().
+          return { key: "common.validation_error", message: getMessage("common.validation_error", lang) };
         }
       }
     }
@@ -503,23 +553,34 @@ export function messageForError(
 
 /**
  * Extract field-level errors from a Zod validation error (VALIDATION_ERROR).
- * Returns a map of field path -> message key (or raw message).
- * Paths like "data.title.en" map to form fields.
+ * Returns a map of field path -> message.
+ *
+ * `error.flatten()` (what the API sends as `details`) returns
+ * `fieldErrors: Record<string, string[]>`, but older Zod payloads nested an
+ * object with `message`, so both shapes are accepted.
  */
-export function fieldErrors(
-  err: unknown
-): Record<string, string> {
-  if (!err || typeof err !== "object") return {};
-  const e = err as { details?: { fieldErrors?: Record<string, { message: string }[]> } };
-  const details = e.details;
-  if (!details?.fieldErrors) return {};
+export function fieldErrors(err: unknown): Record<string, string> {
+  if (!err || typeof err !== "object") return {}
+  const details = (err as { details?: unknown }).details as
+    | { fieldErrors?: Record<string, unknown> }
+    | undefined
+  const raw = details?.fieldErrors
+  if (!raw || typeof raw !== "object") return {}
 
-  const out: Record<string, string> = {};
-  for (const [path, issues] of Object.entries(details.fieldErrors)) {
-    // Take the first issue for this field
-    out[path] = issues[0]?.message || "Invalid value";
+  const out: Record<string, string> = {}
+  for (const [path, issues] of Object.entries(raw)) {
+    const first = Array.isArray(issues) ? issues[0] : issues
+    if (typeof first === "string" && first.length > 0) {
+      out[path] = first
+    } else if (
+      first &&
+      typeof first === "object" &&
+      typeof (first as { message?: unknown }).message === "string"
+    ) {
+      out[path] = (first as { message: string }).message
+    }
   }
-  return out;
+  return out
 }
 
 /**

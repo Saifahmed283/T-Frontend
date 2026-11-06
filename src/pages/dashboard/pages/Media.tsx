@@ -11,20 +11,16 @@ import { Alert, Button, Field, Heading, Input, Modal } from "../ui"
 import { Empty, formatSize } from "../shared"
 
 const PAGE_SIZE = 24
-const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+// Keep these in sync with the server (assets.service.ts): a client that accepts
+// more than the API does only turns a local check into a confusing 4xx later.
+const MAX_FILE_SIZE = 15 * 1024 * 1024 // 15 MB
 const ALLOWED_TYPES = [
   "image/jpeg",
   "image/png",
   "image/gif",
   "image/webp",
-  "image/avif",
+  "image/svg+xml",
   "application/pdf",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  "application/vnd.ms-excel",
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "text/plain",
-  "text/csv",
 ]
 
 export function MediaPage({ canEdit }: { canEdit: boolean }) {
@@ -79,10 +75,10 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
-      return `File type ${file.type} is not allowed. Allowed: images, PDF, Office documents, text files.`
+      return `File type ${file.type || "unknown"} is not allowed. Allowed: images and PDF files.`
     }
     if (file.size > MAX_FILE_SIZE) {
-      return `File size ${formatSize(file.size)} exceeds the 50 MB limit.`
+      return `File size ${formatSize(file.size)} exceeds the 15 MB limit.`
     }
     return null
   }
@@ -221,7 +217,7 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
           <Empty icon={ImageIcon} title="No files yet">
             <p>Drag and drop files here, or click to upload.</p>
             <p className="text-xs text-slate-strong mt-1">
-              Allowed: JPEG, PNG, GIF, WebP, AVIF, PDF, DOCX, XLSX, TXT, CSV (max 50 MB)
+              Allowed: JPEG, PNG, GIF, WebP, SVG and PDF (max 15 MB)
             </p>
           </Empty>
         ) : (

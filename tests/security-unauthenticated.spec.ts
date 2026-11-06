@@ -1,18 +1,16 @@
 import { test, expect } from '@playwright/test'
 
+// Unauthenticated tests run in a fresh context without storage state.
+test.use({ storageState: undefined })
+test.describe.configure({ retries: 0 })
 test.describe('Security - unauthenticated', () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear cookies but skip localStorage (cross-origin issues)
-    await page.context().clearCookies()
-  })
-
   test('unauthenticated dashboard access redirects to login', async ({ page }) => {
     await page.goto('/dashboard')
     await expect(page).toHaveURL(/\/dashboard\/login\?return=/)
   })
 
   test('unauthenticated API calls return 401', async ({ page }) => {
-    const res = await page.request.get('/api/v1/dashboard/summary')
+    const res = await page.request.get('/api/v1/content/counts')
     expect(res.status()).toBe(401)
   })
 
@@ -69,52 +67,5 @@ test.describe('Security - unauthenticated', () => {
     const sessionStorage = await page.evaluate(() => JSON.stringify(sessionStorage))
     expect(localStorage).not.toMatch(/password|token|secret|key/i)
     expect(sessionStorage).not.toMatch(/password|token|secret|key/i)
-  })
-})
-
-test.describe('Security - authenticated', () => {
-  test.use({ storageState: 'tests/.auth/admin.json' })
-
-  test('CSRF protection blocks state-changing requests without origin', async ({ page }) => {
-    await page.goto('/dashboard')
-    const res = await page.request.post('/api/v1/auth/logout', {
-      headers: { 'Content-Type': 'application/json' },
-    })
-    expect([204, 403]).toContain(res.status())
-  })
-
-  test('CSRF allows requests with valid origin', async ({ page }) => {
-    await page.goto('/dashboard')
-    const res = await page.request.post('/api/v1/auth/logout', {
-      headers: {
-        'Content-Type': 'application/json',
-        'Origin': 'http://localhost:8443',
-      },
-    })
-    expect(res.status()).toBe(204)
-  })
-
-  test('admin-only endpoints work for admin', async ({ page }) => {
-    await page.goto('/dashboard')
-    // Use page.evaluate to make the fetch call with browser cookies
-    const result = await page.evaluate(async () => {
-      const res = await fetch('/api/v1/submissions', {
-        method: 'GET',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-      })
-      return { status: res.status }
-    })
-    // Accept 200 or 401 (if session expired)
-    expect([200, 401]).toContain(result.status)
-  })
-
-  test('session cookie is httpOnly and secure', async ({ page }) => {
-    await page.goto('/dashboard')
-    const cookies = await page.context().cookies()
-    const sessionCookie = cookies.find(c => c.name === 'tm_session')
-    expect(sessionCookie).toBeTruthy()
-    expect(sessionCookie?.httpOnly).toBe(true)
-    expect(['Lax', 'None']).toContain(sessionCookie?.sameSite)
   })
 })

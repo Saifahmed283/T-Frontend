@@ -3,6 +3,9 @@ import { test, expect } from '@playwright/test'
 const ADMIN_EMAIL = process.env.E2E_ADMIN_EMAIL ?? 'mbaraka@askterramorph.com'
 const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'MB@terramorph2026'
 
+// Run in a fresh unauthenticated context to avoid polluting the
+// authenticated browser context used by other test files.
+test.use({ storageState: undefined })
 test.describe('Dashboard authentication', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/dashboard')
