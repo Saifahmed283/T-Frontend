@@ -21,8 +21,12 @@ export function SettingsPage({ session }: { session: Session }) {
   const [done, setDone] = useState(false)
 
   const changePassword = async () => {
-    if (next.length < 8)
-      return setError("New password must be at least 8 characters")
+    // Match backend: 12+ chars, upper, lower, digit, special
+    if (next.length < 12) return setError("New password must be at least 12 characters")
+    if (!/[A-Z]/.test(next)) return setError("New password must contain an uppercase letter")
+    if (!/[a-z]/.test(next)) return setError("New password must contain a lowercase letter")
+    if (!/[0-9]/.test(next)) return setError("New password must contain a number")
+    if (!/[^A-Za-z0-9]/.test(next)) return setError("New password must contain a special character")
     if (next !== confirm) return setError("New passwords do not match")
     setBusy(true)
     setError(null)
@@ -87,7 +91,7 @@ export function SettingsPage({ session }: { session: Session }) {
               onChange={(e) => setCurrent(e.target.value)}
             />
           </Field>
-          <Field label="New password" required hint="At least 8 characters.">
+          <Field label="New password" required hint="12+ chars: upper, lower, number, special.">
             <Input
               type="password"
               autoComplete="new-password"

@@ -9,20 +9,23 @@ import { useCollection } from "../hooks/useCollection"
 import { Badge, Button, Field, Input } from "../ui"
 import { collectionIcons, Empty, recordLanguages, statusTone } from "../shared"
 
-/* Collection — one collection's records, with status tabs, search, filters and
-   pagination. The row grid mirrors the header grid so columns stay aligned. */
+/* Collections that have both geography and sector fields for server-side filtering. */
+const COLLECTIONS_WITH_GEO_SECTOR = new Set(["cases", "publications", "instruments", "assignments"])
 
 export function CollectionPage({
   collection,
   counts,
   onOpenItem,
   onCreate,
+  refreshKey,
 }: {
   collection: Collection
   counts: ContentCounts | null
   onOpenItem: (itemId: string) => void
   onCreate: () => void
+  refreshKey?: number
 }) {
+  const hasGeoSector = COLLECTIONS_WITH_GEO_SECTOR.has(collection.id)
   const {
     items,
     loading,
@@ -31,36 +34,26 @@ export function CollectionPage({
     setStatus,
     search,
     setSearch,
+    geography,
+    setGeography,
+    sector,
+    setSector,
     page,
     setPage,
     totalPages,
-  } = useCollection(collection.id)
+  } = useCollection(collection.id, refreshKey)
 
   const [filters, setFilters] = useState(false)
-  const [geoFilter, setGeoFilter] = useState("")
-  const [sectorFilter, setSectorFilter] = useState("")
   const byStatus = counts?.byKind?.[collection.id]?.byStatus
-
-  const filteredItems = useMemo(
-    () =>
-      items.filter((it) => {
-        const data = it.data as Record<string, unknown>
-        const geo = String(data.geography ?? "").toLowerCase()
-        const sector = String(data.sector ?? "").toLowerCase()
-        return (
-          geo.includes(geoFilter.toLowerCase()) &&
-          sector.includes(sectorFilter.toLowerCase())
-        )
-      }),
-    [items, geoFilter, sectorFilter],
-  )
 
   const tabs: { key: string; label: string }[] = [
     { key: "All", label: "All content" },
     { key: "DRAFT", label: "Draft" },
     { key: "REVIEW", label: "Review" },
     { key: "APPROVED", label: "Approved" },
+    { key: "SCHEDULED", label: "Scheduled" },
     { key: "PUBLISHED", label: "Published" },
+    { key: "UNPUBLISHED", label: "Unpublished" },
     { key: "ARCHIVED", label: "Archived" },
   ]
 
@@ -96,30 +89,32 @@ export function CollectionPage({
             aria-label={`Search ${collection.name}`}
           />
         </div>
-        <Button
-          className={filters ? "selected" : ""}
-          onClick={() => setFilters(!filters)}
-          aria-expanded={filters}
-        >
-          <ListFilter size={15} />
-          Filters
-          {filters && <Check size={13} />}
-        </Button>
+        {hasGeoSector && (
+          <Button
+            className={filters ? "selected" : ""}
+            onClick={() => setFilters(!filters)}
+            aria-expanded={filters}
+          >
+            <ListFilter size={15} />
+            Filters
+            {filters && <Check size={13} />}
+          </Button>
+        )}
       </div>
 
-      {filters && (
+      {filters && hasGeoSector && (
         <div className="expanded-filters">
           <Field label="Geography">
             <Input
-              value={geoFilter}
-              onChange={(e) => setGeoFilter(e.target.value)}
+              value={geography}
+              onChange={(e) => setGeography(e.target.value)}
               placeholder="Filter by geography"
             />
           </Field>
           <Field label="Sector">
             <Input
-              value={sectorFilter}
-              onChange={(e) => setSectorFilter(e.target.value)}
+              value={sector}
+              onChange={(e) => setSector(e.target.value)}
               placeholder="Filter by sector"
             />
           </Field>
@@ -141,7 +136,7 @@ export function CollectionPage({
 
       {loading && items.length === 0 ? (
         <SkeletonRows rows={5} />
-      ) : filteredItems.length === 0 ? (
+      ) : items.length === 0 ? (
         <Empty
           icon={collectionIcons[collection.id]}
           title={`No ${collection.name.toLowerCase()} yet`}
@@ -156,7 +151,7 @@ export function CollectionPage({
         </Empty>
       ) : (
         <div>
-          {filteredItems.map((it) => (
+          {items.map((it) => (
             <Button
               variant="ghost"
               key={it.id}

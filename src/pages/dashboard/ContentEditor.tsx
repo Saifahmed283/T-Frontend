@@ -84,6 +84,8 @@ export function ContentEditor({
 
   isApprover,
 
+  isAdmin,
+
   onClose,
 
   onSaved,
@@ -93,6 +95,8 @@ export function ContentEditor({
   itemId?: string
 
   isApprover: boolean
+
+  isAdmin: boolean
 
   onClose: () => void
 
@@ -131,6 +135,20 @@ export function ContentEditor({
   const [error, setError] = useState<string | null>(null)
 
   const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const [dirty, setDirty] = useState(false)
+
+  /* Track if form has unsaved changes to show a confirmation on close/reload. */
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (dirty) {
+        e.preventDefault()
+        e.returnValue = ""
+      }
+    }
+    window.addEventListener("beforeunload", handler)
+    return () => window.removeEventListener("beforeunload", handler)
+  }, [dirty])
 
   useEffect(() => {
     if (!itemId) {
@@ -188,6 +206,42 @@ export function ContentEditor({
     }
   }, [collection, itemId])
 
+  /* Mark form as dirty when user edits any field. */
+  const setField = (key: string, value: unknown) => {
+    setData((d) => ({ ...d, [key]: value }))
+    setDirty(true)
+  }
+
+  const setLocalized = (key: string, lang: "en" | "ar", value: string) => {
+    setData((d) => ({ ...d, [key]: { ...asLocalized(d[key]), [lang]: value } }))
+    setDirty(true)
+  }
+
+  const setSeoField = (key: string, value: unknown) => {
+    setSeo((s) => ({ ...s, [key]: value }))
+    setDirty(true)
+  }
+
+  const setSlugField = (value: string) => {
+    setSlug(value)
+    setDirty(true)
+  }
+
+  const setSourceReferenceField = (value: string) => {
+    setSourceReference(value)
+    setDirty(true)
+  }
+
+  const setScheduledPublishAtField = (value: string) => {
+    setScheduledPublishAt(value)
+    setDirty(true)
+  }
+
+  const setScheduledUnpublishAtField = (value: string) => {
+    setScheduledUnpublishAt(value)
+    setDirty(true)
+  }
+
   const localizedRequired = collection.fields.filter(
     (f) => f.localized && f.required,
   )
@@ -205,16 +259,32 @@ export function ContentEditor({
     )
   }, [data, language])
 
-  const setField = (key: string, value: unknown) =>
-    setData((d) => ({ ...d, [key]: value }))
-
-  const setLocalized = (key: string, lang: "en" | "ar", value: string) =>
-    setData((d) => ({ ...d, [key]: { ...asLocalized(d[key]), [lang]: value } }))
-
-  const setSeoField = (key: string, value: unknown) =>
-    setSeo((s) => ({ ...s, [key]: value }))
+  /* Validate all required fields (localized and non-localized) for the current language. */
+  const validateRequired = (): string | null => {
+    for (const f of collection.fields) {
+      if (!f.required) continue
+      const value = data[f.key]
+      if (f.localized) {
+        const loc = asLocalized(value)
+        if (!loc.en.trim() && !loc.ar.trim()) {
+          return `${f.label} is required`
+        }
+      } else {
+        if (!String(value ?? "").trim()) {
+          return `${f.label} is required`
+        }
+      }
+    }
+    return null
+  }
 
   const save = async () => {
+    const validationError = validateRequired()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
     setBusy(true)
 
     setError(null)
@@ -258,6 +328,7 @@ export function ContentEditor({
         })
       }
 
+      setDirty(false)
       onSaved()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Save failed")
@@ -315,7 +386,7 @@ export function ContentEditor({
       onClose={onClose}
     >
       <div className="editor-topline">
-        <Badge tone="success">
+        <Badge tone={isEdit && detail ? statusTone[detail.status] : "neutral"}>
           {isEdit && detail ? detail.status : "New record"}
         </Badge>
         <span>
@@ -464,10 +535,10 @@ export function ContentEditor({
                           f.type === "url"
                             ? "url"
                             : f.type === "date"
-                              ? "date"
-                              : f.type === "number"
-                                ? "number"
-                                : "text"
+                            ? "date"
+                            : f.type === "number"
+                            ? "number"
+                            : "text"
                         }
                         value={val}
                         onChange={(e) =>
@@ -501,10 +572,10 @@ export function ContentEditor({
                         f.type === "url"
                           ? "url"
                           : f.type === "date"
-                            ? "date"
-                            : f.type === "number"
-                              ? "number"
-                              : "text"
+                          ? "date"
+                          : f.type === "number"
+                          ? "number"
+                          : "text"
                       }
                       value={value}
                       onChange={(e) => setField(f.key, e.target.value)}
@@ -518,11 +589,11 @@ export function ContentEditor({
           <>
             <Field
               label="Slug"
-              hint="Leave blank to generate from the title. Changing a saved slug should create a redirect."
+              hint="Leave blank to generate from the title."
             >
               <Input
                 value={slug}
-                onChange={(e) => setSlug(e.target.value)}
+                onChange={(e) => setSlugField(e.target.value)}
                 placeholder="stable-content-slug"
               />
             </Field>
@@ -610,7 +681,7 @@ export function ContentEditor({
             <Field label="Source / permission reference">
               <Input
                 value={sourceReference}
-                onChange={(e) => setSourceReference(e.target.value)}
+                onChange={(e) => setSourceReferenceField(e.target.value)}
                 placeholder="Reference or supporting evidence"
               />
             </Field>
@@ -619,14 +690,14 @@ export function ContentEditor({
                 <Input
                   type="datetime-local"
                   value={scheduledPublishAt}
-                  onChange={(e) => setScheduledPublishAt(e.target.value)}
+                  onChange={(e) => setScheduledPublishAtField(e.target.value)}
                 />
               </Field>
               <Field label="Scheduled unpublish date">
                 <Input
                   type="datetime-local"
                   value={scheduledUnpublishAt}
-                  onChange={(e) => setScheduledUnpublishAt(e.target.value)}
+                  onChange={(e) => setScheduledUnpublishAtField(e.target.value)}
                 />
               </Field>
             </div>
@@ -649,7 +720,7 @@ export function ContentEditor({
             {preview ? <ArrowLeft size={16} /> : <Monitor size={16} />}
             {preview ? "Back to editor" : "Preview layout"}
           </Button>
-          {isEdit && (
+          {isEdit && isAdmin && (
             <Button
               variant="ghost"
               disabled={busy}

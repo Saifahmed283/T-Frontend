@@ -71,7 +71,7 @@ export function useWorkspace() {
        page when an admin opens it, instead of every dashboard visit paying for
        a queue most people never look at. */
     await Promise.all([
-      api.activity(20).then((a) => { activity = a }).catch(() => {}),
+      api.activity({ limit: 20 }).then((a) => { activity = a }).catch(() => {}),
       api.contentCounts().then((c) => { contentCounts = c }).catch(() => {}),
       api.workflowBoard().then((b) => { workflowBoard = b }).catch(() => {}),
     ])

@@ -16,6 +16,10 @@ logs/
 .claude-replay.*
 .tmp-*
 
+# Playwright test artifacts
+playwright-report/
+test-results/
+
 # Platform-managed agent state, not project source.
 /.plugins/
 /.opencode-skills/

@@ -78,6 +78,7 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
   const [query, setQuery] = useState("")
   const [group, setGroup] = useState("All collections")
   const [sort, setSort] = useState("default")
+  const [collectionRefreshKey, setCollectionRefreshKey] = useState(0)
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -104,6 +105,38 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
     return () => window.removeEventListener("keydown", onKey)
   }, [])
 
+  /* Hash-based deep links (#/overview, #/cases, #/media, …).
+     On mount, read the initial hash. Then listen for hashchange so back/forward
+     and direct links work without a router library. */
+  useEffect(() => {
+    const validPages = new Set([
+      "overview",
+      "content",
+      "workflow",
+      "media",
+      "website",
+      "submissions",
+      "users",
+      "activity",
+      "settings",
+      ...collections.map((c) => c.id),
+    ])
+
+    const readHash = () => {
+      const hash = window.location.hash.slice(1)
+      const pageFromHash = hash.split("/")[0] || "overview"
+      if (validPages.has(pageFromHash)) {
+        setPage(pageFromHash)
+        setContentOpen(pageFromHash === "content")
+        setQuery("")
+      }
+    }
+
+    readHash()
+    window.addEventListener("hashchange", readHash)
+    return () => window.removeEventListener("hashchange", readHash)
+  }, [])
+
   const counts = data?.contentCounts ?? null
   const currentCollection = collections.find((c) => c.id === page)
   const isCollectionPage = Boolean(currentCollection) && page !== "content"
@@ -112,6 +145,7 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
     setPage(id)
     setMobileNav(false)
     setQuery("")
+    window.location.hash = id
     window.scrollTo({ top: 0, behavior: "smooth" })
   }, [])
 
@@ -123,6 +157,7 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
   const closeEditor = useCallback(() => setEditor(null), [])
   const afterSave = useCallback(() => {
     setEditor(null)
+    setCollectionRefreshKey((k) => k + 1)
     void reload()
   }, [reload])
 
@@ -418,6 +453,7 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
                 counts={counts}
                 onOpenItem={openCollectionItem}
                 onCreate={createCollectionItem}
+                refreshKey={collectionRefreshKey}
               />
             ) : page === "workflow" ? (
               <MemoWorkflow
@@ -425,18 +461,15 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
                 onOpenItem={openWorkflowItem}
               />
             ) : page === "media" ? (
-              <MemoMedia />
+              <MemoMedia canEdit={data?.isAdmin ?? false} />
             ) : page === "website" ? (
-              <MemoWebsite canEdit={data?.isAdmin ?? false} />
+              <MemoWebsite canEdit={(data?.isAdmin ?? false) || (data?.session?.role === "lead")} />
             ) : page === "submissions" ? (
               <MemoSubmissions isAdmin={data?.isAdmin ?? false} />
             ) : page === "users" ? (
               <MemoUsers canEdit={data?.isAdmin ?? false} />
             ) : page === "activity" ? (
-              <MemoActivity
-                items={data?.activity.items ?? []}
-                loading={loading}
-              />
+              <MemoActivity />
             ) : (
               <MemoSettings session={data?.session ?? null} />
             )}
@@ -597,6 +630,7 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
               collection={collection}
               itemId={editor.itemId}
               isApprover={data?.isApprover ?? false}
+              isAdmin={data?.isAdmin ?? false}
               onClose={closeEditor}
               onSaved={afterSave}
             />

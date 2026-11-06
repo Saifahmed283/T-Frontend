@@ -122,6 +122,7 @@ describe("ContentEditor", () => {
       <ContentEditor
         collection={collection}
         isApprover={false}
+        isAdmin={true}
         onClose={vi.fn()}
         onSaved={onSaved}
       />,
@@ -188,6 +189,7 @@ describe("ContentEditor", () => {
         collection={collection}
         itemId="c1"
         isApprover={false}
+        isAdmin={true}
         onClose={vi.fn()}
         onSaved={onSaved}
       />,
@@ -232,6 +234,7 @@ describe("ContentEditor", () => {
         collection={collection}
         itemId="c1"
         isApprover
+        isAdmin={true}
         onClose={vi.fn()}
         onSaved={onSaved}
       />,

@@ -1,21 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Image as ImageIcon, Plus, Search } from "lucide-react"
+import { Image as ImageIcon, Plus, Search, Copy, X, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { SkeletonCard, SkeletonRegion } from "@/components/ui"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { api, type Asset } from "@/lib/api"
 
-import { Button, Field, Input } from "../ui"
+import { Button, Field, Heading, Input, Modal } from "../ui"
 import { Empty, formatSize } from "../shared"
 
-/* Media — the shared asset library. Uploads are disabled when the API reports
-   that object storage is not configured, and we say so rather than failing
-   silently. Search is debounced and the list is paginated, so a large library
-   never downloads or renders in one go. */
-
 const PAGE_SIZE = 24
+const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
+const ALLOWED_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+  "image/avif",
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "text/plain",
+  "text/csv",
+]
 
-export function MediaPage() {
+export function MediaPage({ canEdit }: { canEdit: boolean }) {
   const [assets, setAssets] = useState<Asset[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -24,11 +34,13 @@ export function MediaPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [storageEnabled, setStorageEnabled] = useState(true)
   const [busy, setBusy] = useState(false)
-  /* Alt text is edited locally and written on blur: one request per edit, not
-     one per keystroke. English and Arabic are independent. */
   const [altDraft, setAltDraft] = useState<Record<string, { en: string; ar: string }>>({})
   const inputRef = useRef<HTMLInputElement>(null)
+  const dropzoneRef = useRef<HTMLDivElement>(null)
   const requestId = useRef(0)
+
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewAsset, setPreviewAsset] = useState<Asset | null>(null)
 
   const debouncedSearch = useDebouncedValue(search, 300)
 
@@ -62,10 +74,28 @@ export function MediaPage() {
     void load()
   }, [load])
 
-  const upload = async (file: File) => {
+  const validateFile = (file: File): string | null => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      return `File type ${file.type} is not allowed. Allowed: images, PDF, Office documents, text files.`
+    }
+    if (file.size > MAX_FILE_SIZE) {
+      return `File size ${formatSize(file.size)} exceeds the 50 MB limit.`
+    }
+    return null
+  }
+
+  const uploadFiles = async (files: FileList | File[]) => {
+    const fileArray = Array.from(files)
+    const invalid = fileArray.map(validateFile).filter(Boolean)
+    if (invalid.length > 0) {
+      setError(invalid.join("\n"))
+      return
+    }
     setBusy(true)
     try {
-      await api.assetUpload(file)
+      for (const file of fileArray) {
+        await api.assetUpload(file)
+      }
       await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload failed")
@@ -75,12 +105,28 @@ export function MediaPage() {
     }
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files
+    if (f?.length) void uploadFiles(f)
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    const f = e.dataTransfer.files
+    if (f?.length) void uploadFiles(f)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = "copy"
+  }
+
   const remove = async (id: string) => {
+    if (!canEdit) return
     setBusy(true)
     try {
       await api.assetDelete(id)
       setAssets((a) => a.filter((x) => x.id !== id))
-      // The last item on a page leaves an empty page behind; step back.
       if (assets.length === 1 && page > 1) setPage((p) => p - 1)
       else await load()
     } catch {
@@ -101,40 +147,50 @@ export function MediaPage() {
     }
   }
 
+  const copyUrl = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url)
+      setError("URL copied to clipboard")
+      setTimeout(() => setError(null), 2000)
+    } catch {
+      setError("Could not copy URL")
+    }
+  }
+
+  const openPreview = (asset: Asset) => {
+    setPreviewAsset(asset)
+    setPreviewOpen(true)
+  }
+
   return (
     <section className="panel">
-      <div className="collection-toolbar">
-        <div className="search-field">
-          <Search size={16} />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search media…"
-            aria-label="Search media"
-          />
+      <div className="panel-heading">
+        <div>
+          <Heading level={2}>Media library</Heading>
+          <p>Upload and manage images and documents for your content.</p>
         </div>
-        <input
-          ref={inputRef}
-          type="file"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0]
-            if (f) void upload(f)
-          }}
-        />
-        <Button
-          variant="primary"
-          disabled={busy || !storageEnabled}
-          onClick={() => inputRef.current?.click()}
-        >
-          <Plus size={15} /> Upload
-        </Button>
+        <div className="panel-heading-actions">
+          <input
+            ref={inputRef}
+            type="file"
+            multiple
+            accept={ALLOWED_TYPES.join(",")}
+            className="hidden"
+            onChange={handleFileSelect}
+          />
+          <Button
+            variant="primary"
+            disabled={busy || !storageEnabled || !canEdit}
+            onClick={() => inputRef.current?.click()}
+          >
+            <Plus size={15} /> Upload
+          </Button>
+        </div>
       </div>
 
       {!storageEnabled && (
         <p className="panel-foot is-error">
-          Storage is not configured on this environment, so uploads stay
-          disabled.
+          Storage is not configured on this environment, so uploads stay disabled.
         </p>
       )}
       {error && (
@@ -143,89 +199,120 @@ export function MediaPage() {
         </p>
       )}
 
-      {loading && assets.length === 0 ? (
-        <SkeletonRegion label="Loading media" className="media-grid">
-          {Array.from({ length: 6 }, (_, i) => (
-            <SkeletonCard key={i} className="h-56" />
-          ))}
-        </SkeletonRegion>
-      ) : assets.length === 0 ? (
-        <Empty icon={ImageIcon} title="No files yet">
-          Upload images and documents to reuse them across your content.
-        </Empty>
-      ) : (
-        <ul className="media-grid" aria-busy={loading}>
-          {assets.map((a) => (
-            <li key={a.id} className="media-card">
-              <div className="media-thumb">
-                {a.mimeType.startsWith("image/") ? (
-                  <img
-                    src={a.url}
-                    alt={a.alt?.en ?? a.filename}
-                    loading="lazy"
-                    decoding="async"
-                  />
-                ) : (
-                  <ImageIcon size={24} strokeWidth={1.4} />
-                )}
-              </div>
-              <div className="media-body">
-                <p className="media-name" title={a.filename}>
-                  {a.filename}
-                </p>
-                <p className="media-meta">
-                  {formatSize(a.size)} · {a.mimeType.split("/")[1] ?? "file"}
-                </p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Field label="Alt text · EN">
-                    <Input
-                      value={altDraft[a.id]?.en ?? a.alt?.en ?? ""}
-                      onChange={(e) =>
-                        setAltDraft((d) => ({
-                          ...d,
-                          [a.id]: {
-                            ...(d[a.id] ?? { en: "", ar: "" }),
-                            en: e.target.value,
-                          },
-                        }))
-                      }
-                      onBlur={(e) => void saveAlt(a, "en", e.target.value)}
-                      placeholder="Describe the image"
+      <div
+        ref={dropzoneRef}
+        className={`dropzone ${busy ? "dropzone-busy" : ""}`}
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+        onClick={() => inputRef.current?.click()}
+      >
+        {loading && assets.length === 0 ? (
+          <SkeletonRegion label="Loading media" className="media-grid">
+            {Array.from({ length: 6 }, (_, i) => (
+              <SkeletonCard key={i} className="h-56" />
+            ))}
+          </SkeletonRegion>
+        ) : assets.length === 0 ? (
+          <Empty icon={ImageIcon} title="No files yet">
+            <p>Drag and drop files here, or click to upload.</p>
+            <p className="text-xs text-slate-strong mt-1">
+              Allowed: JPEG, PNG, GIF, WebP, AVIF, PDF, DOCX, XLSX, TXT, CSV (max 50 MB)
+            </p>
+          </Empty>
+        ) : (
+          <ul className="media-grid" aria-busy={loading}>
+            {assets.map((a) => (
+              <li key={a.id} className="media-card">
+                <div className="media-thumb" onClick={() => openPreview(a)}>
+                  {a.mimeType.startsWith("image/") ? (
+                    <img
+                      src={a.url}
+                      alt={a.alt?.en ?? a.filename}
+                      loading="lazy"
+                      decoding="async"
                     />
-                  </Field>
-                  <Field label="Alt text · AR">
-                    <Input
-                      value={altDraft[a.id]?.ar ?? a.alt?.ar ?? ""}
-                      onChange={(e) =>
-                        setAltDraft((d) => ({
-                          ...d,
-                          [a.id]: {
-                            ...(d[a.id] ?? { en: "", ar: "" }),
-                            ar: e.target.value,
-                          },
-                        }))
-                      }
-                      onBlur={(e) => void saveAlt(a, "ar", e.target.value)}
-                      placeholder="وصف الصورة"
-                      dir="rtl"
-                      lang="ar"
-                    />
-                  </Field>
+                  ) : (
+                    <ImageIcon size={24} strokeWidth={1.4} />
+                  )}
                 </div>
-                <Button
-                  variant="ghost"
-                  disabled={busy}
-                  onClick={() => void remove(a.id)}
-                  aria-label={`Delete ${a.filename}`}
-                  className="media-delete"
-                >
-                  Delete
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+                <div className="media-body">
+                  <p className="media-name" title={a.filename}>
+                    {a.filename}
+                  </p>
+                  <p className="media-meta">
+                    {formatSize(a.size)} · {a.mimeType.split("/")[1] ?? "file"}
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="Alt text · EN">
+                      <Input
+                        value={altDraft[a.id]?.en ?? a.alt?.en ?? ""}
+                        onChange={(e) =>
+                          setAltDraft((d) => ({
+                            ...d,
+                            [a.id]: {
+                              ...(d[a.id] ?? { en: "", ar: "" }),
+                              en: e.target.value,
+                            },
+                          }))
+                        }
+                        onBlur={(e) => void saveAlt(a, "en", e.target.value)}
+                        placeholder="Describe the image"
+                      />
+                    </Field>
+                    <Field label="Alt text · AR">
+                      <Input
+                        value={altDraft[a.id]?.ar ?? a.alt?.ar ?? ""}
+                        onChange={(e) =>
+                          setAltDraft((d) => ({
+                            ...d,
+                            [a.id]: {
+                              ...(d[a.id] ?? { en: "", ar: "" }),
+                              ar: e.target.value,
+                            },
+                          }))
+                        }
+                        onBlur={(e) => void saveAlt(a, "ar", e.target.value)}
+                        placeholder="وصف الصورة"
+                        dir="rtl"
+                        lang="ar"
+                      />
+                    </Field>
+                  </div>
+                  <div className="media-actions">
+                    <Button
+                      variant="ghost"
+                      onClick={() => copyUrl(a.url)}
+                      aria-label="Copy URL"
+                      title="Copy URL"
+                    >
+                      <Copy size={14} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      onClick={() => openPreview(a)}
+                      aria-label="Preview"
+                      title="Preview"
+                    >
+                      <ImageIcon size={14} />
+                    </Button>
+                    {canEdit && (
+                      <Button
+                        variant="ghost"
+                        className="text-danger"
+                        disabled={busy}
+                        onClick={() => void remove(a.id)}
+                        aria-label={`Delete ${a.filename}`}
+                      >
+                        <X size={14} />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {totalPages > 1 && (
         <div className="panel-foot" style={{ justifyContent: "space-between" }}>
@@ -238,17 +325,45 @@ export function MediaPage() {
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page <= 1 || loading}
             >
-              Previous
+              <ChevronLeft size={14} />
             </Button>
             <Button
               variant="secondary"
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page >= totalPages || loading}
             >
-              Next
+              <ChevronRight size={14} />
             </Button>
           </div>
         </div>
+      )}
+
+      {previewOpen && previewAsset && (
+        <Modal title={previewAsset.filename} onClose={() => setPreviewOpen(false)} wide>
+          <div className="modal-body" style={{ textAlign: "center" }}>
+            {previewAsset.mimeType.startsWith("image/") ? (
+              <img
+                src={previewAsset.url}
+                alt={previewAsset.alt?.en ?? previewAsset.filename}
+                style={{ maxWidth: "100%", maxHeight: "70vh", borderRadius: "4px" }}
+              />
+            ) : (
+              <div className="media-preview-placeholder">
+                <ImageIcon size={48} strokeWidth={1.4} />
+                <p className="mt-2 text-slate-strong">{previewAsset.filename}</p>
+                <p className="text-xs text-slate-strong">{previewAsset.mimeType}</p>
+              </div>
+            )}
+            <div className="mt-4 flex gap-2 justify-center">
+              <Button variant="secondary" onClick={() => copyUrl(previewAsset.url)}>
+                <Copy size={14} /> Copy URL
+              </Button>
+              <Button variant="primary" onClick={() => window.open(previewAsset.url, "_blank")}>
+                Open in new tab
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </section>
   )

@@ -2,6 +2,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   BookOpen,
+  BriefcaseBusiness,
   ChevronRight,
   Clock3,
   Database,
@@ -50,6 +51,13 @@ export function OverviewPage({
     value: number
   }[] = [
     {
+      name: "Assignments",
+      icon: BriefcaseBusiness,
+      detail: "Client mandates & delivery",
+      id: "assignments",
+      value: counts?.byKind?.assignments?.total ?? 0,
+    },
+    {
       name: "Case studies",
       icon: FolderOpen,
       detail: "Evidence ready to share",
@@ -76,7 +84,10 @@ export function OverviewPage({
     { status: "DRAFT", label: "Draft" },
     { status: "REVIEW", label: "In review" },
     { status: "APPROVED", label: "Approved" },
+    { status: "SCHEDULED", label: "Scheduled" },
     { status: "PUBLISHED", label: "Published" },
+    { status: "UNPUBLISHED", label: "Unpublished" },
+    { status: "ARCHIVED", label: "Archived" },
   ] as const
 
   const stats = [

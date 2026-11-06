@@ -241,53 +241,11 @@ export type Member = {
   joinedAt: string
 
   role: MemberRole
+
+  suspendedAt: string | null
 }
 
-export type DashboardSummary = {
-  activeAssignments: number
-
-  contractValue: number
-
-  expertsOnRoster: number
-
-  outcomesVerified: number
-
-  notesReceived: number
-
-  statuses: Partial<Record<ApiStatus, number>>
-
-  stages: Partial<Record<ApiStage, number>>
-
-  generatedAt: string
-}
-
-export type Assignment = {
-  id: string
-
-  name: string
-
-  client: string
-
-  sector: string
-
-  value: number
-
-  status: ApiStatus
-
-  stage: ApiStage
-
-  lead: {
-    id: string
-
-    name: string
-  } | null
-
-  createdAt: string
-
-  updatedAt: string
-}
-
-export type Paginated<T,> = {
+export type Paginated<T> = {
   items: T[]
 
   pagination: {
@@ -395,28 +353,6 @@ export type SessionInfo = {
   role: string
 }
 
-export type ExpertStatus = "REGISTERED" | "PROFILE_COMPLETE" | "VETTED" | "MATCHED" | "DEPLOYED" | "REJECTED"
-
-export type Expert = {
-  id: string
-
-  workspaceId: string
-
-  name: string
-
-  email: string
-
-  sector: string
-
-  country: string | null
-
-  status: ExpertStatus
-
-  registeredAt: string
-
-  vettedAt: string | null
-}
-
 export type SubmissionStatus = "NEW" | "IN_REVIEW" | "APPROVED" | "REJECTED" | "ARCHIVED"
 
 export type Submission = {
@@ -438,26 +374,6 @@ export type Submission = {
 
   createdAt: string
 }
-
-export type AssignmentActivity = {
-  id: string
-
-  type: string
-
-  message: string
-
-  metadata: unknown
-
-  createdAt: string
-
-  user: {
-    id: string
-
-    name: string
-  } | null
-}
-
-export type AssignmentDetail = Assignment & { activities: AssignmentActivity[] }
 
 export class ApiError extends Error {
   status: number
@@ -495,14 +411,24 @@ const inflight = new Map<string, Promise<unknown>>()
 async function performRequest<T>(
   path: string,
   init: RequestInit,
+  query?: Record<string, string | number | undefined>,
 ): Promise<T> {
+  let url = `${BASE}${path}`
+  if (query) {
+    const qs = new URLSearchParams()
+    for (const [k, v] of Object.entries(query)) {
+      if (v !== undefined) qs.set(k, String(v))
+    }
+    const qsStr = qs.toString()
+    if (qsStr) url += `?${qsStr}`
+  }
   let res: Response
 
   const isForm =
     typeof FormData !== "undefined" && init.body instanceof FormData
 
   try {
-    res = await fetch(`${BASE}${path}`, {
+    res = await fetch(url, {
       ...init,
 
       credentials: "include",
@@ -562,7 +488,11 @@ async function performRequest<T>(
   return payload as T
 }
 
-function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+function request<T>(
+  path: string,
+  init: RequestInit = {},
+  query?: Record<string, string | number | undefined>,
+): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase()
 
   if (method !== "GET") return performRequest<T>(path, init)
@@ -575,7 +505,7 @@ function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   let promise: Promise<T>
 
-  promise = performRequest<T>(path, init).finally(() => {
+  promise = performRequest<T>(path, init, query).finally(() => {
     // Only delete our own entry: a newer request may have replaced it.
     if (inflight.get(key) === promise) inflight.delete(key)
   })
@@ -606,80 +536,19 @@ export const api = {
       body: JSON.stringify({ currentPassword, newPassword }),
     }),
 
-  summary: () => request<DashboardSummary>("/api/v1/dashboard/summary"),
-
-  assignments: (
-    params: {
-      status?: ApiStatus
-
-      search?: string
-
-      page?: number
-
-      pageSize?: number
-    } = {},
-  ) => {
-    const q = new URLSearchParams()
-
-    if (params.status) q.set("status", params.status)
-
-    if (params.search) q.set("search", params.search)
-
-    if (params.page) q.set("page", String(params.page))
-
-    if (params.pageSize) q.set("pageSize", String(params.pageSize))
-
-    const qs = q.toString()
-
-    return request<Paginated<Assignment>>(
-      `/api/v1/assignments${qs ? `?${qs}` : ""}`,
-    )
-  },
-
-  assignment: (id: string) =>
-    request<AssignmentDetail>(`/api/v1/assignments/${encodeURIComponent(id)}`),
-
-  experts: (
-    params: {
-      status?: ExpertStatus
-
-      search?: string
-
-      page?: number
-
-      pageSize?: number
-    } = {},
-  ) => {
-    const q = new URLSearchParams()
-
-    if (params.status) q.set("status", params.status)
-
-    if (params.search) q.set("search", params.search)
-
-    if (params.page) q.set("page", String(params.page))
-
-    if (params.pageSize) q.set("pageSize", String(params.pageSize))
-
-    const qs = q.toString()
-
-    return request<Paginated<Expert>>(`/api/v1/experts${qs ? `?${qs}` : ""}`)
-  },
-
   submissions: (
     params: {
       kind?: SubmissionKind
-
+      status?: string
       page?: number
-
       pageSize?: number
     } = {},
   ) => {
     const q = new URLSearchParams()
 
     if (params.kind) q.set("kind", params.kind)
-
+    if (params.status) q.set("status", params.status)
     if (params.page) q.set("page", String(params.page))
-
     if (params.pageSize) q.set("pageSize", String(params.pageSize))
 
     const qs = q.toString()
@@ -689,8 +558,23 @@ export const api = {
     )
   },
 
-  activity: (limit = 20) =>
-    request<ActivityFeed>(`/api/v1/activity?limit=${limit}`),
+  submissionStats: () => request<Record<string, number>>("/api/v1/submissions/stats"),
+
+  submissionGet: (id: string) => request<Submission>(`/api/v1/submissions/${encodeURIComponent(id)}`),
+
+  submissionUpdateStatus: (id: string, status: SubmissionStatus) =>
+    request<Submission>(`/api/v1/submissions/${encodeURIComponent(id)}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+
+  submissionDelete: (id: string) =>
+    request<{ deleted: boolean }>(`/api/v1/submissions/${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    }),
+
+  activity: (params: { limit?: number; before?: string } = {}) =>
+    request<ActivityFeed>("/api/v1/activity", {}, params),
 
   submit: (input: SubmissionInput) =>
     request<SubmissionReceipt>("/api/v1/submissions", {
@@ -713,6 +597,10 @@ export const api = {
 
       search?: string
 
+      geography?: string
+
+      sector?: string
+
       page?: number
 
       pageSize?: number
@@ -723,6 +611,10 @@ export const api = {
     if (params.status) q.set("status", params.status)
 
     if (params.search) q.set("search", params.search)
+
+    if (params.geography) q.set("geography", params.geography)
+
+    if (params.sector) q.set("sector", params.sector)
 
     if (params.page) q.set("page", String(params.page))
 
@@ -932,30 +824,6 @@ export const api = {
       body: JSON.stringify({ role }),
     }),
 
-  suspendMember: (userId: string) =>
-    request<{
-      suspended: boolean
-
-      user: {
-        id: string
-
-        name: string
-
-        email: string
-      }
-    }>(`/api/v1/members/${encodeURIComponent(userId)}/suspend`, {
-      method: "POST",
-    }),
-
-  deleteMember: (userId: string) =>
-    request<{
-      id: string
-
-      deleted: boolean
-    }>(`/api/v1/members/${encodeURIComponent(userId)}`, {
-      method: "DELETE",
-    }),
-
   updateMemberInfo: (userId: string, data: { name: string; email: string }) =>
     request<{
       user: {
@@ -968,6 +836,43 @@ export const api = {
     }>(`/api/v1/members/${encodeURIComponent(userId)}`, {
       method: "PATCH",
 
+      body: JSON.stringify(data),
+    }),
+
+  suspendMember: (userId: string) =>
+    request<{
+      userId: string
+      suspendedAt: string
+    }>(`/api/v1/members/${encodeURIComponent(userId)}/suspend`, {
+      method: "POST",
+    }),
+
+  resumeMember: (userId: string) =>
+    request<{
+      userId: string
+      suspendedAt: string | null
+    }>(`/api/v1/members/${encodeURIComponent(userId)}/resume`, {
+      method: "POST",
+    }),
+
+  deleteMember: (userId: string) =>
+    request<{
+      deleted: boolean
+    }>(`/api/v1/members/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    }),
+
+  inviteMember: (data: { email: string; name: string; role: MemberRole }) =>
+    request<{
+      role: MemberRole
+      user: {
+        id: string
+        name: string
+        email: string
+      }
+      tempPassword: string | null
+    }>("/api/v1/members/invite", {
+      method: "POST",
       body: JSON.stringify(data),
     }),
 }

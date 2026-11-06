@@ -14,6 +14,7 @@ export function useSubmissions(enabled: boolean) {
   const [loading, setLoading] = useState(enabled)
   const [error, setError] = useState<string | null>(null)
   const [kind, setKindState] = useState<SubmissionKind | undefined>(undefined)
+  const [status, setStatusState] = useState<string | undefined>(undefined)
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const requestId = useRef(0)
@@ -24,7 +25,7 @@ export function useSubmissions(enabled: boolean) {
     setLoading(true)
     setError(null)
     try {
-      const res = await api.submissions({ kind, page, pageSize: PAGE_SIZE })
+      const res = await api.submissions({ kind, status, page, pageSize: PAGE_SIZE })
       if (id !== requestId.current) return
       setItems(res.items)
       setTotalPages(res.pagination.totalPages)
@@ -36,7 +37,7 @@ export function useSubmissions(enabled: boolean) {
     } finally {
       if (id === requestId.current) setLoading(false)
     }
-  }, [enabled, kind, page])
+  }, [enabled, kind, status, page])
 
   useEffect(() => {
     void load()
@@ -47,12 +48,19 @@ export function useSubmissions(enabled: boolean) {
     setPage(1)
   }, [])
 
+  const setStatus = useCallback((value: string | undefined) => {
+    setStatusState(value)
+    setPage(1)
+  }, [])
+
   return {
     items,
     loading,
     error,
     kind,
     setKind,
+    status,
+    setStatus,
     page,
     setPage,
     totalPages,

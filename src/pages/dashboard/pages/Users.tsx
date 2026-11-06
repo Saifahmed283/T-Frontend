@@ -1,13 +1,10 @@
 import { useEffect, useState } from "react"
-import { ShieldCheck, Trash2, Edit3, Pause } from "lucide-react"
+import { ShieldCheck, Trash2, Edit3, Pause, Play, UserPlus, X } from "lucide-react"
 
 import { api, type Member, type MemberRole } from "@/lib/api"
 
 import { Badge, Button, Field, Heading, Input, Modal, Select } from "../ui"
 import { Empty, initials } from "../shared"
-
-/* Users & roles — who can access this workspace, what they can do, and how
-   an admin manages them: edit info, change role, suspend, delete. */
 
 const tone: Record<MemberRole, "brand" | "warning" | "neutral"> = {
   admin: "brand",
@@ -32,6 +29,13 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
 
   const [suspendBusy, setSuspendBusy] = useState<string | null>(null)
 
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteBusy, setInviteBusy] = useState(false)
+  const [inviteName, setInviteName] = useState("")
+  const [inviteEmail, setInviteEmail] = useState("")
+  const [inviteRole, setInviteRole] = useState<MemberRole>("member")
+  const [inviteResult, setInviteResult] = useState<{ tempPassword: string | null } | null>(null)
+
   const load = async () => {
     setLoading(true)
     try {
@@ -46,7 +50,6 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
 
   useEffect(() => {
     void load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const setRole = async (m: Member, role: MemberRole) => {
@@ -91,17 +94,33 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
     }
   }
 
-  const suspendMember = async (m: Member) => {
+  const doSuspend = async (m: Member) => {
     setSuspendBusy(m.userId)
     try {
-      await api.suspendMember(m.userId)
+      const res = await api.suspendMember(m.userId)
       setMembers((list) =>
         list.map((x) =>
-          x.userId === m.userId ? { ...x, role: "member" as MemberRole } : x,
+          x.userId === m.userId ? { ...x, suspendedAt: res.suspendedAt } : x,
         ),
       )
     } catch {
       setError("Could not suspend member")
+    } finally {
+      setSuspendBusy(null)
+    }
+  }
+
+  const doResume = async (m: Member) => {
+    setSuspendBusy(m.userId)
+    try {
+      const res = await api.resumeMember(m.userId)
+      setMembers((list) =>
+        list.map((x) =>
+          x.userId === m.userId ? { ...x, suspendedAt: res.suspendedAt } : x,
+        ),
+      )
+    } catch {
+      setError("Could not resume member")
     } finally {
       setSuspendBusy(null)
     }
@@ -127,6 +146,30 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
     }
   }
 
+  const openInvite = () => {
+    setInviteName("")
+    setInviteEmail("")
+    setInviteRole("member")
+    setInviteResult(null)
+    setInviteOpen(true)
+  }
+
+  const doInvite = async () => {
+    if (!inviteName || !inviteEmail) return
+    setInviteBusy(true)
+    try {
+      const res = await api.inviteMember({ email: inviteEmail, name: inviteName, role: inviteRole })
+      setInviteResult({ tempPassword: res.tempPassword })
+      await load()
+    } catch {
+      setError("Could not invite member")
+    } finally {
+      setInviteBusy(false)
+    }
+  }
+
+  const isSelf = (m: Member) => m.userId === members.find((x) => x.email === m.email)?.userId
+
   return (
     <section className="panel">
       <div className="panel-heading">
@@ -134,6 +177,12 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
           <Heading level={2}>Users & roles</Heading>
           <p>Who can access this workspace and what they can do.</p>
         </div>
+        {canEdit && (
+          <Button variant="primary" onClick={openInvite}>
+            <UserPlus size={15} />
+            Invite member
+          </Button>
+        )}
         <ShieldCheck size={18} strokeWidth={1.5} />
       </div>
 
@@ -152,21 +201,35 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
         </div>
       ) : members.length === 0 ? (
         <Empty icon={ShieldCheck} title="Only you so far">
-          Invite teammates from your account settings to collaborate here.
+          {canEdit ? (
+            <Button variant="primary" onClick={openInvite}>
+              <UserPlus size={15} />
+              Invite your first teammate
+            </Button>
+          ) : (
+            <p>Ask an admin to invite teammates.</p>
+          )}
         </Empty>
       ) : (
         <ul>
           {members.map((m) => (
             <li
               key={m.userId}
-              className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 last:border-0"
+              className={`flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4 last:border-0 ${m.suspendedAt ? "opacity-50" : ""}`}
             >
               <div className="flex min-w-0 items-center gap-3">
                 <span className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-full border border-line bg-surface-2 font-mono text-[10px] tracking-wide text-gold-strong">
                   {initials(m.name)}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate text-xs font-medium">{m.name}</p>
+                  <p className="truncate text-xs font-medium">
+                    {m.name}
+                    {m.suspendedAt && (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded bg-warning/10 px-1.5 py-0.5 text-xs text-warning-strong">
+                        <Pause size={10} /> Suspended
+                      </span>
+                    )}
+                  </p>
                   <p className="mt-0.5 truncate font-mono text-[10px] text-slate-strong">
                     {m.email}
                   </p>
@@ -179,39 +242,59 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
                     <Button
                       variant="ghost"
                       className="icon-button"
-                      disabled={editBusy}
+                      disabled={editBusy || !!m.suspendedAt}
                       onClick={() => editInfo(m)}
                       aria-label={`Edit ${m.name}`}
                     >
                       <Edit3 size={15} />
                     </Button>
-                    <Select
-                      value={m.role}
-                      disabled={!canEdit}
-                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
-                        void setRole(m, e.target.value as MemberRole)
-                      }
-                      aria-label={`Role for ${m.name}`}
-                    >
-                      <option value="admin">Admin</option>
-                      <option value="lead">Lead</option>
-                      <option value="member">Member</option>
-                    </Select>
-                    <Button
-                      variant="ghost"
-                      disabled={suspendBusy === m.userId || !canEdit}
-                      onClick={() => suspendMember(m)}
-                      aria-label={`Suspend ${m.name}`}
-                    >
-                      {suspendBusy === m.userId ? (
-                        <span className="animate-pulse" />
-                      ) : (
-                        <>
-                          <Pause size={15} />
-                          Suspend
-                        </>
-                      )}
-                    </Button>
+                    {!m.suspendedAt ? (
+                      <Select
+                        value={m.role}
+                        disabled={!canEdit}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                          void setRole(m, e.target.value as MemberRole)
+                        }
+                        aria-label={`Role for ${m.name}`}
+                      >
+                        <option value="admin">Admin</option>
+                        <option value="lead">Lead</option>
+                        <option value="member">Member</option>
+                      </Select>
+                    ) : null}
+                    {!m.suspendedAt ? (
+                      <Button
+                        variant="ghost"
+                        disabled={suspendBusy === m.userId || !canEdit}
+                        onClick={() => doSuspend(m)}
+                        aria-label={`Suspend ${m.name}`}
+                      >
+                        {suspendBusy === m.userId ? (
+                          <span className="animate-pulse" />
+                        ) : (
+                          <>
+                            <Pause size={15} />
+                            Suspend
+                          </>
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        disabled={suspendBusy === m.userId || !canEdit}
+                        onClick={() => doResume(m)}
+                        aria-label={`Resume ${m.name}`}
+                      >
+                        {suspendBusy === m.userId ? (
+                          <span className="animate-pulse" />
+                        ) : (
+                          <>
+                            <Play size={15} />
+                            Resume
+                          </>
+                        )}
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       className="text-danger"
@@ -283,6 +366,98 @@ export function UsersPage({ canEdit }: { canEdit: boolean }) {
             >
               {deleteBusy ? "Removing…" : "Delete member"}
             </Button>
+          </div>
+        </Modal>
+      )}
+
+      {inviteOpen && (
+        <Modal title="Invite member" onClose={() => setInviteOpen(false)}>
+          {inviteResult ? (
+            <div className="modal-body space-y-4">
+              <div className="p-4 rounded border border-line bg-ivory-2">
+                <p className="text-sm font-medium">Invitation sent!</p>
+                <p className="mt-1 text-xs text-slate-strong">
+                  {inviteResult.tempPassword ? (
+                    <>
+                      A temporary password has been generated. Share it securely with the new member:
+                      <div className="mt-2 flex items-center gap-2">
+                        <code className="flex-1 rounded border border-line bg-ivory px-2 py-1 font-mono text-xs">
+                          {inviteResult.tempPassword}
+                        </code>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            navigator.clipboard.writeText(inviteResult.tempPassword || "")
+                          }}
+                        >
+                          Copy
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    "The user already had an account. They can sign in with their existing password."
+                  )}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="modal-body space-y-4">
+              <Field label="Name" required>
+                <Input
+                  value={inviteName}
+                  onChange={(e) => setInviteName(e.target.value)}
+                  disabled={inviteBusy}
+                  autoFocus
+                />
+              </Field>
+              <Field label="Email" required>
+                <Input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  disabled={inviteBusy}
+                />
+              </Field>
+              <Field label="Role" required>
+                <Select
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value as MemberRole)}
+                  disabled={inviteBusy}
+                >
+                  <option value="member">Member</option>
+                  <option value="lead">Lead</option>
+                  <option value="admin">Admin</option>
+                </Select>
+              </Field>
+              <p className="text-xs text-slate-strong">
+                {inviteResult === null && (
+                  <>
+                    If the email is new, a temporary password will be generated and shown once.
+                    If the user exists, they will be added with their existing password.
+                  </>
+                )}
+              </p>
+            </div>
+          )}
+          <div className="modal-foot">
+            {inviteResult ? (
+              <Button variant="primary" onClick={() => setInviteOpen(false)}>
+                Done
+              </Button>
+            ) : (
+              <>
+                <Button variant="ghost" onClick={() => setInviteOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled={inviteBusy || !inviteName || !inviteEmail}
+                  onClick={() => void doInvite()}
+                >
+                  {inviteBusy ? "Inviting…" : "Send invitation"}
+                </Button>
+              </>
+            )}
           </div>
         </Modal>
       )}

@@ -5,18 +5,25 @@ import { api, type ContentItem, type ContentStatus } from "@/lib/api"
 
 const SEARCH_DEBOUNCE_MS = 300
 
-export function useCollection(collectionId: string) {
+export function useCollection(
+  collectionId: string,
+  refreshKey?: number,
+) {
   const [items, setItems] = useState<ContentItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<ContentStatus | undefined>(undefined)
   const [search, setSearch] = useState("")
+  const [geography, setGeography] = useState("")
+  const [sector, setSector] = useState("")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
   // The input renders `search` immediately; the network only sees the settled
   // value, so typing does not fire one request per keystroke.
   const debouncedSearch = useDebouncedValue(search, SEARCH_DEBOUNCE_MS)
+  const debouncedGeography = useDebouncedValue(geography, SEARCH_DEBOUNCE_MS)
+  const debouncedSector = useDebouncedValue(sector, SEARCH_DEBOUNCE_MS)
 
   // Ignore a slow earlier response if a newer one has already been requested.
   const requestId = useRef(0)
@@ -29,6 +36,8 @@ export function useCollection(collectionId: string) {
       const res = await api.contentList(collectionId, {
         status,
         search: debouncedSearch,
+        geography: debouncedGeography,
+        sector: debouncedSector,
         page,
         pageSize: 20,
       })
@@ -43,7 +52,7 @@ export function useCollection(collectionId: string) {
     } finally {
       if (id === requestId.current) setLoading(false)
     }
-  }, [collectionId, status, debouncedSearch, page])
+  }, [collectionId, status, debouncedSearch, debouncedGeography, debouncedSector, page, refreshKey])
 
   useEffect(() => {
     void load()
@@ -51,6 +60,16 @@ export function useCollection(collectionId: string) {
 
   const updateSearch = useCallback((value: string) => {
     setSearch(value)
+    setPage(1)
+  }, [])
+
+  const updateGeography = useCallback((value: string) => {
+    setGeography(value)
+    setPage(1)
+  }, [])
+
+  const updateSector = useCallback((value: string) => {
+    setSector(value)
     setPage(1)
   }, [])
 
@@ -67,6 +86,10 @@ export function useCollection(collectionId: string) {
     setStatus: updateStatus,
     search,
     setSearch: updateSearch,
+    geography,
+    setGeography: updateGeography,
+    sector,
+    setSector: updateSector,
     page,
     setPage,
     totalPages,
