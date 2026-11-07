@@ -406,7 +406,7 @@ function Hero({ lang }: { lang: Lang }) {
           </div>
         </div>
       </section>
-      <RequestDialog request={req} onClose={() => setReq(null)} />
+      <RequestDialog request={req} onClose={() => setReq(null)} lang={lang} />
     </>
   )
 }

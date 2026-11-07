@@ -346,7 +346,7 @@ export function Knowledge({ lang }: { lang: Lang }) {
           </div>
         )}
       </div>
-      <RequestDialog request={req} onClose={() => setReq(null)} />
+      <RequestDialog request={req} onClose={() => setReq(null)} lang={lang} />
     </section>
   )
 }

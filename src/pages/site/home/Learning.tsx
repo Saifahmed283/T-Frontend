@@ -172,7 +172,7 @@ function Learning({ lang }: { lang: Lang }) {
           {courses.length > 0 && courseRows}
         </ul>
       </div>
-      <RequestDialog request={req} onClose={() => setReq(null)} />
+      <RequestDialog request={req} onClose={() => setReq(null)} lang={lang} />
     </section>
   )
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { createContext, useCallback, useContext, useEffect, useState } from "react"
 import Site, { type Lang } from "./Site"
 import { ensureArabicFonts } from "@/lib/fonts"
 import { loadPagesAr } from "@/content/pages.i18n"
@@ -21,6 +21,18 @@ type Props = {
    The Arabic copy lives in its own lazily-fetched chunks (see pages.i18n /
    hubs.i18n), so the toggle awaits them before flipping: switching is a single
    repaint into fully-translated content rather than an English flash. */
+
+export const LangContext = createContext<{
+  lang: Lang
+  setLang: (l: Lang) => void
+} | null>(null)
+
+export function useLang() {
+  const ctx = useContext(LangContext)
+  if (!ctx) throw new Error("useLang must be used within SitePage")
+  return ctx
+}
+
 export default function SitePage(props: Props) {
   const [lang, setLangState] = useState<Lang>(props.lang ?? "en")
   useEffect(() => {
@@ -39,11 +51,12 @@ export default function SitePage(props: Props) {
     )
   }, [])
   return (
-    <CookieConsentProvider>
-      <Site lang={lang} setLang={setLang} {...props}>
-        {props.children}
-      </Site>
-    </CookieConsentProvider>
+    <LangContext.Provider value={{ lang, setLang }}>
+      <CookieConsentProvider>
+        <Site lang={lang} setLang={setLang} {...props}>
+          {props.children}
+        </Site>
+      </CookieConsentProvider>
+    </LangContext.Provider>
   )
 }
-

@@ -17,10 +17,14 @@ export type RequestConfig = {
 export function RequestDialog({
   request,
   onClose,
+  lang = "en",
 }: {
   request: RequestConfig | null
   onClose: () => void
+  lang?: "en" | "ar"
 }) {
+  const ar = lang === "ar"
+
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [message, setMessage] = useState("")
@@ -53,13 +57,19 @@ export function RequestDialog({
     setError("")
 
     if (!isValidEmail(email)) {
-      setError("Please enter a valid email address.")
+      setError(
+        ar ? "يرجى إدخال عنوان بريد إلكتروني صحيح." : "Please enter a valid email address.",
+      )
 
       return
     }
 
     if (!termsAccepted) {
-      setError("Please accept the Privacy Policy and Terms of Service to continue.")
+      setError(
+        ar
+          ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة."
+          : "Please accept the Privacy Policy and Terms of Service to continue.",
+      )
 
       return
     }
@@ -88,7 +98,9 @@ export function RequestDialog({
       setError(
         err instanceof ApiError
           ? err.message
-          : "Something went wrong. Please try again.",
+          : ar
+            ? "حدث خطأ ما. حاول مرة أخرى."
+            : "Something went wrong. Please try again.",
       )
     }
   }
@@ -103,7 +115,7 @@ export function RequestDialog({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="animate-fade-in mx-5 w-[min(520px,92vw)] border border-line bg-ivory shadow-2xl"
+        className={`animate-fade-in mx-5 w-[min(520px,92vw)] border border-line bg-ivory shadow-2xl dir-${ar ? "rtl" : "ltr"}`}
       >
         {phase === "done" ? (
           <div className="p-10 text-center">
@@ -111,17 +123,18 @@ export function RequestDialog({
               ✓
             </span>
             <h3 id="request-dialog-title" className="mt-6 text-3xl font-medium">
-              Got it — we're on it.
+              {ar ? "تم استلام طلبك" : "Got it — we're on it."}
             </h3>
             <p className="mt-3 text-navy-2">
-              A partner will reach out within two working days. We never share
-              your details.
+              {ar
+                ? "سيتواصل معك أحد الشركاء خلال يومَي عمل. لا نشارك بياناتك أبدًا."
+                : "A partner will reach out within two working days. We never share your details."}
             </p>
             <button
               onClick={onClose}
               className="mt-8 border border-navy px-6 py-3 text-xs tracking-cta text-navy uppercase transition hover:bg-navy hover:text-ivory"
             >
-              Close
+              {ar ? "إغلاق" : "Close"}
             </button>
           </div>
         ) : (
@@ -146,19 +159,22 @@ export function RequestDialog({
               )}
               <div className="mt-6 space-y-5">
                 <label className="block">
-                  <span className="eyebrow text-slate">Your name</span>
+                  <span className="eyebrow text-slate">
+                    {ar ? "اسمك الكامل" : "Your name"}
+                  </span>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     name="name"
                     autoComplete="name"
-                    placeholder="Full name"
+                    placeholder={ar ? "الاسم الكامل" : "Full name"}
                     className="mt-2 w-full border-b border-navy/30 bg-transparent py-2 focus:border-gold focus:outline-none"
                   />
                 </label>
                 <label className="block">
                   <span className="eyebrow text-slate">
-                    Work email <span className="text-gold-strong">*</span>
+                    {ar ? "البريد الإلكتروني ×" : "Work email "}
+                    <span className="text-gold-strong">*</span>
                   </span>
                   <input
                     value={email}
@@ -173,9 +189,8 @@ export function RequestDialog({
                 </label>
                 <label className="block">
                   <span className="eyebrow text-slate">
-                    {request?.requireMessage
-                      ? "Message *"
-                      : "Message — optional"}
+                    {ar ? "رسالة" : "Message "}
+                    {request?.requireMessage ? " *" : " — optional"}
                   </span>
                   <textarea
                     value={message}
@@ -183,7 +198,7 @@ export function RequestDialog({
                     required={request?.requireMessage}
                     name="message"
                     rows={3}
-                    placeholder="Anything we should know to prepare?"
+                    placeholder={ar ? "أي شيء يجب أن نعلمه للاستعداد؟" : "Anything we should know to prepare?"}
                     className="mt-2 w-full resize-none border-b border-navy/30 bg-transparent py-2 focus:border-gold focus:outline-none"
                   />
                 </label>
@@ -198,10 +213,27 @@ export function RequestDialog({
                 />
                 <div className="flex-1 min-w-0">
                   <span className="block text-sm text-navy-2">
-                    I accept the <a href="/legal/privacy-policy" className="underline decoration-gold underline-offset-2 hover:text-navy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="/legal/terms-of-service" className="underline decoration-gold underline-offset-2 hover:text-navy" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                    {ar ? "أوافق على " : "I accept the "}
+                    <a
+                      href="/legal/privacy-policy"
+                      className="underline decoration-gold underline-offset-2 hover:text-navy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {ar ? "سياسة الخصوصية" : "Privacy Policy"}
+                    </a>{" "}
+                    {ar ? " و " : " and "}
+                    <a
+                      href="/legal/terms-of-service"
+                      className="underline decoration-gold underline-offset-2 hover:text-navy"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {ar ? "شروط الخدمة" : "Terms of Service"}
+                    </a>
                   </span>
                   <p className="mt-1 text-xs text-slate">
-                    By submitting this request, you accept processing of your data per the Privacy Policy.
+                    {ar ? "بإرسال هذا الطلب، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this request, you accept processing of your data per the Privacy Policy."}
                   </p>
                 </div>
               </label>
@@ -216,8 +248,10 @@ export function RequestDialog({
                 className="mt-8 w-full bg-navy px-6 py-4 text-xs tracking-cta text-ivory uppercase transition hover:bg-navy-2 disabled:opacity-60"
               >
                 {phase === "sending"
-                  ? "Sending…"
-                  : (request?.submitLabel ?? "Request")}{" "}
+                  ? ar
+                    ? "جارٍ الإرسال…"
+                    : "Sending…"
+                  : (request?.submitLabel ?? (ar ? "طلب" : "Request"))}{" "}
                 →
               </button>
             </form>

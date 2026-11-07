@@ -3,7 +3,7 @@ import { usePageContext } from "vike-react/usePageContext";
 import { ChevronLeft, Shield, FileText, Cookie, Gavel } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import SitePage from "@/pages/site/SitePage";
+import SitePage, { useLang } from "@/pages/site/SitePage";
 import { labelPath } from "@/content/pages";
 import { type Lang } from "@/pages/site/types";
 
@@ -62,7 +62,7 @@ const LEGAL_PAGES = {
   },
   "dmca-policy": {
     en: () => import("@/content/legal/dmca-policy.en").then((m) => m.dmcaPolicy),
-    ar: () => import("@/content/legal/dmca-policy.en").then((m) => m.dmcaPolicy),
+    ar: () => import("@/content/legal/dmca-policy.ar").then((m) => m.dmcaPolicy),
     icon: Gavel,
     fallbackTitle: { en: "DMCA Policy", ar: "سياسة DMCA" },
   },
@@ -119,6 +119,7 @@ function SectionBody({ section, lang }: { section: LegalSection; lang: Lang }) {
 }
 
 function LegalPageContent({ content, lang, slug }: { content: LegalContent; lang: Lang; slug: LegalSlug }) {
+  const ar = lang === "ar";
   const Icon = LEGAL_PAGES[slug].icon;
 
   return (
@@ -162,10 +163,11 @@ function LegalPageContent({ content, lang, slug }: { content: LegalContent; lang
 
       <footer className="mt-12 pt-8 border-t border-line">
         <p className="text-sm text-slate-strong">
-          Questions? Contact <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">privacy@askterramorph.com</a>
+          {ar ? "أسئلة؟ تواصل مع " : "Questions? Contact "}
+          <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">privacy@askterramorph.com</a>
         </p>
         <p className="mt-2 text-xs text-slate-strong">
-          This page is part of TerraMorph's compliance documentation. Legal review pending.
+          {ar ? "هذه الصفحة جزء من وثائق امتثال شركة تيرامورف. المراجعة القانونية قيد الانتظار." : "This page is part of TerraMorph's compliance documentation. Legal review pending."}
         </p>
       </footer>
     </article>
@@ -175,7 +177,8 @@ function LegalPageContent({ content, lang, slug }: { content: LegalContent; lang
 export default function LegalPage() {
   const { routeParams } = usePageContext();
   const slug = routeParams.slug as LegalSlug;
-  const resolvedLang = "en";
+  const { lang } = useLang();
+  const resolvedLang = lang;
   const pageConfig = slug ? LEGAL_PAGES[slug] : undefined;
   const [content, setContent] = useState<LegalContent | null>(null);
   const [loading, setLoading] = useState(true);
