@@ -7,6 +7,8 @@ import { Heading, Button, Prose, GoldLine, Card, CardContent, Field, Input, Text
 import { DATA_REQUEST_TYPES, type DataRequestType, getRequiredFields } from "@/content/data-requests"
 import { api } from "@/lib/api"
 import { messageForError } from "@/lib/messages"
+import { capturePosthog } from "@/lib/posthog.capture"
+import { logPosthogInfo } from "@/lib/posthog.logs"
 
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -57,6 +59,8 @@ function DataRequestPage() {
       })
       
       setRequestId(res.id)
+      capturePosthog("data_request_submitted")
+      logPosthogInfo("data_request_submission_succeeded")
       setStatus('success')
       setMessage(`Your request has been submitted. Reference: ${res.id}`)
       

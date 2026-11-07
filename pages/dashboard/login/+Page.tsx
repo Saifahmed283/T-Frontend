@@ -2,6 +2,8 @@ import { useState } from "react"
 
 import { api, ApiError } from "@/lib/api"
 import { messageForError, getMessage } from "@/lib/messages"
+import posthog from "@/lib/posthog.client"
+import { logPosthogInfo } from "@/lib/posthog.logs"
 
 import { SignInPage } from "@/pages/dashboard/components/SignIn"
 
@@ -19,7 +21,14 @@ export default function LoginPage() {
     setBusy(true)
     setError("")
     try {
-      await api.login(email, password)
+      const session = await api.login(email, password)
+      posthog.identify(session.user.id, {
+        email: session.user.email,
+        name: session.user.name,
+        role: session.role,
+      })
+      posthog.capture("user_logged_in", { role: session.role })
+      logPosthogInfo("dashboard_login_succeeded", { role: session.role })
       window.location.replace(returnTo)
     } catch (ex) {
       setBusy(false)

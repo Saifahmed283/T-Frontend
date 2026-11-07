@@ -5,6 +5,7 @@ import { Contours } from "@/components/motion/fx"
 import { Head } from "./Head"
 
 import { api, ApiError, type SubmissionKind } from "@/lib/api"
+import { capturePosthog } from "@/lib/posthog.capture"
 
 import {
   RequestDialog,
@@ -359,6 +360,11 @@ export function Join({ lang }: { lang: Lang }) {
         },
       })
 
+      capturePosthog("expert_registration_submitted", {
+        language: lang,
+        expertise_count: selAreas.length,
+        has_cv: Boolean(cvName),
+      })
       setStep(3)
 
       // Record terms acceptance with backend (non-blocking)

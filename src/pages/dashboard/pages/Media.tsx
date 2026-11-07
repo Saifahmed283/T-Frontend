@@ -5,6 +5,7 @@ import { SkeletonCard, SkeletonRegion } from "@/components/ui"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { api, type Asset } from "@/lib/api"
 import { messageForError } from "@/lib/messages"
+import posthog from "@/lib/posthog.client"
 import { useToastActions } from "../ui"
 
 import { Alert, Button, Field, Heading, Input, Modal } from "../ui"
@@ -95,6 +96,10 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
       for (const file of fileArray) {
         await api.assetUpload(file)
       }
+      posthog.capture("media_uploaded", {
+        file_count: fileArray.length,
+        mime_types: [...new Set(fileArray.map((file) => file.type))],
+      })
       success("Files uploaded")
       await load()
     } catch (e) {
@@ -130,6 +135,7 @@ export function MediaPage({ canEdit }: { canEdit: boolean }) {
       setAssets((a) => a.filter((x) => x.id !== id))
       if (assets.length === 1 && page > 1) setPage((p) => p - 1)
       else await load()
+      posthog.capture("media_deleted")
       success("File deleted")
     } catch (e) {
       const { message } = messageForError(e)

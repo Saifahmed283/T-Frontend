@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Send, Mic, Info, Search } from "lucide-react";
 import { api } from "@/lib/api";
+import { capturePosthog } from "@/lib/posthog.capture";
 import { MorpheIcon } from "./MorpheIcon";
 import { KNOWLEDGE_BASE, findKnowledgeAnswer } from "./knowledge-base";
 import type { Lang } from "@/pages/site/types";
@@ -90,6 +91,11 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       timestamp: new Date().toISOString(),
     };
 
+    capturePosthog("morphe_message_sent", {
+      language: lang,
+      attachment_count: attachments.length,
+      uses_web_search: useSearch,
+    });
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
