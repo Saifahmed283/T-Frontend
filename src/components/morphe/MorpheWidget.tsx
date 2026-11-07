@@ -1,273 +1,343 @@
 /**
- * MorpheWidget - TerraMorph's animated, bilingual intake assistant.
+ * MorpheWidget v3 - TerraMorph's AI chatbot (refactored)
  *
- * Design inspiration: reactbits.devv + getlayers.ai — smooth spring
- * animations, glass panels, thinking states, chip-based quick replies.
- *
- *   <MorpheWidget lang="en" />
- *
- * Features:
- *   - Animated Morphe SVG icon (thinking state pulses the network)
- *   - Smooth open/close with cubic-bezier spring physics
- *   - Thinking/typing indicator with animated dots
- *   - Knowledge base trained on TerraMorph website topics (G0-G7, LDIA,
- *     audiences, services, certifications, contact, legal)
- *   - Classifier routes to knowledge answers; falls back to flow engine
- *   - Quick-reply chips for the current state's valid intents
- *   - Smooth scroll, focus trap, Escape-to-close, aria-live
- *   - Session in sessionStorage; lead persisted server-side via Submission
- *   - No raw transcripts stored
+ * Design inspiration: reactbits.devv + getlayers.ai
+ * - Glassmorphism panel with backdrop blur
+ * - Smooth spring animations (cubic-bezier)
+ * - Refined typography: Cormorant Garamond headings + Jost body
+ * - Pill-shaped toggles, floating action button with send icon
+ * - Info tooltip on hover for privacy disclosure
+ * - Bilingual EN/AR with RTL support
+ * - All Lucide-react icons (Send, Mic, Info, Search, Send)
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Send, Mic, Info } from "lucide-react";
-import { api } from "@/lib/api"
-import { MorpheIcon } from "./MorpheIcon"
-import { KNOWLEDGE_BASE, findKnowledgeAnswer } from "./knowledge-base"
-import type { Lang } from "@/pages/site/types"
+import { Send, Mic, Info, Search } from "lucide-react";
+import { api } from "@/lib/api";
+import { MorpheIcon } from "./MorpheIcon";
+import { KNOWLEDGE_BASE, findKnowledgeAnswer } from "./knowledge-base";
+import type { Lang } from "@/pages/site/types";
 
-type ChatLink = { id: string; url: string; label: string }
-type Message = {
-  role: "morphe" | "user"
-  text: string
-  links?: ChatLink[]
-  chips?: string[]
-  terminal?: boolean
-  thinking?: boolean
-  searchUsed?: boolean
-}
+type ChatMessage = {
+  id: string;
+  role: "morphe" | "user";
+  text: string;
+  content?: string;
+  links?: Array<{ id: string; url: string; label: string }>;
+  chips?: string[];
+  terminal?: boolean;
+  thinking?: boolean;
+  searchUsed?: boolean;
+  attachments?: Array<{ id: string; filename: string; size: number }>;
+  sources?: Array<{ id: string; url: string; label: string }>;
+  timestamp?: string;
+};
 
-const COLORS = {
-  navy: "#132B45",
-  navy2: "#1A2E4A",
-  gold: "#AF8C4B",
+const C = {
+  navy: "#0F1C2E",
+  navyLight: "#16263F",
+  gold: "#C9A227",
+  goldLight: "#E4C57E",
   cream: "#FBF9F0",
-  ivory: "#F5F1E8",
+  ivory: "#F3F0E6",
   slate: "#6B7280",
   white: "#FFFFFF",
-}
+  ink: "#1A1A1A",
+  border: "#D8D4C4",
+  error: "#B42318",
+};
 
-const SESSION_KEY = "morphe_session_id"
-
-// Quick-reply chip suggestions per flow state
-const CHIPS_BY_STATE: Record<string, string[]> = {
-  greeting: ["I have an idea", "I want to partner", "I have a question", "Just browsing"],
-  sector: ["Education", "Climate", "Health", "Livelihoods", "Governance", "Not sure"],
-  idea_stage: ["Just a concept", "Tested informally", "Already running"],
-  timeline: ["Next month", "This quarter", "Exploratory"],
-  contact_capture: ["Share email", "Prefer not to"],
-  general_qa: ["Methodology", "Services", "About", "Partners", "Contact"],
-}
+const SESSION_KEY = "morphe_v3_session_id";
+const ALLOWED_EXTS = [".pdf", ".docx", ".txt", ".md", ".csv", ".json", ".png", ".jpg", ".jpeg"];
 
 export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
-  const ar = lang === "ar"
-  const dir = ar ? "rtl" : "ltr"
+  const ar = lang !== "en";
+  const dir = ar ? "rtl" : "ltr";
 
-  const [open, setOpen] = useState(false)
-  const [sessionId, setSessionId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState("")
-  const [loading, setLoading] = useState(false)
-  const [thinking, setThinking] = useState(false)
-  const [ended, setEnded] = useState(false)
-  const [error, setError] = useState("")
-  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const panelRef = useRef<HTMLDivElement>(null)
-  const launcherRef = useRef<HTMLButtonElement>(null)
-  const [useSearch, setUseSearch] = useState(false)
-  const [voiceActive, setVoiceActive] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [attachments, setAttachments] = useState<File[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [useSearch, setUseSearch] = useState(false);
+  const [voiceActive, setVoiceActive] = useState(false);
+  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
+  const [error, setError] = useState("");
+  const [ended, setEnded] = useState(false);
 
-  // Restore session from sessionStorage on mount
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const [recognition, setRecognition] = useState<any>(null);
+
+  const submit = () => {
+    const text = input.trim();
+    if (!text && attachments.length === 0) return;
+    if (loading || streaming) return;
+
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      text: text || "[Attachment]",
+      content: text || "[Attachment]",
+      attachments: [...attachments].map((f) => ({
+        id: crypto.randomUUID(),
+        filename: f.name,
+        size: f.size,
+      })),
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
+    setError("");
+    setStreaming(true);
+
+    void sendMessage(text).catch(() => {
+      setError("Failed to send message. Please try again.");
+    }).finally(() => {
+      setLoading(false);
+      setStreaming(false);
+    });
+  };
+
+  const sendMessage = async (text: string) => {
+    const fileIds: string[] = [];
+    for (const f of attachments) {
+      const formData = new FormData();
+      formData.append("file", f);
+      if (sessionId) formData.append("session_id", sessionId);
+      const res = await fetch(`${api.baseUrl}/api/v1/morphe-ai/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        fileIds.push(data.file_id);
+      }
+    }
+    setAttachments([]);
+
+    await sendToAi(text, fileIds);
+  };
+
+  // Restore session
   useEffect(() => {
     try {
-      const stored = sessionStorage.getItem(SESSION_KEY)
-      if (stored) setSessionId(stored)
-    } catch { /* storage unavailable */ }
-  }, [])
+      const stored = sessionStorage.getItem(SESSION_KEY);
+      if (stored) setSessionId(stored);
+    } catch { /* noop */ }
+  }, []);
 
-  // Persist session id
+  // Persist session
   useEffect(() => {
     if (sessionId) {
-      try { sessionStorage.setItem(SESSION_KEY, sessionId) } catch { /* noop */ }
+      try { sessionStorage.setItem(SESSION_KEY, sessionId); } catch { /* noop */ }
     }
-  }, [sessionId])
+  }, [sessionId]);
 
-  // Auto-scroll to bottom
+  // Scroll to bottom
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
-  }, [messages, loading, thinking])
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, streaming]);
 
-  // Escape to close; Enter to send
+  // Speech recognition setup
+  useEffect(() => {
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = ar ? "ar-EG" : "en-US";
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(transcript);
+        setVoiceActive(false);
+        submit();
+      };
+      rec.onerror = () => {
+        setVoiceActive(false);
+        setError("Voice input not available. Please type instead.");
+      };
+      rec.onend = () => {
+        setVoiceActive(false);
+      };
+      setRecognition(rec);
+    }
+  }, [ar]);
+
+  // Keyboard handling
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!open) return
-      if (e.key === "Escape") setOpen(false)
-      if (e.key === "Enter" && !loading && !ended) submit()
-    }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [open, loading, ended])
-
-  const send = useCallback(
-    async (text: string | null) => {
-      setLoading(true)
-      setError("")
-      setThinking(true)
-      try {
-        const data = await api.morpheChat(sessionId, text, lang, useSearch)
-        setSessionId(data.session_id)
-
-        // Check knowledge base first for direct answers
-        const kbEntry = text ? findKnowledgeAnswer(text, lang) : null
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "morphe",
-            text: kbEntry ? (lang === "ar" ? kbEntry.ar : kbEntry.en) : data.reply,
-            links: kbEntry?.links ?? data.links,
-            chips: kbEntry ? [] : CHIPS_BY_STATE[data.state] ?? [],
-            terminal: data.terminal,
-            searchUsed: data.search_used,
-          },
-        ])
-        if (data.terminal) setEnded(true)
-      } catch {
-        const fallback = ar
-          ? "عفواً - أواجه مشكلة في الاتصال الآن. يرجى المحاولة في وقت لاحق."
-          : "Sorry - I'm having trouble connecting right now. Please try again shortly."
-        setMessages((prev) => [...prev, { role: "morphe", text: fallback }])
-        setError(fallback)
-      } finally {
-        setLoading(false)
-        setThinking(false)
+      if (!open) return;
+      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Enter" && !e.shiftKey && !loading && !streaming) {
+        e.preventDefault();
+        submit();
       }
-    },
-    [sessionId, lang, useSearch],
-  )
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, loading, streaming]);
 
-  // Voice recording (Web Speech API - browser-based speech-to-text)
-  const [recognition, setRecognition] = useState<any>(null)
-
-  useEffect(() => {
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition()
-      rec.continuous = false
-      rec.interimResults = false
-      rec.lang = ar ? "ar-EG" : "en-US"
-      rec.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript
-        setInput(transcript)
-        setVoiceActive(false)
-        submit()
-      }
-      rec.onerror = () => {
-        setVoiceActive(false)
-        setError("Voice input not available. Please type instead.")
-      }
-      rec.onend = () => {
-        setVoiceActive(false)
-      }
-      setRecognition(rec)
-    }
-  }, [ar])
-
+  // Voice recording
   const startVoice = () => {
     if (!recognition) {
-      setError("Voice input not supported in this browser.")
-      return
+      setError("Voice input not supported in this browser.");
+      return;
     }
     try {
-      recognition.start()
-      setVoiceActive(true)
-      setError("")
+      recognition.start();
+      setVoiceActive(true);
+      setError("");
     } catch {
-      setVoiceActive(false)
-      setError("Failed to start voice input.")
+      setVoiceActive(false);
+      setError("Failed to start voice input.");
     }
-  }
+  };
 
   const stopVoice = () => {
     if (recognition && voiceActive) {
-      try {
-        recognition.stop()
-      } catch {
-        /* ignore */
+      try { recognition.stop(); } catch { /* ignore */ }
+      setVoiceActive(false);
+    }
+  };
+
+  // File selection
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid: File[] = [];
+    for (const f of files) {
+      const ext = "." + f.name.split(".").pop()?.toLowerCase();
+      if (!ALLOWED_EXTS.includes(ext)) {
+        setError(`${f.name}: file type not allowed`);
+        continue;
       }
-      setVoiceActive(false)
+      if (f.size > 10 * 1024 * 1024) {
+        setError(`${f.name}: too large (max 10MB)`);
+        continue;
+      }
+      valid.push(f);
     }
-  }
+    if (valid.length > 0) setAttachments((prev) => [...prev, ...valid]);
+    e.target.value = "";
+  };
 
-  // Open panel -> fetch greeting on first open
-  useEffect(() => {
-    if (open && messages.length === 0) {
-      send(null)
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const sendToAi = async (text: string, fileIds: string[] = []) => {
+    const res = await fetch(`${api.baseUrl}/api/v1/morphe-ai/chat/stream`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        session_id: sessionId ?? null,
+        message: text,
+        lang,
+        mode: "chat",
+        stream: true,
+        use_search: useSearch,
+        temperature: 0.7,
+        max_tokens: 2000,
+        file_ids: fileIds,
+      }),
+    });
+    if (!res.ok) throw new Error("Chat failed");
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error("No response stream");
+
+    const aiMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "morphe",
+      text: "",
+      content: "",
+      sources: [],
+      timestamp: new Date().toISOString(),
+    };
+
+    setMessages((prev) => [...prev, aiMessage]);
+    const aiIndex = messages.length;
+
+    let buffer = "";
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += new TextDecoder().decode(value);
+      const lines = buffer.split("\n\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        if (line.startsWith("data: ")) {
+          try {
+            const payload = JSON.parse(line.slice(6));
+            if (payload.chunk) {
+              aiMessage.content += payload.chunk;
+              setMessages((prev) =>
+                prev.map((m, i) => (i === aiIndex ? { ...m, content: aiMessage.content } : m))
+              );
+            }
+            if (payload.done) {
+              aiMessage.sources = payload.sources || [];
+              aiMessage.searchUsed = payload.searchUsed || false;
+              setMessages((prev) =>
+                prev.map((m, i) => (i === aiIndex ? { ...aiMessage } : m))
+              );
+            }
+          } catch { /* ignore */ }
+        }
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open])
-
-  const submit = () => {
-    const text = input.trim()
-    if (!text || loading || ended) return
-    setMessages((prev) => [...prev, { role: "user", text }])
-    setInput("")
-    send(text)
-  }
-
-  const sendChip = (label: string) => {
-    setMessages((prev) => [...prev, { role: "user", text: label }])
-    setInput("")
-    send(label)
-  }
+  };
 
   const startOver = () => {
-    setMessages([])
-    setSessionId(null)
-    setEnded(false)
-    setError("")
-    setThinking(false)
-    try { sessionStorage.removeItem(SESSION_KEY) } catch { /* noop */ }
-  }
+    setMessages([]);
+    setSessionId(null);
+    setError("");
+    setAttachments([]);
+    setStreaming(false);
+    setVoiceActive(false);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
+  };
 
-  const lastMessage = messages[messages.length - 1]
-  const showChips = lastMessage?.chips?.length && !ended && !loading
-
-  const t = (en: string, arText: string) => (ar ? arText : en)
+  const t = (en: string, arText: string) => (ar ? arText : en);
 
   return (
-    <div dir={dir} style={{ fontFamily: "Jost, system-ui, sans-serif" }}>
+    <div dir={dir} style={{ fontFamily: "Jost, system-ui, -apple-system, sans-serif" }}>
       {/* Launcher */}
       <button
         ref={launcherRef}
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? t("إغلاق المحادثة", "Close chat") : t("فتح المحادثة مع مورفي", "Open chat with Morphe")}
+        aria-label={open ? t("إغلاق المحادثة", "Close chat") : t("فتح محادثة مع مورفي", "Open chat with Morphe")}
         style={{
           position: "fixed",
-          bottom: 28,
-          right: ar ? 28 : 28,
-          width: 64,
-          height: 64,
+          bottom: ar ? 28 : 28,
+          right: ar ? undefined : 28,
+          left: ar ? 28 : undefined,
+          width: 56,
+          height: 56,
           borderRadius: "50%",
-          background: open ? COLORS.gold : COLORS.navy,
-          border: `2px solid ${COLORS.gold}`,
-          color: open ? COLORS.navy : COLORS.cream,
+          background: open ? C.gold : C.navy,
+          border: `2px solid ${C.gold}`,
+          color: open ? C.navy : C.cream,
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 26,
-          fontWeight: 600,
+          fontSize: 22,
+          fontWeight: 700,
           cursor: "pointer",
-          boxShadow: "0 10px 30px rgba(19,43,69,0.4)",
+          boxShadow: "0 12px 32px rgba(15,28,46,0.4)",
           zIndex: 1100,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          transform: open ? "scale(1.05)" : "scale(1)",
+          transition: "all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transform: open ? "scale(0.95)" : "scale(1)",
         }}
       >
-        <MorpheIcon size={32} thinking={loading} />
+        {open ? "✕" : "M"}
       </button>
 
       {open && (
@@ -275,52 +345,57 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
           ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-label={t("محادثة مورفي", "Morphe chat")}
+          aria-label={t("محادثة مورفي", "Morphe AI chat")}
           style={{
             position: "fixed",
-            bottom: 110,
-            right: 24,
-            width: 400,
-            maxWidth: "94vw",
-            height: 620,
-            maxHeight: "90vh",
-            background: COLORS.cream,
-            border: `1px solid ${COLORS.gold}`,
-            borderRadius: 20,
-            boxShadow: "0 24px 60px rgba(19,43,69,0.35)",
+            bottom: 100,
+            right: 20,
+            width: 420,
+            maxWidth: "92vw",
+            height: 720,
+            maxHeight: "94vh",
+            background: `linear-gradient(135deg, ${C.cream}, ${C.white})`,
+            border: `1px solid ${C.border}`,
+            borderRadius: 24,
+            boxShadow: "0 30px 80px rgba(15,28,46,0.35)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
             zIndex: 1100,
             direction: dir,
-            animation: "panelOpen 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+            animation: "panelIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
+            backdropFilter: "blur(12px)",
           }}
         >
           <style>{`
-            @keyframes panelOpen {
-              from { opacity: 0; transform: translateY(20px) scale(0.98); }
+            @keyframes panelIn {
+              from { opacity: 0; transform: translateY(24px) scale(0.98); }
               to { opacity: 1; transform: translateY(0) scale(1); }
             }
-            @keyframes slideIn {
-              from { opacity: 0; transform: translateX(${ar ? "-20px" : "20px"}); }
+            @keyframes slideInMsg {
+              from { opacity: 0; transform: translateX(${ar ? "-12px" : "12px"}); }
               to { opacity: 1; transform: translateX(0); }
             }
-            @keyframes typingDots {
-              0%, 60%, 100% { transform: translateY(0); }
-              30% { transform: translateY(-6px); }
+            @keyframes pulseDot {
+              0%, 100% { opacity: 0.4; }
+              50% { opacity: 1; transform: scale(1.1); }
+            }
+            @keyframes typingBounce {
+              0%, 100% { transform: translateY(0); }
+              50% { transform: translateY(-6px); }
             }
           `}</style>
 
           {/* Header */}
           <div
             style={{
-              background: COLORS.navy,
-              color: COLORS.cream,
-              padding: "16px 18px",
+              background: `linear-gradient(135deg, ${C.navy}, ${C.navyLight})`,
+              color: C.cream,
+              padding: "18px 20px",
               display: "flex",
               alignItems: "center",
-              gap: 12,
-              borderBottom: `1px solid ${COLORS.gold}33`,
+              gap: 14,
+              borderBottom: `1px solid ${C.border}`,
             }}
           >
             <div
@@ -328,53 +403,57 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 width: 40,
                 height: 40,
                 borderRadius: "50%",
-                background: COLORS.gold,
+                background: `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 flexShrink: 0,
+                boxShadow: "0 4px 12px rgba(201,162,39,0.3)",
               }}
             >
               <MorpheIcon size={24} thinking={loading} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: 16 }}>
-                Morphe
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: 17 }}>
+                Morphe AI
               </div>
-              <div style={{ fontSize: 11, opacity: 0.8 }}>
-                {ar ? "مساعد الاستقبال - شركة تيرامورف" : "TerraMorph intake assistant"}
+              <div style={{ fontSize: 10.5, opacity: 0.75, letterSpacing: "0.02em" }}>
+                {ar ? "مساعد ذكي - شركة تيرامورف" : "AI Intake Assistant"}
               </div>
             </div>
-            <Info
-              size={14}
+            <div
               onMouseEnter={() => setShowPrivacyTooltip(true)}
               onMouseLeave={() => setShowPrivacyTooltip(false)}
               style={{
-                color: "rgba(255,255,255,0.7)",
                 cursor: "pointer",
-                marginRight: 8,
+                color: "rgba(255,255,255,0.7)",
+                transition: "color 0.2s",
               }}
-            />
+            >
+              <Info size={14} strokeWidth={1.5} />
+            </div>
             {showPrivacyTooltip && (
               <div
                 style={{
                   position: "absolute",
-                  top: -40,
-                  right: 40,
-                  background: COLORS.navy,
-                  color: COLORS.cream,
-                  padding: "8px 12px",
-                  borderRadius: 8,
+                  top: -52,
+                  right: ar ? "auto" : 40,
+                  left: ar ? 40 : "auto",
+                  background: C.navy,
+                  color: C.cream,
+                  padding: "10px 14px",
+                  borderRadius: 10,
                   fontSize: 11,
-                  lineHeight: 1.4,
+                  lineHeight: 1.5,
                   zIndex: 2000,
-                  border: `1px solid ${COLORS.gold}`,
+                  border: `1px solid ${C.gold}`,
                   whiteSpace: "nowrap",
-                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                  animation: "slideInMsg 0.3s ease-out forwards",
                 }}
               >
                 {ar
-                  ? "مorphe يستخدم نموذجًا محليًا لتصنيف نواياك. لا تُستخدم بياناتك في تدريب نماذج الذكاء الاصطناعي."
+                  ? "مorphe يستخدم نموذجًا محليًا للذكاء الاصطناعي. بياناتك لا تُستخدم في التدريب."
                   : "Morphe uses a local AI model. Your data is never used for training."}
               </div>
             )}
@@ -382,23 +461,79 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               onClick={() => setOpen(false)}
               aria-label={t("إغلاق", "Close")}
               style={{
-                background: "rgba(255,255,255,0.1)",
-                border: "none",
-                color: COLORS.cream,
+                background: "rgba(251,249,240,0.1)",
+                border: `1px solid ${C.border}`,
+                color: C.cream,
                 cursor: "pointer",
-                fontSize: 20,
+                fontSize: 18,
                 padding: 0,
                 lineHeight: 1,
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 borderRadius: "50%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                transition: "background 0.2s",
+                transition: "all 0.2s",
               }}
             >
               ×
+            </button>
+          </div>
+
+          {/* Controls: web search + voice */}
+          <div
+            style={{
+              padding: "10px 18px",
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+              background: C.ivory,
+              borderBottom: `1px solid ${C.border}`,
+            }}
+          >
+            <button
+              onClick={() => setUseSearch((p) => { setError(""); return !p })}
+              style={{
+                background: useSearch ? C.gold : "transparent",
+                border: `1px solid ${useSearch ? C.gold : C.border}`,
+                color: useSearch ? C.navy : C.slate,
+                borderRadius: 10,
+                padding: "6px 14px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              <Search size={12} strokeWidth={1.5} />
+              {useSearch ? ar ? "إيقاف البحث على الويب" : "Web Search On" : ar ? "بحث على الويب" : "Web Search"}
+            </button>
+            <button
+              onMouseDown={startVoice}
+              onMouseUp={stopVoice}
+              onMouseLeave={stopVoice}
+              disabled={voiceActive}
+              style={{
+                background: voiceActive ? C.error : C.white,
+                border: `1px solid ${voiceActive ? C.error : C.gold}`,
+                color: voiceActive ? C.white : C.navy,
+                borderRadius: "50%",
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: voiceActive ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+              }}
+              title={ar ? "تسجيل صوتي" : "Voice Record"}
+            >
+              <Mic size={14} strokeWidth={1.5} />
             </button>
           </div>
 
@@ -408,209 +543,140 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: "16px 18px",
+              padding: "20px 18px",
               display: "flex",
               flexDirection: "column",
-              gap: 12,
-              background: COLORS.ivory,
-              scrollBehavior: "smooth",
+              gap: 16,
+              background: C.ivory,
             }}
           >
-            {messages.map((m, i) => (
+            {messages.map((m) => (
               <div
-                key={i}
+                key={m.id}
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   alignItems: m.role === "user" ? "flex-end" : "flex-start",
-                  animation: "slideIn 0.4s ease-out forwards",
+                  animation: "slideInMsg 0.3s ease-out forwards",
                 }}
               >
+                {m.role === "user" && m.attachments && m.attachments.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                    {m.attachments.map((a) => (
+                      <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 7, background: C.white, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", fontSize: 12, color: C.slate }}>
+                        <span style={{ fontSize: 14 }}>📎</span>
+                        <span style={{ fontWeight: 600, color: C.ink }}>{a.filename}</span>
+                        <span style={{ fontSize: 10, color: C.slate }}>({Math.round(a.size / 1024)} KB)</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div
                   style={{
-                    maxWidth: "88%",
-                    padding: "12px 16px",
-                    borderRadius: 16,
-                    fontSize: 14,
-                    lineHeight: 1.6,
-                    background: m.role === "user" ? COLORS.navy : COLORS.white,
-                    color: m.role === "user" ? COLORS.cream : "#1a1a1a",
-                    border:
-                      m.role === "morphe"
-                        ? `1px solid ${COLORS.gold}44`
-                        : "none",
-                    boxShadow:
-                      m.role === "morphe"
-                        ? "0 4px 16px rgba(0,0,0,0.06)"
-                        : "none",
-                    position: "relative",
+                    maxWidth: "90%",
+                    padding: "13px 18px",
+                    borderRadius: 18,
+                    fontSize: 14.5,
+                    lineHeight: 1.7,
+                    background: m.role === "user" ? C.navy : C.white,
+                    color: m.role === "user" ? C.cream : C.ink,
+                    border: m.role === "morphe" ? `1px solid ${C.border}` : "none",
+                    boxShadow: m.role === "morphe" ? "0 4px 20px rgba(0,0,0,0.06)" : "none",
+                    whiteSpace: "pre-wrap",
+                    wordBreak: "break-word",
                   }}
                 >
-                  {m.text}
+                  {m.content}
                   {m.role === "morphe" && m.searchUsed && (
-                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 10, color: COLORS.gold, fontWeight: 700 }}>
+                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 10, color: C.gold, fontWeight: 700 }}>
                         🔍
                       </span>
-                      <span style={{ fontSize: 10.5, color: COLORS.slate }}>
+                      <span style={{ fontSize: 10.5, color: C.slate }}>
                         {ar ? "بحث على الويب" : "Web search used"}
                       </span>
                     </div>
                   )}
-                  {m.role === "morphe" && thinking && (
-                    <div style={{ marginTop: 8, display: "flex", gap: 4, justifyContent: "center" }}>
-                      {[1, 2, 3].map((dot) => (
-                        <div
-                          key={dot}
-                          style={{
-                            width: 8,
-                            height: 8,
-                            borderRadius: "50%",
-                            background: COLORS.gold,
-                            animation: `typingDots 1.2s ease-in-out infinite`,
-                            animationDelay: `${dot * 0.15}s`,
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
                 </div>
-                {m.links && m.links.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                    {m.links.map((l) => (
-                      <a
-                        key={l.id}
-                        href={l.url}
-                        rel="noopener noreferrer"
-                        style={{
-                          fontSize: 12,
-                          padding: "7px 14px",
-                          borderRadius: 999,
-                          border: `1px solid ${COLORS.gold}`,
-                          color: COLORS.navy,
-                          textDecoration: "none",
-                          background: `${COLORS.gold}12`,
-                          whiteSpace: "nowrap",
-                          transition: "all 0.2s",
-                        }}
-                      >
-                        {l.label} ↗
-                      </a>
-                    ))}
-                  </div>
-                )}
-                {m.role === "morphe" && (
-                  <span
-                    aria-live="polite"
-                    style={{
-                      position: "absolute",
-                      width: 1,
-                      height: 1,
-                      padding: 0,
-                      margin: -1,
-                      overflow: "hidden",
-                      clip: "rect(0, 0, 0, 0)",
-                      whiteSpace: "nowrap",
-                      border: 0,
-                    }}
-                  >
-                    {ar ? "رد من مورفي" : "Morphe reply"}
-                  </span>
-                )}
               </div>
             ))}
-            {loading && thinking && (
-              <div style={{ display: "flex", justifyContent: "flex-start", padding: "4px 0" }}>
-                <div style={{ fontSize: 12, color: COLORS.slate, fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
-                  {useSearch
-                    ? ar ? "البحث على الويب..." : "Searching the web..."
-                    : ar ? "مورفي يفكر" : "Morphe is thinking"}
-                  <div style={{ display: "flex", gap: 3 }}>
-                    {[1, 2, 3].map((dot) => (
-                      <div
-                        key={dot}
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: "50%",
-                          background: COLORS.gold,
-                          animation: `typingDots 1.2s ease-in-out infinite`,
-                          animationDelay: `${dot * 0.2}s`,
-                        }}
-                      />
-                    ))}
-                  </div>
+            {streaming && (
+              <div style={{ alignSelf: "flex-start", marginBottom: 8 }}>
+                <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold, animation: "pulseDot 1.4s infinite", animationDelay: `${i * 0.2}s` }} />
+                  ))}
+                </div>
+                <div style={{ fontSize: 11, color: C.slate, marginTop: 6, fontStyle: "italic" }}>
+                  {useSearch ? ar ? "البحث على الويب..." : "Searching the web..." : ar ? "مورفي يفكر..." : "Morphe is thinking..."}
                 </div>
               </div>
             )}
             {error && (
-              <div style={{ fontSize: 12, color: "#b42318", marginTop: 6 }}>{error}</div>
+              <div style={{ fontSize: 12, color: C.error, marginTop: 8, padding: "8px 12px", background: "rgba(180,35,24,0.1)", borderRadius: 8, border: `1px solid ${C.error}33` }}>{error}</div>
             )}
           </div>
 
           {/* Quick-reply chips */}
-          {showChips && lastMessage?.chips && (
-            <div
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 8,
-                padding: "0 18px 10px",
-                justifyContent: ar ? "flex-end" : "flex-start",
-              }}
-            >
-              {lastMessage.chips.map((chip, i) => (
-                <button
-                  key={i}
-                  onClick={() => sendChip(chip)}
-                  style={{
-                    fontSize: 12,
-                    padding: "7px 14px",
-                    borderRadius: 999,
-                    border: `1px solid ${COLORS.gold}`,
-                    color: COLORS.navy,
-                    background: COLORS.white,
-                    cursor: "pointer",
-                    transition: "all 0.2s",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {chip}
-                </button>
-              ))}
-            </div>
-          )}
+          {false && null}
 
           {/* Input */}
           {!ended ? (
             <div
               style={{
                 display: "flex",
-                borderTop: `1px solid ${COLORS.gold}44`,
-                padding: 12,
+                borderTop: `1px solid ${C.border}`,
+                padding: 14,
                 gap: 8,
-                background: COLORS.cream,
+                background: C.cream,
                 alignItems: "center",
               }}
             >
-              {/* Web search toggle */}
-              <button
-                onClick={() => setUseSearch((p) => { setError(""); return !p })}
+              <input
+                type="file"
+                multiple
+                onChange={handleFileSelect}
+                style={{ display: "none" }}
+              />
+              <label
+                onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
                 style={{
-                  background: useSearch ? COLORS.gold : "transparent",
-                  border: `1px solid ${useSearch ? COLORS.gold : COLORS.slate}`,
-                  color: useSearch ? COLORS.navy : COLORS.slate,
-                  borderRadius: 10,
-                  padding: "6px 14px",
-                  fontSize: 11.5,
-                  fontWeight: 600,
+                  color: C.gold,
                   cursor: "pointer",
-                  transition: "all 0.2s",
-                  whiteSpace: "nowrap",
+                  fontSize: 15,
                 }}
               >
-                {useSearch ? ar ? "إيقاف البحث على الويب" : "Web Search On" : ar ? "بحث على الويب" : "Web Search"}
-              </button>
+                📎
+              </label>
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+                }}
+                placeholder={ar ? "اكتب رسالتك..." : "Type your message..."}
+                style={{
+                  flex: 1,
+                  border: `1px solid ${C.border}`,
+                  borderRadius: 14,
+                  padding: "13px 48px 13px 48px",
+                  fontSize: 14.5,
+                  outline: "none",
+                  background: C.white,
+                  color: C.ink,
+                  resize: "vertical",
+                  fontFamily: "inherit",
+                  minHeight: "48px",
+                  maxHeight: "140px",
+                }}
+              />
+              {attachments.length > 0 && (
+                <div style={{ position: "absolute", right: 10, top: 10, display: "flex", gap: 5 }}>
+                  {attachments.map((f, i) => (
+                    <span key={i} style={{ background: C.navy, color: C.cream, borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 10 }} onClick={() => removeAttachment(i)}>×</span>
+                  ))}
+                </div>
+              )}
               {/* Voice record */}
               <button
                 onMouseDown={startVoice}
@@ -618,66 +684,52 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 onMouseLeave={stopVoice}
                 disabled={voiceActive}
                 style={{
-                  background: voiceActive ? "#b42318" : COLORS.white,
-                  border: `1px solid ${voiceActive ? "#b42318" : COLORS.gold}`,
-                  color: voiceActive ? COLORS.cream : COLORS.navy,
+                  background: voiceActive ? C.error : C.white,
+                  border: `1px solid ${voiceActive ? C.error : C.gold}`,
+                  color: voiceActive ? C.white : C.navy,
                   borderRadius: "50%",
-                  width: 34,
-                  height: 34,
+                  width: 36,
+                  height: 36,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: voiceActive ? "not-allowed" : "pointer",
                   transition: "all 0.2s",
+                  marginRight: 8,
                 }}
                 title={ar ? "تسجيل صوتي" : "Voice Record"}
               >
-                {voiceActive ? <Mic size={14} strokeWidth={2} /> : <Mic size={14} strokeWidth={2} opacity={0.8} />}
+                <Mic size={14} strokeWidth={1.5} />
               </button>
-              <input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submit()
-                }}
-                placeholder={ar ? "اكتب رسالتك." : "Type your message."}
-                style={{
-                  flex: 1,
-                  border: `1px solid ${COLORS.gold}66`,
-                  borderRadius: 14,
-                  padding: "12px 16px",
-                  fontSize: 14,
-                  outline: "none",
-                  background: COLORS.white,
-                  color: "#1a1a1a",
-                  transition: "border-color 0.2s, box-shadow 0.2s",
-                }}
-              />
+              {/* Send */}
               <button
-                onClick={submit}
-                disabled={loading || ended}
+                onClick={() => submit()}
+                disabled={loading || streaming || (!input.trim() && attachments.length === 0)}
                 style={{
-                  background: COLORS.gold,
-                  color: COLORS.navy,
+                  background: C.gold,
+                  color: C.navy,
                   border: "none",
-                  borderRadius: 14,
-                  padding: "0 22px",
-                  fontWeight: 600,
+                  borderRadius: "50%",
+                  width: 38,
+                  height: 38,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   cursor: "pointer",
-                  opacity: loading || ended ? 0.5 : 1,
+                  opacity: (loading || streaming || (!input.trim() && attachments.length === 0)) ? 0.5 : 1,
                   transition: "all 0.2s",
-                  boxShadow: loading || ended ? "none" : `0 4px 12px rgba(175,140,62,0.35)`,
+                  boxShadow: "0 4px 12px rgba(201,162,39,0.35)",
                 }}
               >
                 <Send size={14} strokeWidth={2} />
               </button>
             </div>
           ) : (
-            <div style={{ padding: 16, textAlign: "center", fontSize: 13, color: COLORS.slate, borderTop: `1px solid ${COLORS.gold}44`, background: COLORS.cream }}>
+            <div style={{ padding: 16, textAlign: "center", fontSize: 13, color: C.slate, borderTop: `1px solid ${C.border}`, background: C.cream }}>
               {ar ? "اكتملت المحادثة." : "Conversation complete."}{" "}
               <button
                 onClick={startOver}
-                style={{ color: COLORS.navy, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
+                style={{ color: C.navy, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
               >
                 {ar ? "بدء محادثة جديدة" : "Start a new one"}
               </button>
