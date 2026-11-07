@@ -3,6 +3,7 @@ import { LockKeyhole } from "lucide-react"
 
 import { api } from "@/lib/api"
 import { messageForError } from "@/lib/messages"
+import posthog from "@/lib/posthog.client"
 import { useToastActions } from "../ui"
 
 import { Button, Field, Heading, Input, Textarea } from "../ui"
@@ -122,6 +123,9 @@ export function WebsitePage({ canEdit }: { canEdit: boolean }) {
       const res = await api.updateSiteSettings(settings)
       setSettings(res.data as SiteSettings)
       setUpdatedAt(res.updatedAt)
+      posthog.capture("website_settings_saved", {
+        announcement_enabled: settings.announcement.enabled,
+      })
       success("Website settings saved")
     } catch (e) {
       const { message } = messageForError(e)

@@ -7,6 +7,7 @@ import {
   type SessionInfo,
   type WorkflowBoardPayload,
 } from "@/lib/api"
+import posthog from "@/lib/posthog.client"
 
 export type WorkspaceData = {
   session: SessionInfo
@@ -58,6 +59,12 @@ export function useWorkspace() {
       return
     }
 
+    posthog.identify(session.user.id, {
+      email: session.user.email,
+      name: session.user.name,
+      role: session.role,
+    })
+
     const isAdmin = session.role === "admin"
     const isApprover = isAdmin || session.role === "lead"
 
@@ -106,6 +113,7 @@ export function useWorkspace() {
       try {
         await api.logout()
       } finally {
+        posthog.reset()
         setState({ ...initial, loading: false, needsAuth: true })
       }
       /* Send the visitor to the dedicated login page so the dashboard URL is

@@ -23,3 +23,4 @@ test-results/
 # Platform-managed agent state, not project source.
 /.plugins/
 /.opencode-skills/
+.env

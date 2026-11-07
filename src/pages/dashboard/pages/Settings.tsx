@@ -2,6 +2,7 @@ import { useState } from "react"
 
 import { api } from "@/lib/api"
 import { messageForError } from "@/lib/messages"
+import posthog from "@/lib/posthog.client"
 import { useToastActions } from "../ui"
 
 import { Button, Field, Heading, Input } from "../ui"
@@ -35,6 +36,7 @@ export function SettingsPage({ session }: { session: Session }) {
     setDone(false)
     try {
       await api.changePassword(current, next)
+      posthog.capture("password_changed")
       success("Password updated")
       setCurrent("")
       setNext("")

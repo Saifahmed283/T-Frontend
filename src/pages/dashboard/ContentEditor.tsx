@@ -19,6 +19,8 @@ import {
   type ContentStatus,
 } from "@/lib/api"
 import { messageForError } from "@/lib/messages"
+import posthog from "@/lib/posthog.client"
+import { logPosthogInfo } from "@/lib/posthog.logs"
 import { useToastActions } from "./ui"
 
 import type { Collection, FieldDefinition } from "./content-model"
@@ -330,6 +332,12 @@ export function ContentEditor({
       }
 
       setDirty(false)
+      posthog.capture(isEdit ? "content_updated" : "content_created", {
+        collection_id: collection.id,
+      })
+      logPosthogInfo("content_save_succeeded", {
+        action: isEdit ? "update" : "create",
+      })
       success(isEdit ? "Changes saved" : "Content created")
       onSaved()
     } catch (e) {
@@ -348,6 +356,10 @@ export function ContentEditor({
     try {
       await api.contentTransition(collection.id, itemId, to)
 
+      posthog.capture("content_status_changed", {
+        collection_id: collection.id,
+        status: to,
+      })
       success("Status updated")
       onSaved()
     } catch (e) {
@@ -366,6 +378,7 @@ export function ContentEditor({
     try {
       await api.contentDelete(collection.id, itemId)
 
+      posthog.capture("content_deleted", { collection_id: collection.id })
       success("Content deleted")
       onSaved()
     } catch (e) {
