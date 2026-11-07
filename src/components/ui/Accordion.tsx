@@ -39,7 +39,7 @@ interface AccordionTriggerProps {
   children: ReactNode;
 }
 
-function AccordionTrigger({ value, open, onOpenChange, children, className = "" }: AccordionTriggerProps) {
+export function AccordionTrigger({ value, open, onOpenChange, children, className = "" }: AccordionTriggerProps) {
   return (
     <Button
       variant="ghost"
@@ -59,6 +59,6 @@ interface AccordionContentProps {
   className?: string;
 }
 
-function AccordionContent({ children, className = "" }: AccordionContentProps) {
+export function AccordionContent({ children, className = "" }: AccordionContentProps) {
   return <div id={`accordion-content-${Math.random()}`} className={`px-4 pb-4 ${className}`}>{children}</div>;
 }
