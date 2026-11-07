@@ -31,6 +31,7 @@ const CONSENT_VERSION = 1;
 interface CookieConsentContextValue {
   consent: CookieConsentState;
   showBanner: boolean;
+  mounted: boolean;
   acceptAll: () => void;
   rejectAll: () => void;
   toggleCategory: (category: CookieCategory) => void;
@@ -161,6 +162,7 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
   const value: CookieConsentContextValue = {
     consent,
     showBanner: mounted && showBanner,
+    mounted,
     acceptAll,
     rejectAll,
     toggleCategory,

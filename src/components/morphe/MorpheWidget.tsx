@@ -65,6 +65,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const [inputError, setInputError] = useState("");
   const [ended, setEnded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [revealed, setRevealed] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -80,6 +81,13 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     window.addEventListener("resize", onResize);
     onResize();
     return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Reveal animation: once the widget mounts (after cookie consent is given),
+  // the launcher slides up and fades in.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setRevealed(true));
+    return () => cancelAnimationFrame(id);
   }, []);
 
   const submit = (rawText?: string) => {
@@ -357,8 +365,13 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          transition: "all 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          transform: open ? "scale(0.95)" : "scale(1)",
+          transition: "all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          opacity: revealed ? 1 : 0,
+          transform: revealed
+            ? open
+              ? "scale(0.95)"
+              : "scale(1)"
+            : "scale(0.8) translateY(20px)",
         }}
       >
         {open ? "✕" : "M"}
@@ -476,28 +489,37 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 showPrivacyTooltip ? "morphe-privacy-tooltip" : undefined
               }
               style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                color: "rgba(255,255,255,0.7)",
-                transition: "color 0.2s",
+                background: "rgba(255,255,255,0.08)",
+                border: `1px solid ${C.border}`,
+                borderRadius: 10,
+                width: 36,
+                height: 36,
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                color: "rgba(255,255,255,0.9)",
+                transition: "all 0.2s",
+                flexShrink: 0,
               }}
             >
-              <Info size={14} strokeWidth={1.5} aria-hidden="true" />
+              <Info size={16} strokeWidth={1.6} aria-hidden="true" />
             </button>
-            {showPrivacyTooltip && tooltipRect && (
+            {showPrivacyTooltip && (
               <div
                 id="morphe-privacy-tooltip"
                 role="tooltip"
                 style={{
                   position: "fixed",
-                  top: tooltipRect.top - 70,
-                  left: ar
-                    ? Math.max(8, tooltipRect.left - 260 + 24)
-                    : Math.max(8, tooltipRect.left),
+                  top: tooltipRect ? tooltipRect.top - 70 : 120,
+                  left: tooltipRect
+                    ? ar
+                      ? Math.max(8, tooltipRect.left - 260 + 24)
+                      : Math.max(8, tooltipRect.left)
+                    : ar
+                      ? undefined
+                      : 20,
+                  right: tooltipRect || ar ? undefined : 20,
                   width: 260,
                   background: C.navy,
                   color: C.cream,

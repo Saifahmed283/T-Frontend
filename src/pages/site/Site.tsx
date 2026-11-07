@@ -25,6 +25,7 @@ import { Hub } from "./components/Hub"
 import { DetailPage } from "./pages/DetailPage"
 
 import { MorpheWidget } from "@/components/morphe"
+import { useCookieConsent } from "@/components/ui/CookieBanner"
 
 import type { SectionId } from "@/lib/routes"
 
@@ -48,6 +49,7 @@ type Props = {
 
 export default function Site(props: Props) {
   const { section } = props
+  const { showBanner, mounted: consentMounted } = useCookieConsent()
 
   // Never read sessionStorage during render (breaks SSR/prerender). Start with
 
@@ -109,6 +111,11 @@ export default function Site(props: Props) {
     setIntro(false)
   }, [])
 
+  // Only reveal the chatbot after the cookie banner has been dismissed
+  // (consent given or already saved). While the banner is up, the widget
+  // stays hidden so it never sits on top of the consent layer.
+  const chatVisible = consentMounted && !showBanner
+
   return (
     <div dir={props.lang === "ar" ? "rtl" : "ltr"}>
       {intro && <Intro onDone={done} onLift={lift} lang={props.lang} />}
@@ -159,7 +166,7 @@ export default function Site(props: Props) {
         )}
       </main>
       <Footer lang={props.lang} />
-      {!intro && <MorpheWidget lang={props.lang} />}
+      {chatVisible && <MorpheWidget lang={props.lang} />}
     </div>
   )
 }

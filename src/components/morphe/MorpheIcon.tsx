@@ -105,17 +105,17 @@ export function MorpheIcon({ size = 48, thinking = false }: { size?: number; thi
       >
         <defs>
           <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#1D3356"/>
-            <stop offset="60%" stop-color="#16263F"/>
-            <stop offset="100%" stop-color="#0F1C30"/>
+            <stop offset="0%" stopColor="#1D3356"/>
+            <stop offset="60%" stopColor="#16263F"/>
+            <stop offset="100%" stopColor="#0F1C30"/>
           </linearGradient>
           <radialGradient id="sheen" cx="32%" cy="22%" r="75%">
-            <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.08"/>
-            <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+            <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.08"/>
+            <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0"/>
           </radialGradient>
           <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#E4C57E"/>
-            <stop offset="100%" stop-color="#9E7B3E"/>
+            <stop offset="0%" stopColor="#E4C57E"/>
+            <stop offset="100%" stopColor="#9E7B3E"/>
           </linearGradient>
         </defs>
         <style>{`
@@ -141,10 +141,10 @@ export function MorpheIcon({ size = 48, thinking = false }: { size?: number; thi
         `}</style>
         <rect x="8" y="8" width="496" height="496" rx="124" fill="url(#bg)"/>
         <rect x="8" y="8" width="496" height="496" rx="124" fill="url(#sheen)"/>
-        <rect x="8.5" y="8.5" width="495" height="495" rx="123.5" fill="none" stroke="#AF8C4B" stroke-opacity="0.35" stroke-width="1"/>
+        <rect x="8.5" y="8.5" width="495" height="495" rx="123.5" fill="none" stroke="#AF8C4B" strokeOpacity="0.35" strokeWidth="1"/>
         <path
           d="M 256 120 C 335 120, 392 172, 392 238 C 392 304, 335 356, 256 356 C 233 356, 212 352, 193 344 L 148 368 C 140 372, 132 365, 135 357 L 148 322 C 128 300, 120 270, 120 238 C 120 172, 177 120, 256 120 Z"
-          fill="none" stroke="url(#gold)" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" opacity="0.9"
+          fill="none" stroke="url(#gold)" strokeWidth="10" strokeLinejoin="round" strokeLinecap="round" opacity="0.9"
         />
         <g>
           <line className="link l1" x1="206" y1="238" x2="256" y2="238"/>
