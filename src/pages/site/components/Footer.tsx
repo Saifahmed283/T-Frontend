@@ -84,7 +84,7 @@ function Footer({ lang }: { lang: Lang }) {
             </div>
           ))}
           <div>
-            <p className="eyebrow text-navy">{ar ? "السياسات القانونية" : "Legal Policies"}</p>
+            <p className="eyebrow text-navy">{ar ? "القانونية" : "Legal"}</p>
             <ul className="mt-3 space-y-1.5 text-sm text-navy-2 sm:mt-5 sm:space-y-2.5">
               {legalLinks.map((link) => (
                 <li key={link.slug}>
@@ -96,6 +96,17 @@ function Footer({ lang }: { lang: Lang }) {
                   </a>
                 </li>
               ))}
+              <li>
+                <button
+                  type="button"
+                  onClick={openPreferences}
+                  className="flex items-center gap-1.5 eyebrow text-slate transition hover:text-navy py-1"
+                  aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+                >
+                  <Cookie className="text-gold-strong" size={14} aria-hidden="true" />
+                  {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+                </button>
+              </li>
             </ul>
           </div>
         </div>
@@ -112,15 +123,6 @@ function Footer({ lang }: { lang: Lang }) {
             >
               {ar ? "بوابة العملاء ↗" : "Client portal ↗"}
             </a>
-            <button
-              type="button"
-              onClick={openPreferences}
-              className="flex items-center gap-1.5 eyebrow text-slate transition hover:text-navy py-1"
-              aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
-            >
-              <Cookie className="text-gold-strong" size={14} aria-hidden="true" />
-              {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
-            </button>
           </div>
         </div>
       </div>
