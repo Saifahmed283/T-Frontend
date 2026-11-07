@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { footer, footerAr, footerHeadingAr } from "@/content/data"
 import { labelPath } from "@/content/pages"
 import { useCookieConsent } from "@/components/ui/CookieBanner"
@@ -42,6 +43,7 @@ const legalLinks = [
 function Footer({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
   const { openPreferences } = useCookieConsent()
+  const [legalOpen, setLegalOpen] = useState(false)
 
   return (
     <footer className="border-t border-line bg-ivory">
@@ -83,31 +85,45 @@ function Footer({ lang }: { lang: Lang }) {
               <p className="mt-1.5 sm:mt-2">{v}</p>
             </div>
           ))}
-          <div>
-            <p className="eyebrow text-navy">{ar ? "القانونية" : "Legal"}</p>
-            <ul className="mt-3 space-y-1.5 text-sm text-navy-2 sm:mt-5 sm:space-y-2.5">
-              {legalLinks.map((link) => (
-                <li key={link.slug}>
-                  <a
-                    href={`/legal/${link.slug}`}
-                    className="hover:text-navy hover:underline decoration-gold underline-offset-4 inline-block py-0.5"
+          <div
+            onClick={() => setLegalOpen(!legalOpen)}
+            className="cursor-pointer hover:text-navy transition"
+          >
+            <div className="flex items-center gap-2">
+              <p className="eyebrow text-navy">{ar ? "القانونية" : "Legal"}</p>
+              <span
+                className={`text-gold-strong text-xs transition-transform duration-200 ${
+                  legalOpen ? "rotate-180" : ""
+                }`}
+              >
+                ▾
+              </span>
+            </div>
+            {legalOpen && (
+              <ul className="mt-3 space-y-1.5 text-sm text-navy-2 sm:mt-5 sm:space-y-2.5">
+                {legalLinks.map((link) => (
+                  <li key={link.slug}>
+                    <a
+                      href={`/legal/${link.slug}`}
+                      className="hover:text-navy hover:underline decoration-gold underline-offset-4 inline-block py-0.5"
+                    >
+                      {ar ? link.label.ar : link.label.en}
+                    </a>
+                  </li>
+                ))}
+                <li>
+                  <button
+                    type="button"
+                    onClick={openPreferences}
+                    className="flex items-center gap-1.5 eyebrow text-slate transition hover:text-navy py-1"
+                    aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
                   >
-                    {ar ? link.label.ar : link.label.en}
-                  </a>
+                    <Cookie className="text-gold-strong" size={14} aria-hidden="true" />
+                    {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+                  </button>
                 </li>
-              ))}
-              <li>
-                <button
-                  type="button"
-                  onClick={openPreferences}
-                  className="flex items-center gap-1.5 eyebrow text-slate transition hover:text-navy py-1"
-                  aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
-                >
-                  <Cookie className="text-gold-strong" size={14} aria-hidden="true" />
-                  {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
-                </button>
-              </li>
-            </ul>
+              </ul>
+            )}
           </div>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 sm:mt-8 sm:gap-4 sm:pt-8">
