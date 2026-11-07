@@ -570,6 +570,15 @@ function request<T>(
   return promise
 }
 
+export type MorpheChatResponse = {
+  session_id: string
+  reply: string
+  state: string
+  terminal: boolean
+  slots: Record<string, unknown>
+  links: Array<{ id: string; url: string; label: string }>
+}
+
 export const api = {
   baseUrl: BASE || "(same origin)",
 
@@ -1038,4 +1047,15 @@ export const api = {
 
   /** Extract field-level validation errors from a VALIDATION_ERROR. */
   fieldErrors: (err: unknown) => extractFieldErrors(err),
+
+  /** Chat with Morphe, the intake assistant. */
+  morpheChat: (sessionId: string | null, message: string | null, lang: "en" | "ar") =>
+    request<MorpheChatResponse>("/api/v1/morphe/chat", {
+      method: "POST",
+      body: JSON.stringify({ session_id: sessionId, message, lang }),
+    }),
+
+  /** Morphe health check. */
+  morpheHealth: () => request<{ status: string; service: string }>("/api/v1/morphe/health"),
 }
+

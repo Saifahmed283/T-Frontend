@@ -24,6 +24,8 @@ import { Hub } from "./components/Hub"
 
 import { DetailPage } from "./pages/DetailPage"
 
+import { MorpheWidget } from "@/components/morphe"
+
 import type { SectionId } from "@/lib/routes"
 
 import type { Lang } from "./types"
@@ -157,6 +159,7 @@ export default function Site(props: Props) {
         )}
       </main>
       <Footer lang={props.lang} />
+      {!props.page && <MorpheWidget lang={props.lang} />}
     </div>
   )
 }
