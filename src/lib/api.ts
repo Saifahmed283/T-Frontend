@@ -577,6 +577,7 @@ export type MorpheChatResponse = {
   terminal: boolean
   slots: Record<string, unknown>
   links: Array<{ id: string; url: string; label: string }>
+  search_used?: boolean
 }
 
 export const api = {
@@ -1049,10 +1050,10 @@ export const api = {
   fieldErrors: (err: unknown) => extractFieldErrors(err),
 
   /** Chat with Morphe, the intake assistant. */
-  morpheChat: (sessionId: string | null, message: string | null, lang: "en" | "ar") =>
+  morpheChat: (sessionId: string | null, message: string | null, lang: "en" | "ar", useSearch?: boolean) =>
     request<MorpheChatResponse>("/api/v1/morphe/chat", {
       method: "POST",
-      body: JSON.stringify({ session_id: sessionId, message, lang }),
+      body: JSON.stringify({ session_id: sessionId, message, lang, use_search: useSearch ?? false }),
     }),
 
   /** Morphe health check. */

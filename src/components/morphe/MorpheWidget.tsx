@@ -33,6 +33,7 @@ type Message = {
   chips?: string[]
   terminal?: boolean
   thinking?: boolean
+  searchUsed?: boolean
 }
 
 const COLORS = {
@@ -72,6 +73,8 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
+  const [useSearch, setUseSearch] = useState(false)
+  const [voiceActive, setVoiceActive] = useState(false)
 
   // Restore session from sessionStorage on mount
   useEffect(() => {
@@ -110,7 +113,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       setError("")
       setThinking(true)
       try {
-        const data = await api.morpheChat(sessionId, text, lang)
+        const data = await api.morpheChat(sessionId, text, lang, useSearch)
         setSessionId(data.session_id)
 
         // Check knowledge base first for direct answers
@@ -124,6 +127,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             links: kbEntry?.links ?? data.links,
             chips: kbEntry ? [] : CHIPS_BY_STATE[data.state] ?? [],
             terminal: data.terminal,
+            searchUsed: data.search_used,
           },
         ])
         if (data.terminal) setEnded(true)
@@ -138,8 +142,62 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
         setThinking(false)
       }
     },
-    [sessionId, lang],
+    [sessionId, lang, useSearch],
   )
+
+  // Voice recording (Web Speech API - browser-based speech-to-text)
+  const [recognition, setRecognition] = useState<any>(null)
+
+  useEffect(() => {
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (SpeechRecognition) {
+      const rec = new SpeechRecognition()
+      rec.continuous = false
+      rec.interimResults = false
+      rec.lang = ar ? "ar-EG" : "en-US"
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript
+        setInput(transcript)
+        setVoiceActive(false)
+        submit()
+      }
+      rec.onerror = () => {
+        setVoiceActive(false)
+        setError("Voice input not available. Please type instead.")
+      }
+      rec.onend = () => {
+        setVoiceActive(false)
+      }
+      setRecognition(rec)
+    }
+  }, [ar])
+
+  const startVoice = () => {
+    if (!recognition) {
+      setError("Voice input not supported in this browser.")
+      return
+    }
+    try {
+      recognition.start()
+      setVoiceActive(true)
+      setError("")
+    } catch {
+      setVoiceActive(false)
+      setError("Failed to start voice input.")
+    }
+  }
+
+  const stopVoice = () => {
+    if (recognition && voiceActive) {
+      try {
+        recognition.stop()
+      } catch {
+        /* ignore */
+      }
+      setVoiceActive(false)
+    }
+  }
 
   // Open panel -> fetch greeting on first open
   useEffect(() => {
@@ -309,6 +367,58 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             </button>
           </div>
 
+          {/* Controls: web search + voice */}
+          <div
+            style={{
+              padding: "8px 18px",
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              background: COLORS.ivory,
+              borderBottom: `1px solid ${COLORS.gold}33`,
+            }}
+          >
+            <button
+              onClick={() => setUseSearch((p) => { setError(""); return !p })}
+              style={{
+                background: useSearch ? COLORS.gold : "transparent",
+                border: `1px solid ${useSearch ? COLORS.gold : COLORS.slate}`,
+                color: useSearch ? COLORS.navy : COLORS.slate,
+                borderRadius: 10,
+                padding: "6px 14px",
+                fontSize: 11.5,
+                fontWeight: 600,
+                cursor: "pointer",
+                transition: "all 0.2s",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {useSearch ? ar ? "إيقاف البحث على الويب" : "Web Search On" : ar ? "بحث على الويب" : "Web Search"}
+            </button>
+            <button
+              onMouseDown={startVoice}
+              onMouseUp={stopVoice}
+              onMouseLeave={stopVoice}
+              disabled={voiceActive}
+              style={{
+                background: voiceActive ? "#b42318" : COLORS.white,
+                border: `1px solid ${voiceActive ? "#b42318" : COLORS.gold}`,
+                color: voiceActive ? COLORS.cream : COLORS.navy,
+                borderRadius: "50%",
+                width: 34,
+                height: 34,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: voiceActive ? "not-allowed" : "pointer",
+                transition: "all 0.2s",
+              }}
+              title={ar ? "تسجيل صوتي" : "Voice Record"}
+            >
+              {voiceActive ? "⏹" : "🎙"}
+            </button>
+          </div>
+
           {/* Messages */}
           <div
             ref={scrollRef}
@@ -354,6 +464,16 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   }}
                 >
                   {m.text}
+                  {m.role === "morphe" && m.searchUsed && (
+                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 10, color: COLORS.gold, fontWeight: 700 }}>
+                        🔍
+                      </span>
+                      <span style={{ fontSize: 10.5, color: COLORS.slate }}>
+                        {ar ? "بحث على الويب" : "Web search used"}
+                      </span>
+                    </div>
+                  )}
                   {m.role === "morphe" && thinking && (
                     <div style={{ marginTop: 8, display: "flex", gap: 4, justifyContent: "center" }}>
                       {[1, 2, 3].map((dot) => (
@@ -419,7 +539,9 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             {loading && thinking && (
               <div style={{ display: "flex", justifyContent: "flex-start", padding: "4px 0" }}>
                 <div style={{ fontSize: 12, color: COLORS.slate, fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
-                  {ar ? "مورفي يفكر" : "Morphe is thinking"}
+                  {useSearch
+                    ? ar ? "البحث على الويب..." : "Searching the web..."
+                    : ar ? "مورفي يفكر" : "Morphe is thinking"}
                   <div style={{ display: "flex", gap: 3 }}>
                     {[1, 2, 3].map((dot) => (
                       <div
