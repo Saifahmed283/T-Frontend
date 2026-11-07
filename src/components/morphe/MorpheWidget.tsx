@@ -187,24 +187,41 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, streaming]);
 
-  // Speech recognition setup
+  // Speech recognition setup — max sensitivity, continuous listening with
+  // interim results so the user sees letters appear as they speak.
   useEffect(() => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (SpeechRecognition) {
       const rec = new SpeechRecognition();
-      rec.continuous = false;
-      rec.interimResults = false;
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.maxAlternatives = 5;
       rec.lang = ar ? "ar-EG" : "en-US";
       rec.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInput(transcript);
-        setInputError("");
-        setVoiceActive(false);
-        textareaRef.current?.focus();
+        let finalTranscript = "";
+        let interimTranscript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += transcript;
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+        if (finalTranscript) {
+          setInput(finalTranscript);
+          setInputError("");
+          setVoiceActive(false);
+          try { rec.stop(); } catch { /* ignore */ }
+          textareaRef.current?.focus();
+        } else if (interimTranscript) {
+          setInput(interimTranscript);
+          setInputError("");
+        }
       };
       rec.onerror = (event: any) => {
         setVoiceActive(false);
-        // Stopping the recogniser or a silent pause is not a user-facing error.
+        // Aborted / no-speech are normal when the user stops speaking — not errors.
         if (event?.error === "aborted" || event?.error === "no-speech") return;
         setError(
           ar
@@ -213,7 +230,8 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
         );
       };
       rec.onend = () => {
-        setVoiceActive(false);
+        // Only deactivate if we haven't just finalized a transcript.
+        if (voiceActive) setVoiceActive(false);
       };
       setRecognition(rec);
     }
@@ -392,6 +410,14 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               0%, 100% { transform: translateY(0); }
               50% { transform: translateY(-6px); }
             }
+            @keyframes pulseVoice {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.4; }
+            }
+            @keyframes pulseRing {
+              0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
+              100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
+            }
           `}</style>
 
           {/* Header */}
@@ -490,32 +516,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   : "Morphe is TerraMorph's AI assistant. Messages are processed to answer you and are not used for model training."}
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                launcherRef.current?.focus();
-              }}
-              aria-label={t("Close", "إغلاق")}
-              style={{
-                background: "rgba(251,249,240,0.1)",
-                border: `1px solid ${C.border}`,
-                color: C.cream,
-                cursor: "pointer",
-                fontSize: 18,
-                padding: 0,
-                lineHeight: 1,
-                width: 34,
-                height: 34,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transition: "all 0.2s",
-              }}
-            >
-              ×
-            </button>
           </div>
 
           {/* Messages */}
@@ -636,9 +636,9 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 <button
                   type="button"
                   onClick={() => (voiceActive ? stopVoice() : startVoice())}
-                  aria-label={t("Dictate a message", "إملاء رسالة")}
+                  aria-label={voiceActive ? t("Stop dictation", "إيقاف الإملاء") : t("Dictate a message", "إملاء رسالة")}
                   aria-pressed={voiceActive}
-                  title={t("Dictate a message", "إملاء رسالة")}
+                  title={voiceActive ? t("Stop dictation", "إيقاف الإملاء") : t("Dictate a message", "إملاء رسالة")}
                   style={{
                     background: voiceActive ? C.error : C.white,
                     border: `1px solid ${voiceActive ? C.error : C.gold}`,
@@ -652,9 +652,28 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                     cursor: "pointer",
                     flexShrink: 0,
                     transition: "all 0.2s",
+                    boxShadow: voiceActive
+                      ? `0 0 0 0 ${C.error}80`
+                      : "0 2px 6px rgba(0,0,0,0.1)",
+                    animation: voiceActive ? "pulseVoice 1.5s infinite" : "none",
                   }}
                 >
                   <Mic size={15} strokeWidth={1.6} aria-hidden="true" />
+                  {voiceActive && (
+                    <span style={{
+                      position: "absolute",
+                      top: "50%",
+                      left: "50%",
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "50%",
+                      border: `2px solid ${C.error}`,
+                      opacity: 0.5,
+                      animation: "pulseRing 1.5s infinite",
+                      transform: "translate(-50%, -50%)",
+                      pointerEvents: "none",
+                    }} />
+                  )}
                 </button>
 
                 <textarea
