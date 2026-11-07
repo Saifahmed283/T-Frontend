@@ -1,7 +1,9 @@
-import { Shield, FileText, Cookie, Gavel, ChevronRight, ExternalLink } from "lucide-react";
-import { Server, Mail, BarChart2, HardDrive, Brain } from "lucide-react";
+import { useState } from "react";
+import { ChevronRight, ExternalLink } from "lucide-react";
+import { Server, Mail, BarChart2, HardDrive, Brain, Shield } from "lucide-react";
+
 import SitePage, { useLang } from "@/pages/site/SitePage";
-import { Heading, Card, Button, Badge, GoldLine, Prose, Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/components/ui";
+import { Heading, Card, Button, Badge, GoldLine, Prose } from "@/components/ui";
 import { SUB_PROCESSORS, SUB_PROCESSOR_CATEGORIES, type SubProcessor } from "@/content/sub-processors";
 import type { Lang } from "@/pages/site/types";
 
@@ -49,22 +51,33 @@ export default function SubProcessorsPage() {
 
         <GoldLine className="my-12" />
 
-        {/* Sub-processor categories */}
-        <section className="space-y-8">
+        {/* Sub-processor categories - each category is its own card */}
+        <div className="grid gap-6 sm:gap-8 lg:gap-10">
           {SUB_PROCESSOR_CATEGORIES.map((category) => {
             const processors = SUB_PROCESSORS.filter((p) => p.category === category.value);
             if (processors.length === 0) return null;
 
             return (
-              <AccordionItem key={category.value} value={category.value}>
-                <div className="flex items-center gap-3">
-                  <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-ivory-2 border border-line flex items-center justify-center">
-                    <IconComponent category={category.value} className="text-gold-strong" size={18} />
+              <Card
+                key={category.value}
+                className="border-line hover:border-gold transition-all duration-300 hover:shadow-lg"
+              >
+                <div className="p-6 sm:p-8">
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="flex-shrink-0 w-11 h-11 rounded-lg bg-ivory-2 border border-line flex items-center justify-center group-hover:border-gold group-hover:bg-gold/10 transition-colors">
+                      <IconComponent category={category.value} className="text-gold-strong" size={18} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <Heading level={3} className="text-lg font-medium leading-tight">
+                        {ar ? category.labelAr : category.label}
+                      </Heading>
+                      <p className="mt-2 text-sm text-navy-2 leading-relaxed line-clamp-2">
+                        {processors.length} processor{processors.length !== 1 ? "s" : ""}
+                      </p>
+                    </div>
                   </div>
-                  <span className="font-semibold">{ar ? category.labelAr : category.label}</span>
-                </div>
-                <AccordionContent>
-                  <div className="grid gap-6 sm:gap-8 lg:gap-10 mt-4">
+
+                  <div className="space-y-3">
                     {processors.map((processor) => (
                       <SubProcessorCard
                         key={processor.id}
@@ -74,11 +87,11 @@ export default function SubProcessorsPage() {
                       />
                     ))}
                   </div>
-                </AccordionContent>
-              </AccordionItem>
+                </div>
+              </Card>
             );
           })}
-        </section>
+        </div>
 
         {/* Notes */}
         <section className="mt-16 pt-12 border-t border-line">
@@ -172,15 +185,15 @@ function SubProcessorCard({ processor, lang, ar }: { processor: SubProcessor; la
   const categoryMeta = SUB_PROCESSOR_CATEGORIES.find((c) => c.value === processor.category);
 
   return (
-    <Card className="group h-full p-6 sm:p-8 border-line hover:border-gold transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
-      <div className="flex items-start gap-4 mb-6">
-        <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-ivory-2 border border-line flex items-center justify-center group-hover:border-gold group-hover:bg-gold/10 transition-colors">
-          <IconComponent category={processor.category} className="text-gold-strong" size={20} aria-hidden="true" />
+    <Card className="group border border-line rounded-lg p-5 sm:p-6 hover:border-gold transition-all duration-300">
+      <div className="flex items-start gap-3 mb-4">
+        <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-ivory-2 border border-line flex items-center justify-center group-hover:border-gold group-hover:bg-gold/10 transition-colors">
+          <IconComponent category={processor.category} className="text-gold-strong" size={18} aria-hidden="true" />
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
-            <Heading level={3} className="text-lg font-medium group-hover:text-gold transition-colors leading-tight">
-              {ar ? processor.name : processor.name}
+            <Heading level={4} className="text-sm font-semibold text-navy group-hover:text-gold transition-colors leading-tight">
+              {processor.name}
             </Heading>
             {categoryMeta && (
               <Badge tone="neutral" className="text-[10px]">
@@ -188,39 +201,37 @@ function SubProcessorCard({ processor, lang, ar }: { processor: SubProcessor; la
               </Badge>
             )}
           </div>
-          <p className="mt-3 text-sm text-navy-2 leading-relaxed line-clamp-3">
+          <p className="mt-2 text-sm text-navy-2 leading-relaxed line-clamp-2">
             {ar ? processor.descriptionAr : processor.description}
           </p>
         </div>
       </div>
-      <div className="mt-auto border-t border-line pt-6">
-        <div className="space-y-3 text-sm text-navy-2">
-          <div className="flex justify-between">
-            <span className="text-slate">Location</span>
-            <span className="font-medium">{processor.location}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate">DPA Status</span>
-            <span className="font-medium">
-              {processor.dpaSigned ? (ar ? `موقعة (${processor.dpaDate})` : `Signed (${processor.dpaDate})`) : (ar ? "غير موقعة" : "Pending")}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-slate">Retention</span>
-            <span className="font-medium">{processor.retention}</span>
-          </div>
+      <div className="mt-4 space-y-3 text-xs text-navy-2">
+        <div className="flex justify-between">
+          <span className="text-slate">Location</span>
+          <span className="font-medium">{processor.location}</span>
         </div>
-
-        {processor.certifications && processor.certifications.length > 0 && (
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {processor.certifications.map((cert) => (
-              <Badge key={cert} tone="neutral" className="text-[10px]">
-                {cert}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <div className="flex justify-between">
+          <span className="text-slate">DPA Status</span>
+          <span className="font-medium">
+            {processor.dpaSigned ? (ar ? `موقعة (${processor.dpaDate})` : `Signed (${processor.dpaDate})`) : (ar ? "غير موقعة" : "Pending")}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-slate">Retention</span>
+          <span className="font-medium">{processor.retention}</span>
+        </div>
       </div>
+
+      {processor.certifications && processor.certifications.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {processor.certifications.map((cert) => (
+            <Badge key={cert} tone="neutral" className="text-[10px]">
+              {cert}
+            </Badge>
+          ))}
+        </div>
+      )}
     </Card>
   );
 }
