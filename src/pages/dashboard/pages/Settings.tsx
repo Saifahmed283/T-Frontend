@@ -5,6 +5,8 @@ import { messageForError } from "@/lib/messages"
 import { useToastActions } from "../ui"
 
 import { Button, Field, Heading, Input } from "../ui"
+import { useFormValidation } from "@/lib/useFormValidation"
+import { validatePassword, validatePasswordMatch } from "@/lib/validation"
 
 /* Settings — workspace identity and the account password. */
 
@@ -15,37 +17,42 @@ type Session = {
 } | null
 
 export function SettingsPage({ session }: { session: Session }) {
-  const [current, setCurrent] = useState("")
-  const [next, setNext] = useState("")
-  const [confirm, setConfirm] = useState("")
-  const [busy, setBusy] = useState(false)
-  const [done, setDone] = useState(false)
-
   const { success, error: toastError } = useToastActions()
 
-  const changePassword = async () => {
-    // Match backend: 12+ chars, upper, lower, digit, special
-    if (next.length < 12) return toastError("New password must be at least 12 characters")
-    if (!/[A-Z]/.test(next)) return toastError("New password must contain an uppercase letter")
-    if (!/[a-z]/.test(next)) return toastError("New password must contain a lowercase letter")
-    if (!/[0-9]/.test(next)) return toastError("New password must contain a number")
-    if (!/[^A-Za-z0-9]/.test(next)) return toastError("New password must contain a special character")
-    if (next !== confirm) return toastError("New passwords do not match")
-    setBusy(true)
-    setDone(false)
-    try {
-      await api.changePassword(current, next)
-      success("Password updated")
-      setCurrent("")
-      setNext("")
-      setConfirm("")
-    } catch (e) {
-      const { message } = messageForError(e)
-      toastError(message)
-    } finally {
-      setBusy(false)
-    }
-  }
+  const form = useFormValidation({
+    fields: {
+      current: {
+        initial: "",
+        validate: (value) => validatePassword(value, "en"),
+      },
+      next: {
+        initial: "",
+        validate: (value) => validatePassword(value, "en"),
+      },
+      confirm: {
+        initial: "",
+        validate: (value, values) => validatePasswordMatch(values.next, value, "en"),
+      },
+    },
+    onSubmit: async (values) => {
+      setBusy(true)
+      setDone(false)
+      try {
+        await api.changePassword(String(values.current), String(values.next))
+        success("Password updated")
+        form.reset()
+        setDone(true)
+      } catch (cause) {
+        const { message } = messageForError(cause)
+        throw new Error(message || "Could not update the password. Try again.")
+      } finally {
+        setBusy(false)
+      }
+    },
+  })
+
+  const [busy, setBusy] = useState(false)
+  const [done, setDone] = useState(false)
 
   const rows: [string, string][] = [
     ["Workspace", session?.workspace.slug ?? "—"],
@@ -86,37 +93,80 @@ export function SettingsPage({ session }: { session: Session }) {
           </div>
         </div>
         <div className="modal-body">
-          <Field label="Current password" required>
-            <Input
-              type="password"
-              autoComplete="current-password"
-              value={current}
-              onChange={(e) => setCurrent(e.target.value)}
-            />
-          </Field>
-          <Field label="New password" required hint="12+ chars: upper, lower, number, special.">
-            <Input
-              type="password"
-              autoComplete="new-password"
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-            />
-          </Field>
-          <Field label="Confirm new password" required>
-            <Input
-              type="password"
-              autoComplete="new-password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-            />
-          </Field>
-          <Button
-            variant="primary"
-            disabled={busy}
-            onClick={() => void changePassword()}
-          >
-            {busy ? "Updating…" : "Update password"}
-          </Button>
+          <form {...form.formProps} noValidate>
+            <Field
+              label="Current password"
+              required
+              error={form.error("current") ?? undefined}
+            >
+              <Input
+                {...form.input("current")}
+                type="password"
+                autoComplete="current-password"
+                required
+              />
+            </Field>
+            {form.error("current") && (
+              <p id={form.errorId("current")} role="alert" className="text-error mt-2">
+                {form.error("current")}
+              </p>
+            )}
+            <Field
+              label="New password"
+              required
+              hint="12+ chars: upper, lower, number, special."
+              error={form.error("next") ?? undefined}
+            >
+              <Input
+                {...form.input("next")}
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={12}
+              />
+            </Field>
+            {form.error("next") && (
+              <p id={form.errorId("next")} role="alert" className="text-error mt-2">
+                {form.error("next")}
+              </p>
+            )}
+            <Field
+              label="Confirm new password"
+              required
+              error={form.error("confirm") ?? undefined}
+            >
+              <Input
+                {...form.input("confirm")}
+                type="password"
+                autoComplete="new-password"
+                required
+                minLength={12}
+              />
+            </Field>
+            {form.error("confirm") && (
+              <p id={form.errorId("confirm")} role="alert" className="text-error mt-2">
+                {form.error("confirm")}
+              </p>
+            )}
+            {form.submitError && (
+              <p role="alert" className="text-error mt-4">
+                {form.submitError}
+              </p>
+            )}
+            <Button
+              variant="primary"
+              type="submit"
+              disabled={form.isSubmitting || busy}
+              aria-busy={form.isSubmitting || busy || undefined}
+            >
+              {busy || form.isSubmitting ? "Updating…" : "Update password"}
+            </Button>
+          </form>
+          {done && (
+            <p className="mt-4 text-ok">
+              ✓ Your password was updated and every other session was signed out.
+            </p>
+          )}
         </div>
       </section>
     </div>

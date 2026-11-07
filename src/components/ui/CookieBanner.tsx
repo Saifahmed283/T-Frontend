@@ -203,7 +203,7 @@ function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; o
               </p>
             </div>
           </div>
-          <Button variant="ghost" size="sm" className="text-slate-strong hover:text-navy p-1" onClick={onClose} aria-label="Dismiss banner">
+          <Button variant="ghost" size="sm" className="text-slate-strong hover:text-navy p-1" onClick={onClose} aria-label={ar ? "إغلاق الشريط" : "Dismiss banner"}>
             <X size={18} />
           </Button>
         </div>
@@ -372,13 +372,13 @@ function CookiePreferencesModal({ onClose }: { onClose: () => void }) {
 
         <div className="p-4 sm:p-5 border-t border-line flex flex-col gap-2">
           <Button variant="primary" className="w-full" onClick={() => { acceptAll(); onClose(); }}>
-            Accept All
+            {ar ? "قبول الكل" : "Accept All"}
           </Button>
           <Button variant="secondary" className="w-full" onClick={() => { rejectAll(); onClose(); }}>
-            Reject All (Essential Only)
+            {ar ? "رفض الكل (الأساسية فقط)" : "Reject All (Essential Only)"}
           </Button>
           <Button variant="ghost" className="w-full" onClick={onClose}>
-            Save & Close
+            {ar ? "حفظ وإغلاق" : "Save & Close"}
           </Button>
         </div>
       </div>
