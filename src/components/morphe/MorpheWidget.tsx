@@ -484,14 +484,12 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
           aria-label={t("Morphe AI chat", "محادثة مورفي")}
           style={{
             position: "fixed",
-            bottom: isMobile ? 88 : 100,
+            bottom: 100,
             right: ar ? undefined : isMobile ? 12 : 20,
             left: ar ? isMobile ? 12 : undefined : undefined,
             width: isMobile ? "92vw" : 420,
             maxWidth: "96vw",
-            minHeight: isMobile ? "44vh" : undefined,
-            height: "auto",
-            maxHeight: isMobile ? "88vh" : 720,
+            height: "72vh",
             background: `linear-gradient(135deg, ${C.cream}, ${C.white})`,
             border: `1px solid ${C.border}`,
             borderRadius: isMobile ? 16 : 24,

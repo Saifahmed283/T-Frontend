@@ -389,10 +389,32 @@ Verified certificate copies released to procurement teams within one working day
   {
     id: "contact",
     triggers: ["contact", "reach", "email", "phone", "team", "where", "office", "cairo", "assiut", "alexandria"],
-    en:
-      "Contact TerraMorph: New Cairo head office (Sun–Thu, 09:00–17:00 EET), with field presences in Assiut (Upper Egypt) and Alexandria (Delta).\n\nEmail: hello@askterramorph.com (new engagements), tenders@askterramorph.com (procurement), info@askterramorph.com (data protection)\nPhone: +20 115 000 0984\nWebsite: https://askterramorph.com\n\nReplies within one working day from a named person.",
-    ar:
-      "تواصل مع شركة تيرامورف: المكتب الرئيسي في القاهرة الجديدة (الأحد–الخميس، 09:00–17:00 بتوقيت القاهرة)، مع تواجد ميداني في أسيوط (صعيد مصر) والإسكندرية (الدلتا).\n\nالبريد الإلكتروني: hello@askterramorph.com (التعاقدات الجديدة)، tenders@askterramorph.com (المشتريات)، info@askterramorph.com (حماية البيانات)\nالهاتف: +20 115 000 0984\nالموقع الإلكتروني: https://askterramorph.com\n\nالرد خلال يوم عمل واحد من شخص محدد الاسم.",
+    en: `Contact TerraMorph
+
+New Cairo head office (Sun–Thu, 09:00–17:00 EET)
+Field presences: Assiut (Upper Egypt) · Alexandria (Delta)
+
+Email:
+• info@askterramorph.com — general info, news & events
+
+Owner: mbaraka@askterramorph.com
+
+Phone: +20 115 000 0984
+
+Replies within one working day from a named person.`,
+    ar: `تواصل مع شركة تيرامورف
+
+المكتب الرئيسي في القاهرة الجديدة (الأحد–الخميس، 09:00–17:00 بتوقيت القاهرة)
+تواجد ميداني: أسيوط (صعيد مصر) · الإسكندرية (الدلتا)
+
+البريد الإلكتروني:
+• info@askterramorph.com — المعلومات العامة، الأخبار والأحداث
+
+المالك: mbaraka@askterramorph.com
+
+الهاتف: +20 115 000 0984
+
+الرد خلال يوم عمل واحد من شخص محدد الاسم.`,
     links: [
       { id: "contact", url: "/about/contact", label: "Contact & Offices", labelAr: "التواصل والمكاتب" },
     ],
