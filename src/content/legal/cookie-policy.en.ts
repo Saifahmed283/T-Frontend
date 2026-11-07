@@ -106,7 +106,7 @@ export const cookiePolicy = {
       id: "contact",
       heading: "Contact",
       body: [
-        "Questions: privacy@askterramorph.com",
+        "Questions: info@askterramorph.com",
       ],
     },
   ],

@@ -111,7 +111,7 @@ function UnsubscribePage() {
                   <p>{message || 'The unsubscribe link is invalid or has expired.'}</p>
                   <p className="mt-2 text-sm">
                     Please check the link in your email or{' '}
-                    <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">
+                    <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">
                       contact us
                     </a>
                     {' '}for assistance.
@@ -131,7 +131,7 @@ function UnsubscribePage() {
                   <p>This unsubscribe link is missing required parameters.</p>
                   <p className="mt-2 text-sm">
                     Please use the link from your email or{' '}
-                    <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">
+                    <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">
                       contact us
                     </a>
                     {' '}for assistance.

@@ -24,7 +24,7 @@ export const privacyPolicy = {
         "Commercial Registration: CR No. 184 562 · Cairo",
         "Tax ID: TIN 742-118-903",
         "Registered address: New Cairo, Egypt",
-        "Contact: privacy@askterramorph.com",
+        "Contact: info@askterramorph.com",
       ],
     },
     {
@@ -109,7 +109,7 @@ export const privacyPolicy = {
         "• Standard Contractual Clauses (SCCs) approved by Egypt's Data Protection Authority or EU Commission",
         "• Binding Corporate Rules (where applicable)",
         "• Your explicit consent (for specific transfers)",
-        "Contact privacy@askterramorph.com for the current transfer mechanism register.",
+        "Contact info@askterramorph.com for the current transfer mechanism register.",
       ],
     },
     {
@@ -124,7 +124,7 @@ export const privacyPolicy = {
         "Object: object to processing based on legitimate interests or direct marketing.",
         "Withdraw consent: where processing relies on consent, withdraw at any time (does not affect lawfulness before withdrawal).",
         "Not subject to automated decision-making with legal/similar effects (we do not use such systems).",
-        "How to exercise: email privacy@askterramorph.com or use the portal's Data Request page. We respond within 30 days (extendable by 60 days for complexity). No fee unless request is manifestly unfounded/excessive.",
+        "How to exercise: email info@askterramorph.com or use the portal's Data Request page. We respond within 30 days (extendable by 60 days for complexity). No fee unless request is manifestly unfounded/excessive.",
       ],
     },
     {
@@ -191,7 +191,7 @@ export const privacyPolicy = {
       heading: "16. Complaints & Supervisory Authority",
       body: [
         "You may lodge a complaint with Egypt's Personal Data Protection Authority (or your local EU supervisory authority if GDPR applies).",
-        "We encourage you to contact us first at privacy@askterramorph.com so we can resolve the issue.",
+        "We encourage you to contact us first at info@askterramorph.com so we can resolve the issue.",
       ],
     },
   ],

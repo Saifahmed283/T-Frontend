@@ -228,7 +228,7 @@ function DataRequestPage() {
             <a href="/legal/terms-of-service" className="underline decoration-gold underline-offset-2 hover:text-navy">Terms of Service</a>
           </p>
           <p className="mt-1 text-sm text-navy-2">
-            <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">privacy@askterramorph.com</a>
+            <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">info@askterramorph.com</a>
           </p>
         </footer>
       </div>

@@ -209,8 +209,8 @@ export default function LegalIndexPage() {
               </span>
               <span>
                 Email:
-                <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy font-medium">
-                  privacy@askterramorph.com
+                <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy font-medium">
+                  info@askterramorph.com
                 </a>
               </span>
             </p>

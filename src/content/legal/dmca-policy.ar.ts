@@ -73,7 +73,7 @@ export const dmcaPolicy = {
       heading: "6. التواصل",
       body: [
         "أسئلة حول سياسة DMCA هذه: copyright@askterramorph.com",
-        "استفسارات عامة: privacy@askterramorph.com",
+        "استفسارات عامة: info@askterramorph.com",
       ],
     },
   ],

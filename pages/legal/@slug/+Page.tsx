@@ -164,7 +164,7 @@ function LegalPageContent({ content, lang, slug }: { content: LegalContent; lang
       <footer className="mt-12 pt-8 border-t border-line">
         <p className="text-sm text-slate-strong">
           {ar ? "أسئلة؟ تواصل مع " : "Questions? Contact "}
-          <a href="mailto:privacy@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">privacy@askterramorph.com</a>
+          <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">info@askterramorph.com</a>
         </p>
         <p className="mt-2 text-xs text-slate-strong">
           {ar ? "هذه الصفحة جزء من وثائق امتثال شركة تيرامورف. المراجعة القانونية قيد الانتظار." : "This page is part of TerraMorph's compliance documentation. Legal review pending."}

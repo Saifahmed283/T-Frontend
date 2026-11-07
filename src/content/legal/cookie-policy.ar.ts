@@ -106,7 +106,7 @@ export const cookiePolicyAr = {
       id: "contact",
       heading: "التواصل",
       body: [
-        "استفسارات: privacy@askterramorph.com",
+        "استفسارات: info@askterramorph.com",
       ],
     },
   ],
