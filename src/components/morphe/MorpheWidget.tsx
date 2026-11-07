@@ -1,23 +1,28 @@
 /**
- * MorpheWidget - TerraMorph's bilingual intake assistant.
+ * MorpheWidget - TerraMorph's animated, bilingual intake assistant.
  *
- * Drops into the public site shell. Talks to /api/v1/morphe/chat through
- * your Fastify backend (never calls any model service directly from the browser).
+ * Design inspiration: reactbits.devv + getlayers.ai — smooth spring
+ * animations, glass panels, thinking states, chip-based quick replies.
  *
  *   <MorpheWidget lang="en" />
  *
  * Features:
- *   - Floating launcher + panel, fixed position above the cookie banner
- *   - EN/AR toggle with RTL layout
- *   - Full keyboard access: Tab, Escape, focus return on close
- *   - aria-live announcements for Morphe's replies
- *   - Session persisted in sessionStorage (functional, disclosed)
- *   - AI disclosure + Privacy Policy link before contact capture
- *   - No raw transcripts stored; only structured leads persisted server-side
+ *   - Animated Morphe SVG icon (thinking state pulses the network)
+ *   - Smooth open/close with cubic-bezier spring physics
+ *   - Thinking/typing indicator with animated dots
+ *   - Knowledge base trained on TerraMorph website topics (G0-G7, LDIA,
+ *     audiences, services, certifications, contact, legal)
+ *   - Classifier routes to knowledge answers; falls back to flow engine
+ *   - Quick-reply chips for the current state's valid intents
+ *   - Smooth scroll, focus trap, Escape-to-close, aria-live
+ *   - Session in sessionStorage; lead persisted server-side via Submission
+ *   - No raw transcripts stored
  */
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api"
+import { MorpheIcon } from "./MorpheIcon"
+import { KNOWLEDGE_BASE, findKnowledgeAnswer } from "./knowledge-base"
 import type { Lang } from "@/pages/site/types"
 
 type ChatLink = { id: string; url: string; label: string }
@@ -25,6 +30,9 @@ type Message = {
   role: "morphe" | "user"
   text: string
   links?: ChatLink[]
+  chips?: string[]
+  terminal?: boolean
+  thinking?: boolean
 }
 
 const COLORS = {
@@ -34,17 +42,31 @@ const COLORS = {
   cream: "#FBF9F0",
   ivory: "#F5F1E8",
   slate: "#6B7280",
+  white: "#FFFFFF",
 }
 
 const SESSION_KEY = "morphe_session_id"
 
+// Quick-reply chip suggestions per flow state
+const CHIPS_BY_STATE: Record<string, string[]> = {
+  greeting: ["I have an idea", "I want to partner", "I have a question", "Just browsing"],
+  sector: ["Education", "Climate", "Health", "Livelihoods", "Governance", "Not sure"],
+  idea_stage: ["Just a concept", "Tested informally", "Already running"],
+  timeline: ["Next month", "This quarter", "Exploratory"],
+  contact_capture: ["Share email", "Prefer not to"],
+  general_qa: ["Methodology", "Services", "About", "Partners", "Contact"],
+}
+
 export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const ar = lang === "ar"
+  const dir = ar ? "rtl" : "ltr"
+
   const [open, setOpen] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [loading, setLoading] = useState(false)
+  const [thinking, setThinking] = useState(false)
   const [ended, setEnded] = useState(false)
   const [error, setError] = useState("")
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -66,16 +88,43 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     }
   }, [sessionId])
 
+  // Auto-scroll to bottom
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
+  }, [messages, loading, thinking])
+
+  // Escape to close; Enter to send
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (!open) return
+      if (e.key === "Escape") setOpen(false)
+      if (e.key === "Enter" && !loading && !ended) submit()
+    }
+    document.addEventListener("keydown", onKey)
+    return () => document.removeEventListener("keydown", onKey)
+  }, [open, loading, ended])
+
   const send = useCallback(
     async (text: string | null) => {
       setLoading(true)
       setError("")
+      setThinking(true)
       try {
         const data = await api.morpheChat(sessionId, text, lang)
         setSessionId(data.session_id)
+
+        // Check knowledge base first for direct answers
+        const kbEntry = text ? findKnowledgeAnswer(text, lang) : null
+
         setMessages((prev) => [
           ...prev,
-          { role: "morphe", text: data.reply, links: data.links },
+          {
+            role: "morphe",
+            text: kbEntry ? (lang === "ar" ? kbEntry.ar : kbEntry.en) : data.reply,
+            links: kbEntry?.links ?? data.links,
+            chips: kbEntry ? [] : CHIPS_BY_STATE[data.state] ?? [],
+            terminal: data.terminal,
+          },
         ])
         if (data.terminal) setEnded(true)
       } catch {
@@ -86,6 +135,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
         setError(fallback)
       } finally {
         setLoading(false)
+        setThinking(false)
       }
     },
     [sessionId, lang],
@@ -99,22 +149,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
-  // Scroll to bottom
-  useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" })
-  }, [messages, loading])
-
-  // Escape to close; Enter to send
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (!open) return
-      if (e.key === "Escape") setOpen(false)
-      if (e.key === "Enter" && !loading && !ended) submit()
-    }
-    document.addEventListener("keydown", onKey)
-    return () => document.removeEventListener("keydown", onKey)
-  }, [open, loading, ended])
-
   const submit = () => {
     const text = input.trim()
     if (!text || loading || ended) return
@@ -123,15 +157,25 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     send(text)
   }
 
+  const sendChip = (label: string) => {
+    setMessages((prev) => [...prev, { role: "user", text: label }])
+    setInput("")
+    send(label)
+  }
+
   const startOver = () => {
     setMessages([])
     setSessionId(null)
     setEnded(false)
     setError("")
+    setThinking(false)
     try { sessionStorage.removeItem(SESSION_KEY) } catch { /* noop */ }
   }
 
-  const dir = ar ? "rtl" : "ltr"
+  const lastMessage = messages[messages.length - 1]
+  const showChips = lastMessage?.chips?.length && !ended && !loading
+
+  const t = (en: string, arText: string) => (ar ? arText : en)
 
   return (
     <div dir={dir} style={{ fontFamily: "Jost, system-ui, sans-serif" }}>
@@ -139,30 +183,31 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       <button
         ref={launcherRef}
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? "إغلاق المحادثة" : "فتح المحادثة مع مورفي"}
+        aria-label={open ? t("إغلاق المحادثة", "Close chat") : t("فتح المحادثة مع مورفي", "Open chat with Morphe")}
         style={{
           position: "fixed",
-          bottom: 24,
-          right: ar ? 24 : 24,
-          left: ar ? undefined : undefined,
-          width: 60,
-          height: 60,
+          bottom: 28,
+          right: ar ? 28 : 28,
+          width: 64,
+          height: 64,
           borderRadius: "50%",
-          background: COLORS.navy,
+          background: open ? COLORS.gold : COLORS.navy,
           border: `2px solid ${COLORS.gold}`,
-          color: COLORS.cream,
+          color: open ? COLORS.navy : COLORS.cream,
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 24,
+          fontSize: 26,
           fontWeight: 600,
           cursor: "pointer",
-          boxShadow: "0 8px 24px rgba(19,43,69,0.35)",
-          zIndex: 1100, // above cookie banner (z-50)
+          boxShadow: "0 10px 30px rgba(19,43,69,0.4)",
+          zIndex: 1100,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
+          transition: "all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transform: open ? "scale(1.05)" : "scale(1)",
         }}
       >
-        {open ? "×" : "M"}
+        <MorpheIcon size={32} thinking={loading} />
       </button>
 
       {open && (
@@ -170,55 +215,70 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
           ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-label={ar ? "محادثة مورفي" : "Morphe chat"}
+          aria-label={t("محادثة مورفي", "Morphe chat")}
           style={{
             position: "fixed",
-            bottom: 100,
+            bottom: 110,
             right: 24,
-            width: 380,
-            maxWidth: "92vw",
-            height: 560,
-            maxHeight: "80vh",
+            width: 400,
+            maxWidth: "94vw",
+            height: 620,
+            maxHeight: "90vh",
             background: COLORS.cream,
             border: `1px solid ${COLORS.gold}`,
-            borderRadius: 16,
-            boxShadow: "0 16px 48px rgba(19,43,69,0.3)",
+            borderRadius: 20,
+            boxShadow: "0 24px 60px rgba(19,43,69,0.35)",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
             zIndex: 1100,
             direction: dir,
+            animation: "panelOpen 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
           }}
         >
+          <style>{`
+            @keyframes panelOpen {
+              from { opacity: 0; transform: translateY(20px) scale(0.98); }
+              to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            @keyframes slideIn {
+              from { opacity: 0; transform: translateX(${ar ? "-20px" : "20px"}); }
+              to { opacity: 1; transform: translateX(0); }
+            }
+            @keyframes typingDots {
+              0%, 60%, 100% { transform: translateY(0); }
+              30% { transform: translateY(-6px); }
+            }
+          `}</style>
+
           {/* Header */}
           <div
             style={{
               background: COLORS.navy,
               color: COLORS.cream,
-              padding: "14px 16px",
+              padding: "16px 18px",
               display: "flex",
               alignItems: "center",
-              gap: 10,
+              gap: 12,
+              borderBottom: `1px solid ${COLORS.gold}33`,
             }}
           >
             <div
               style={{
-                width: 32,
-                height: 32,
+                width: 40,
+                height: 40,
                 borderRadius: "50%",
                 background: COLORS.gold,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontWeight: 700,
-                color: COLORS.navy,
+                flexShrink: 0,
               }}
             >
-              M
+              <MorpheIcon size={24} thinking={loading} />
             </div>
-            <div>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: 15 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: 16 }}>
                 Morphe
               </div>
               <div style={{ fontSize: 11, opacity: 0.8 }}>
@@ -227,16 +287,22 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             </div>
             <button
               onClick={() => setOpen(false)}
-              aria-label="إغلاق"
+              aria-label={t("إغلاق", "Close")}
               style={{
-                background: "none",
+                background: "rgba(255,255,255,0.1)",
                 border: "none",
                 color: COLORS.cream,
                 cursor: "pointer",
-                fontSize: 20,
+                fontSize: 22,
                 padding: 0,
                 lineHeight: 1,
-                marginLeft: "auto",
+                width: 32,
+                height: 32,
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: "background 0.2s",
               }}
             >
               ×
@@ -249,35 +315,65 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             style={{
               flex: 1,
               overflowY: "auto",
-              padding: 14,
+              padding: "16px 18px",
               display: "flex",
               flexDirection: "column",
-              gap: 10,
+              gap: 12,
               background: COLORS.ivory,
+              scrollBehavior: "smooth",
             }}
           >
             {messages.map((m, i) => (
               <div
                 key={i}
-                style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start" }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: m.role === "user" ? "flex-end" : "flex-start",
+                  animation: "slideIn 0.4s ease-out forwards",
+                }}
               >
                 <div
                   style={{
-                    maxWidth: "85%",
-                    padding: "10px 14px",
-                    borderRadius: 14,
+                    maxWidth: "88%",
+                    padding: "12px 16px",
+                    borderRadius: 16,
                     fontSize: 14,
-                    lineHeight: 1.5,
-                    background: m.role === "user" ? COLORS.navy : "#ffffff",
+                    lineHeight: 1.6,
+                    background: m.role === "user" ? COLORS.navy : COLORS.white,
                     color: m.role === "user" ? COLORS.cream : "#1a1a1a",
-                    border: m.role === "morphe" ? `1px solid ${COLORS.gold}44` : "none",
-                    boxShadow: m.role === "morphe" ? "0 2px 6px rgba(0,0,0,0.06)" : "none",
+                    border:
+                      m.role === "morphe"
+                        ? `1px solid ${COLORS.gold}44`
+                        : "none",
+                    boxShadow:
+                      m.role === "morphe"
+                        ? "0 4px 16px rgba(0,0,0,0.06)"
+                        : "none",
+                    position: "relative",
                   }}
                 >
                   {m.text}
+                  {m.role === "morphe" && thinking && (
+                    <div style={{ marginTop: 8, display: "flex", gap: 4, justifyContent: "center" }}>
+                      {[1, 2, 3].map((dot) => (
+                        <div
+                          key={dot}
+                          style={{
+                            width: 8,
+                            height: 8,
+                            borderRadius: "50%",
+                            background: COLORS.gold,
+                            animation: `typingDots 1.2s ease-in-out infinite`,
+                            animationDelay: `${dot * 0.15}s`,
+                          }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
                 {m.links && m.links.length > 0 && (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
                     {m.links.map((l) => (
                       <a
                         key={l.id}
@@ -285,13 +381,14 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                         rel="noopener noreferrer"
                         style={{
                           fontSize: 12,
-                          padding: "6px 12px",
+                          padding: "7px 14px",
                           borderRadius: 999,
                           border: `1px solid ${COLORS.gold}`,
                           color: COLORS.navy,
                           textDecoration: "none",
-                          background: `${COLORS.gold}1a`,
+                          background: `${COLORS.gold}12`,
                           whiteSpace: "nowrap",
+                          transition: "all 0.2s",
                         }}
                       >
                         {l.label} ↗
@@ -319,9 +416,26 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 )}
               </div>
             ))}
-            {loading && (
-              <div style={{ fontSize: 13, color: COLORS.slate, fontStyle: "italic" }}>
-                {ar ? "مورفي يكتب..." : "Morphe is typing."}
+            {loading && thinking && (
+              <div style={{ display: "flex", justifyContent: "flex-start", padding: "4px 0" }}>
+                <div style={{ fontSize: 12, color: COLORS.slate, fontStyle: "italic", display: "flex", alignItems: "center", gap: 6 }}>
+                  {ar ? "مورفي يفكر" : "Morphe is thinking"}
+                  <div style={{ display: "flex", gap: 3 }}>
+                    {[1, 2, 3].map((dot) => (
+                      <div
+                        key={dot}
+                        style={{
+                          width: 7,
+                          height: 7,
+                          borderRadius: "50%",
+                          background: COLORS.gold,
+                          animation: `typingDots 1.2s ease-in-out infinite`,
+                          animationDelay: `${dot * 0.2}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
             {error && (
@@ -329,11 +443,44 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             )}
           </div>
 
-          {/* Disclosure + consent before contact capture */}
+          {/* Quick-reply chips */}
+          {showChips && lastMessage?.chips && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 8,
+                padding: "0 18px 10px",
+                justifyContent: ar ? "flex-end" : "flex-start",
+              }}
+            >
+              {lastMessage.chips.map((chip, i) => (
+                <button
+                  key={i}
+                  onClick={() => sendChip(chip)}
+                  style={{
+                    fontSize: 12,
+                    padding: "7px 14px",
+                    borderRadius: 999,
+                    border: `1px solid ${COLORS.gold}`,
+                    color: COLORS.navy,
+                    background: COLORS.white,
+                    cursor: "pointer",
+                    transition: "all 0.2s",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Disclosure before contact capture */}
           {!ended && messages.some((m) => m.role === "morphe") && (
             <div
               style={{
-                padding: "10px 14px",
+                padding: "10px 18px",
                 borderTop: `1px solid ${COLORS.gold}44`,
                 fontSize: 11,
                 color: COLORS.slate,
@@ -342,7 +489,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               }}
             >
               {ar
-                ? "مorphe Assistant يستخدم نموذج محلي لتصنيف نواياك. لا يتم استخدام بياناتك في تدريب نماذج الذكاء الاصطناعي. عند مشاركة بيانات التواصل، سيتم حفظها كLead according to our Privacy Policy."
+                ? "مorphe يستخدم نموذجًا محليًا لتصنيف نواياك. لا تُستخدم بياناتك في تدريب نماذج الذكاء الاصطناعي. عند مشاركة بيانات التواصل، تُحفظ كإشعارlead وفقًا لسياسة الخصوصية."
                 : "Morphe uses a local model to classify your intent. Your data is never used to train AI models. When you share contact details, they are stored as a lead per our Privacy Policy."}
               <br />
               <a
@@ -362,8 +509,8 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               style={{
                 display: "flex",
                 borderTop: `1px solid ${COLORS.gold}44`,
-                padding: 10,
-                gap: 8,
+                padding: 12,
+                gap: 10,
                 background: COLORS.cream,
               }}
             >
@@ -377,12 +524,13 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 style={{
                   flex: 1,
                   border: `1px solid ${COLORS.gold}66`,
-                  borderRadius: 10,
-                  padding: "10px 14px",
+                  borderRadius: 14,
+                  padding: "12px 16px",
                   fontSize: 14,
                   outline: "none",
-                  background: "#ffffff",
+                  background: COLORS.white,
                   color: "#1a1a1a",
+                  transition: "border-color 0.2s, box-shadow 0.2s",
                 }}
               />
               <button
@@ -392,22 +540,24 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   background: COLORS.gold,
                   color: COLORS.navy,
                   border: "none",
-                  borderRadius: 10,
-                  padding: "0 18px",
+                  borderRadius: 14,
+                  padding: "0 22px",
                   fontWeight: 600,
                   cursor: "pointer",
                   opacity: loading || ended ? 0.5 : 1,
+                  transition: "all 0.2s",
+                  boxShadow: loading || ended ? "none" : `0 4px 12px rgba(175,140,62,0.35)`,
                 }}
               >
                 {ar ? "إرسال" : "Send"}
               </button>
             </div>
           ) : (
-            <div style={{ padding: 12, textAlign: "center", fontSize: 13, color: COLORS.slate, borderTop: `1px solid ${COLORS.gold}44`, background: COLORS.cream }}>
+            <div style={{ padding: 16, textAlign: "center", fontSize: 13, color: COLORS.slate, borderTop: `1px solid ${COLORS.gold}44`, background: COLORS.cream }}>
               {ar ? "اكتملت المحادثة." : "Conversation complete."}{" "}
               <button
                 onClick={startOver}
-                style={{ color: COLORS.navy, textDecoration: "underline", background: "none", border: "none", cursor: "pointer" }}
+                style={{ color: COLORS.navy, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
               >
                 {ar ? "بدء محادثة جديدة" : "Start a new one"}
               </button>
