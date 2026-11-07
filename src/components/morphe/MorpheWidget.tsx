@@ -367,58 +367,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             </button>
           </div>
 
-          {/* Controls: web search + voice */}
-          <div
-            style={{
-              padding: "8px 18px",
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-              background: COLORS.ivory,
-              borderBottom: `1px solid ${COLORS.gold}33`,
-            }}
-          >
-            <button
-              onClick={() => setUseSearch((p) => { setError(""); return !p })}
-              style={{
-                background: useSearch ? COLORS.gold : "transparent",
-                border: `1px solid ${useSearch ? COLORS.gold : COLORS.slate}`,
-                color: useSearch ? COLORS.navy : COLORS.slate,
-                borderRadius: 10,
-                padding: "6px 14px",
-                fontSize: 11.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {useSearch ? ar ? "إيقاف البحث على الويب" : "Web Search On" : ar ? "بحث على الويب" : "Web Search"}
-            </button>
-            <button
-              onMouseDown={startVoice}
-              onMouseUp={stopVoice}
-              onMouseLeave={stopVoice}
-              disabled={voiceActive}
-              style={{
-                background: voiceActive ? "#b42318" : COLORS.white,
-                border: `1px solid ${voiceActive ? "#b42318" : COLORS.gold}`,
-                color: voiceActive ? COLORS.cream : COLORS.navy,
-                borderRadius: "50%",
-                width: 34,
-                height: 34,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: voiceActive ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-              }}
-              title={ar ? "تسجيل صوتي" : "Voice Record"}
-            >
-              {voiceActive ? "⏹" : "🎙"}
-            </button>
-          </div>
-
           {/* Messages */}
           <div
             ref={scrollRef}
@@ -632,10 +580,52 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 display: "flex",
                 borderTop: `1px solid ${COLORS.gold}44`,
                 padding: 12,
-                gap: 10,
+                gap: 8,
                 background: COLORS.cream,
+                alignItems: "center",
               }}
             >
+              {/* Web search toggle */}
+              <button
+                onClick={() => setUseSearch((p) => { setError(""); return !p })}
+                style={{
+                  background: useSearch ? COLORS.gold : "transparent",
+                  border: `1px solid ${useSearch ? COLORS.gold : COLORS.slate}`,
+                  color: useSearch ? COLORS.navy : COLORS.slate,
+                  borderRadius: 10,
+                  padding: "6px 14px",
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  transition: "all 0.2s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {useSearch ? ar ? "إيقاف البحث على الويب" : "Web Search On" : ar ? "بحث على الويب" : "Web Search"}
+              </button>
+              {/* Voice record */}
+              <button
+                onMouseDown={startVoice}
+                onMouseUp={stopVoice}
+                onMouseLeave={stopVoice}
+                disabled={voiceActive}
+                style={{
+                  background: voiceActive ? "#b42318" : COLORS.white,
+                  border: `1px solid ${voiceActive ? "#b42318" : COLORS.gold}`,
+                  color: voiceActive ? COLORS.cream : COLORS.navy,
+                  borderRadius: "50%",
+                  width: 34,
+                  height: 34,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: voiceActive ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                }}
+                title={ar ? "تسجيل صوتي" : "Voice Record"}
+              >
+                {voiceActive ? "⏹" : "🎙"}
+              </button>
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
