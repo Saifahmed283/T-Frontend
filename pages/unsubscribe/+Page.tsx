@@ -59,7 +59,7 @@ function UnsubscribePage() {
     : MARKETING_LISTS.find(l => l.value === list)?.label ?? list;
 
   return (
-    <SitePage lang="en" title={`Unsubscribe from ${targetList}`} description="Manage your marketing preferences" noIndex={true}>
+    <SitePage lang="en">
       <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16 md:px-10 md:py-20">
         <div className="text-center mb-8">
           <Mail className="mx-auto h-12 w-12 text-navy-2" aria-hidden="true" />
