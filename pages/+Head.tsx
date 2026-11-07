@@ -60,6 +60,26 @@ const SECTIONS: Record<string, {
     description:
       "Start a conversation with TerraMorph — request a proposal, ask a question, or send a payment link to a client.",
   },
+  "/legal": {
+    title: "Legal & Compliance | TerraMorph",
+    description:
+      "TerraMorph legal policies: Privacy Policy, Terms of Service, Cookie Policy, and sub-processor list.",
+  },
+  "/legal/privacy-policy": {
+    title: "Privacy Policy | TerraMorph",
+    description:
+      "How we collect, use, and protect your personal data under Egypt PDPL and international standards.",
+  },
+  "/legal/terms-of-service": {
+    title: "Terms of Service | TerraMorph",
+    description:
+      "Terms governing use of our website, client portal, and advisory services.",
+  },
+  "/legal/cookie-policy": {
+    title: "Cookie Policy | TerraMorph",
+    description:
+      "How we use cookies and similar technologies, and how to manage your preferences.",
+  },
   "/dashboard": {
     title: "Dashboard | TerraMorph",
     description: "The TerraMorph client portal and content workspace.",

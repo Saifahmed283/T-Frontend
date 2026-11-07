@@ -36,6 +36,7 @@ import { WorkflowPage } from "./pages/Workflow"
 import { MediaPage } from "./pages/Media"
 import { WebsitePage } from "./pages/Website"
 import { SubmissionsPage } from "./pages/Submissions"
+import { DataRequestsPage } from "./pages/DataRequests"
 import { UsersPage } from "./pages/Users"
 import { ActivityPage } from "./pages/Activity"
 import { SettingsPage } from "./pages/Settings"
@@ -50,6 +51,7 @@ const MemoWorkflow = memo(WorkflowPage)
 const MemoMedia = memo(MediaPage)
 const MemoWebsite = memo(WebsitePage)
 const MemoSubmissions = memo(SubmissionsPage)
+const MemoDataRequests = memo(DataRequestsPage)
 const MemoUsers = memo(UsersPage)
 const MemoActivity = memo(ActivityPage)
 const MemoSettings = memo(SettingsPage)
@@ -464,6 +466,8 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
               <MemoWebsite canEdit={(data?.isAdmin ?? false) || (data?.session?.role === "lead")} />
             ) : page === "submissions" ? (
               <MemoSubmissions isAdmin={data?.isAdmin ?? false} />
+            ) : page === "data-requests" ? (
+              <MemoDataRequests canEdit={data?.isAdmin ?? false} />
             ) : page === "users" ? (
               <MemoUsers canEdit={data?.isAdmin ?? false} />
             ) : page === "activity" ? (

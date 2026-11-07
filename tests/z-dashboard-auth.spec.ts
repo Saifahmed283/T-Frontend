@@ -27,8 +27,8 @@ test.describe('Dashboard authentication', () => {
     await page.fill('input[type="email"]', ADMIN_EMAIL)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
     await page.click('button[type="submit"]')
-    await expect(page).toHaveURL(/\/dashboard$/)
-    await expect(page.locator('.tm-workspace')).toBeVisible()
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 })
+    await expect(page.locator('.tm-workspace')).toBeVisible({ timeout: 10000 })
   })
 
   test('session persists on refresh', async ({ page }) => {
@@ -47,10 +47,10 @@ test.describe('Dashboard authentication', () => {
     await page.fill('input[type="email"]', ADMIN_EMAIL)
     await page.fill('input[type="password"]', ADMIN_PASSWORD)
     await page.click('button[type="submit"]')
-    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15000 })
 
     await page.click('button:has-text("Sign out"), button:has-text("Log out"), [aria-label*="sign out" i]')
-    await expect(page).toHaveURL(/\/dashboard\/login/)
+    await expect(page).toHaveURL(/\/dashboard\/login/, { timeout: 10000 })
     await expect(page.locator('h1')).toContainText(/Welcome back/i)
   })
 

@@ -41,7 +41,9 @@ test.describe('Public routes', () => {
       els => els.map(e => e.getAttribute('href')).filter(Boolean)
     )
     const unique = [...new Set(links)]
-    for (const href of unique.slice(0, 30)) {
+    // Filter out anchor links and external URLs
+    const internalLinks = unique.filter(href => href.startsWith('/') && !href.startsWith('//') && !href.startsWith('#'))
+    for (const href of internalLinks.slice(0, 30)) {
       const res = await page.request.get(href, { timeout: 15000 })
       if (res.status() === 404) {
         console.warn(`Broken link: ${href}`)

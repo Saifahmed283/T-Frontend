@@ -40,6 +40,8 @@ type Props = {
   section?: SectionId
 
   page?: string
+
+  children?: React.ReactNode
 }
 
 export default function Site(props: Props) {
@@ -111,7 +113,9 @@ export default function Site(props: Props) {
       <Header {...props} />
       <div style={{ height: "var(--tm-header-h)" }} aria-hidden />
       <main id="main">
-        {props.page ? (
+        {props.children ? (
+          props.children
+        ) : props.page ? (
           <DetailPage slug={props.page} lang={props.lang} />
         ) : props.hub ? (
           <Hub slug={props.hub} lang={props.lang} />

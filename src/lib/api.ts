@@ -261,6 +261,28 @@ export type Paginated<T> = {
   }
 }
 
+export type DataRequestType =
+  | "access"
+  | "rectification"
+  | "erasure"
+  | "restriction"
+  | "portability"
+  | "objection"
+  | "withdraw_consent"
+
+export type DataSubjectRequest = {
+  id: string
+  type: DataRequestType
+  email: string
+  name?: string
+  details?: string
+  status: "pending" | "in_progress" | "completed" | "rejected"
+  createdAt: string
+  updatedAt: string
+  completedAt?: string
+  response?: string
+}
+
 export type ActivityItem = {
   id: string
 
@@ -894,6 +916,38 @@ export const api = {
     }>("/api/v1/members/invite", {
       method: "POST",
       body: JSON.stringify(data),
+    }),
+
+  /* Data Subject Requests */
+
+  dataRequests: (params?: { page?: number; pageSize?: number; status?: string; search?: string }) =>
+    request<Paginated<DataSubjectRequest>>(
+      `/api/v1/data-requests${params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : ""}`,
+    ),
+
+  dataRequestCreate: (data: {
+    type: DataRequestType
+    email: string
+    name?: string
+    details?: string
+  }) =>
+    request<DataSubjectRequest>("/api/v1/data-requests", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  dataRequestGet: (id: string) =>
+    request<DataSubjectRequest>(`/api/v1/data-requests/${encodeURIComponent(id)}`),
+
+  dataRequestUpdate: (id: string, data: Partial<DataSubjectRequest>) =>
+    request<DataSubjectRequest>(`/api/v1/data-requests/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
+  dataRequestDelete: (id: string) =>
+    request<{ deleted: boolean }>(`/api/v1/data-requests/${encodeURIComponent(id)}`, {
+      method: "DELETE",
     }),
 
   /** Get a user-friendly error message from any caught error. */

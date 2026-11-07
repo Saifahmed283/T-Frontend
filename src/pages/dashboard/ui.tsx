@@ -19,14 +19,21 @@ import { X, CheckCircle, AlertCircle, AlertTriangle, Info, Loader2 } from "lucid
 export function Button({
   variant = "secondary",
   className = "",
+  size = "md",
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "ghost"
+  size?: "sm" | "md" | "lg"
 }) {
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2 text-base",
+    lg: "px-6 py-3 text-lg",
+  }
   return (
     <button
       type="button"
-      className={`button button-${variant} ${className}`}
+      className={`button button-${variant} ${sizes[size]} ${className}`}
       {...props}
     />
   )
@@ -72,7 +79,7 @@ export function Badge({
   tone = "neutral",
 }: {
   children: ReactNode
-  tone?: "neutral" | "warning" | "success" | "brand"
+  tone?: "neutral" | "warning" | "success" | "brand" | "error"
 }) {
   return <span className={`badge badge-${tone}`}>{children}</span>
 }

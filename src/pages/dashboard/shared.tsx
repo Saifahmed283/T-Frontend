@@ -5,6 +5,7 @@ import {
   Clock3,
   Database,
   FileCheck2,
+  FileText,
   FolderOpen,
   Globe2,
   Image as ImageIcon,
@@ -58,6 +59,7 @@ export const navGroups: NavGroup[] = [
     title: "Management",
     items: [
       { id: "submissions", label: "Submissions", icon: Inbox },
+      { id: "data-requests", label: "Data requests", icon: FileText },
       { id: "users", label: "Users & roles", icon: ShieldCheck },
       { id: "activity", label: "Activity log", icon: Clock3 },
       { id: "settings", label: "Settings", icon: Settings2 },

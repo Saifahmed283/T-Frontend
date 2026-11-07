@@ -5,6 +5,7 @@ import { SplitText } from "@/components/motion/fx"
 import { Dialog } from "@/components/ui"
 
 import { api, type SubmissionKind } from "@/lib/api"
+import { MARKETING_LISTS, type MarketingList } from "@/content/marketing-consent"
 
 import { img } from "./shared"
 
@@ -135,6 +136,13 @@ export function WhatsNew({ lang }: { lang: Lang }) {
 
   const [email, setEmail] = useState("")
 
+  const [marketingConsent, setMarketingConsent] = useState<Record<MarketingList, boolean>>({
+    newsletter: false,
+    events: false,
+    insights: false,
+    careers: false,
+  })
+
   const [busy, setBusy] = useState<string | null>(null)
 
   const [toast, setToast] = useState<{
@@ -244,6 +252,10 @@ export function WhatsNew({ lang }: { lang: Lang }) {
       return
     }
 
+    const selectedLists = Object.entries(marketingConsent)
+      .filter(([, checked]) => checked)
+      .map(([list]) => list)
+
     setBusy(a.key)
 
     setToast(null)
@@ -258,12 +270,22 @@ export function WhatsNew({ lang }: { lang: Lang }) {
 
         message: `What's new · ${n?.title ?? ""}`,
 
-        payload: { action: a.action, itemId: n?.id },
+        payload: {
+          action: a.action,
+          itemId: n?.id,
+          marketingConsent: selectedLists.length > 0 ? selectedLists : undefined,
+        },
       })
 
       setToast({ tone: "ok", text: ar ? a.doneAr : a.done })
 
       setEmail("")
+      setMarketingConsent({
+        newsletter: false,
+        events: false,
+        insights: false,
+        careers: false,
+      })
     } catch {
       setToast({
         tone: "risk",
@@ -454,6 +476,44 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                     className="mt-2 w-full border-b border-navy/20 bg-transparent py-2 text-sm focus:border-gold-strong focus:outline-none"
                   />
                 </label>
+
+                <fieldset className="mt-6 border-t border-line pt-6">
+                  <legend className="eyebrow text-slate mb-4">
+                    {ar
+                      ? "موافقة التسويق (اختياري)"
+                      : "Marketing consent (optional)"}
+                  </legend>
+                  <p className="text-xs text-slate mb-4">
+                    {ar
+                      ? "اختر القوائم التي تريد الاشتراك بها. يمكنك إلغاء الاشتراك في أي وقت."
+                      : "Choose which lists you'd like to join. Unsubscribe anytime."}
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {MARKETING_LISTS.map((list: { value: MarketingList; label: string; description: string; labelAr?: string; descriptionAr?: string }) => (
+                      <label
+                        key={list.value}
+                        className="flex items-start gap-3 p-3 border border-line rounded-lg hover:border-gold-light hover:bg-ivory transition cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={marketingConsent[list.value]}
+                          onChange={(e) =>
+                            setMarketingConsent((prev) => ({
+                              ...prev,
+                              [list.value]: e.target.checked,
+                            }))
+                          }
+                          className="mt-1 h-4 w-4 shrink-0 rounded border-line text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2"
+                        />
+                        <div>
+                          <span className="block font-medium text-sm text-navy">{ar ? list.labelAr : list.label}</span>
+                          <p className="mt-0.5 text-xs text-slate">{ar ? list.descriptionAr : list.description}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
                 <div className="mt-5 grid grid-cols-2 gap-px bg-line">
                   {actions.map((a, k) => (
                     <button

@@ -1,8 +1,9 @@
 import { footer, footerAr, footerHeadingAr } from "@/content/data"
-
 import { labelPath } from "@/content/pages"
+import { useCookieConsent } from "@/components/ui/CookieBanner"
 
 import { GoldLine, Logo } from "@/components/motion/fx"
+import { Cookie } from "lucide-react"
 
 import type { Lang } from "../types"
 
@@ -11,40 +12,36 @@ import type { Lang } from "../types"
 
 const COLUMN_FALLBACK: Record<string, string> = {
   Evidence: "/evidence",
-
   Method: "/method",
-
   Knowledge: "/knowledge",
-
   Learning: "/learning",
-
   About: "/about",
-
   Join: "/join",
 }
 
 const legal = [
   ["Legal identity", "TerraMorph Advisory LLC"],
-
   ["Commercial reg.", "CR No. 184 562 · Cairo"],
-
   ["Tax ID", "TIN 742-118-903"],
-
   ["Registered address", "New Cairo, Egypt"],
 ]
 
 const legalAr = [
   ["الكيان القانوني", "TerraMorph Advisory LLC"],
-
   ["السجل التجاري", "CR No. 184 562 · القاهرة"],
-
   ["الرقم الضريبي", "TIN 742-118-903"],
-
   ["المقر المسجّل", "القاهرة الجديدة، مصر"],
 ]
 
+const legalLinks = [
+  { slug: "privacy-policy", label: { en: "Privacy Policy", ar: "سياسة الخصوصية" } },
+  { slug: "terms-of-service", label: { en: "Terms of Service", ar: "شروط الخدمة" } },
+  { slug: "cookie-policy", label: { en: "Cookie Policy", ar: "سياسة ملفات تعريف الارتباط" } },
+] as const
+
 function Footer({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
+  const { openPreferences } = useCookieConsent()
 
   return (
     <footer className="border-t border-line bg-ivory">
@@ -86,6 +83,21 @@ function Footer({ lang }: { lang: Lang }) {
               <p className="mt-1.5 sm:mt-2">{v}</p>
             </div>
           ))}
+          <div>
+            <p className="eyebrow text-navy">{ar ? "السياسات القانونية" : "Legal Policies"}</p>
+            <ul className="mt-3 space-y-1.5 text-sm text-navy-2 sm:mt-5 sm:space-y-2.5">
+              {legalLinks.map((link) => (
+                <li key={link.slug}>
+                  <a
+                    href={`/legal/${link.slug}`}
+                    className="hover:text-navy hover:underline decoration-gold underline-offset-4 inline-block py-0.5"
+                  >
+                    {ar ? link.label.ar : link.label.en}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 sm:mt-8 sm:gap-4 sm:pt-8">
           <p className="eyebrow text-slate">
@@ -93,12 +105,23 @@ function Footer({ lang }: { lang: Lang }) {
               ? "© 2026 TerraMorph · رافعة للخير"
               : "© 2026 TerraMorph · Leverage for good"}
           </p>
-          <a
-            href="/dashboard"
-            className="eyebrow text-slate transition hover:text-navy py-1"
-          >
-            {ar ? "بوابة العملاء ↗" : "Client portal ↗"}
-          </a>
+          <div className="flex items-center gap-4">
+            <a
+              href="/dashboard"
+              className="eyebrow text-slate transition hover:text-navy py-1"
+            >
+              {ar ? "بوابة العملاء ↗" : "Client portal ↗"}
+            </a>
+            <button
+              type="button"
+              onClick={openPreferences}
+              className="flex items-center gap-1.5 eyebrow text-slate transition hover:text-navy py-1"
+              aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+            >
+              <Cookie className="text-gold-strong" size={14} aria-hidden="true" />
+              {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+            </button>
+          </div>
         </div>
       </div>
     </footer>

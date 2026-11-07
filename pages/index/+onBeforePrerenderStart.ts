@@ -13,6 +13,15 @@ export default async function onBeforePrerenderStart(): Promise<string[]> {
 
   for (const audience of audiences) urls.add(`/hub/${audience.slug}`)
 
+  // Legal pages
+  urls.add("/legal")
+  urls.add("/legal/privacy-policy")
+  urls.add("/legal/terms-of-service")
+  urls.add("/legal/cookie-policy")
+
+  // Unsubscribe page
+  urls.add("/unsubscribe")
+
   try {
     const slugs = await fetchPublicSlugs()
 

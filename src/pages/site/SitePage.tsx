@@ -3,12 +3,16 @@ import Site, { type Lang } from "./Site"
 import { ensureArabicFonts } from "@/lib/fonts"
 import { loadPagesAr } from "@/content/pages.i18n"
 import { loadHubsAr } from "@/content/hubs.i18n"
+import { CookieConsentProvider } from "@/components/ui/CookieBanner"
 import type { SectionId } from "@/lib/routes"
+import type { ReactNode } from "react"
 
 type Props = {
   section?: SectionId
   page?: string
   hub?: string
+  children?: ReactNode
+  lang?: Lang
 }
 
 /* Holds the client-side language toggle. Arabic stays on the same URL — the
@@ -18,7 +22,7 @@ type Props = {
    hubs.i18n), so the toggle awaits them before flipping: switching is a single
    repaint into fully-translated content rather than an English flash. */
 export default function SitePage(props: Props) {
-  const [lang, setLangState] = useState<Lang>("en")
+  const [lang, setLangState] = useState<Lang>(props.lang ?? "en")
   useEffect(() => {
     const el = document.documentElement
     el.lang = lang
@@ -34,6 +38,12 @@ export default function SitePage(props: Props) {
       setLangState("ar"),
     )
   }, [])
-  return <Site lang={lang} setLang={setLang} {...props} />
+  return (
+    <CookieConsentProvider>
+      <Site lang={lang} setLang={setLang} {...props}>
+        {props.children}
+      </Site>
+    </CookieConsentProvider>
+  )
 }
 
