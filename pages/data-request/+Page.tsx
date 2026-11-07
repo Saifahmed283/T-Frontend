@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react"
 import { usePageContext } from "vike-react/usePageContext"
-import { Shield } from "lucide-react"
+import { Shield, Loader2 } from "lucide-react"
 
 import SitePage from "@/pages/site/SitePage"
 import { Heading, Button, Prose, GoldLine, Card, CardContent, Field, Input, Textarea, Select } from "@/components/ui"
 import { DATA_REQUEST_TYPES, type DataRequestType, getRequiredFields } from "@/content/data-requests"
+import { api } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
 
 type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
 
@@ -47,27 +49,23 @@ function DataRequestPage() {
     setMessage('')
 
     try {
-      // In production, this would call the API
-      // const res = await fetch('/api/v1/data-requests', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData)
-      // })
+      const res = await api.dataRequestCreate({
+        type: formData.type,
+        email: formData.email,
+        name: formData.name || undefined,
+        details: formData.details || undefined,
+      })
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // Generate a mock request ID
-      const mockId = `DSR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
-      setRequestId(mockId)
+      setRequestId(res.id)
       setStatus('success')
-      setMessage(`Your request has been submitted. Reference: ${mockId}`)
+      setMessage(`Your request has been submitted. Reference: ${res.id}`)
       
       // Clear form
       setFormData({ type: "access", email: "", name: "", details: "" })
     } catch (e) {
       setStatus('error')
-      setMessage('Something went wrong. Please try again or contact us.')
+      const { message: errorMessage } = messageForError(e)
+      setMessage(errorMessage || 'Something went wrong. Please try again or contact us.')
     }
   }
 
@@ -156,7 +154,7 @@ function DataRequestPage() {
                 <Button type="submit" variant="primary" disabled={status === 'loading'} className="w-full">
                   {status === 'loading' ? (
                     <>
-                      <span className="animate-spin mr-2">⏳</span>
+                      <Loader2 className="animate-spin mr-2 h-4 w-4" />
                       Submitting...
                     </>
                   ) : (
@@ -204,13 +202,13 @@ function DataRequestPage() {
 
               {status === 'error' && (
                 <div className="pt-6 border-t border-line">
-                  <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-200 rounded-lg">
                     <svg className="h-6 w-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                     <div>
                       <p className="font-medium text-red-800">Submission Failed</p>
-                      <p className="text-sm text-red-700">{message || 'Something went wrong. Please try again or contact us.'}</p>
+                      <p className="text-sm text-red-700 mt-1">{message || 'Something went wrong. Please try again or contact us.'}</p>
                     </div>
                   </div>
                   <Button variant="ghost" className="mt-4 w-full" onClick={() => setStatus('idle')}>

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { Plus, Search, X, FileText, Download, Trash2, AlertCircle, CheckCircle, Clock, RefreshCw } from "lucide-react"
+import { Plus, Search, X, FileText, Download, Trash2, AlertCircle, CheckCircle, Clock, RefreshCw, AlertTriangle } from "lucide-react"
 
 import { api, type DataSubjectRequest, type DataRequestType } from "@/lib/api"
 import { messageForError } from "@/lib/messages"
@@ -47,6 +47,7 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<DataSubjectRequest | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleteConfirm, setDeleteConfirm] = useState<DataSubjectRequest | null>(null)
 
   const [formData, setFormData] = useState<{
     type: DataRequestType
@@ -128,16 +129,26 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
   }
 
   const handleDelete = async (id: string) => {
-    setDeleting(id)
+    const req = requests.find(r => r.id === id)
+    if (req) {
+      setDeleteConfirm(req)
+      return
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return
+    setDeleting(deleteConfirm.id)
     try {
-      await api.dataRequestDelete(id)
-      toastError("Request deleted")
+      await api.dataRequestDelete(deleteConfirm.id)
+      success("Request deleted")
       await load()
     } catch (e) {
       const { message } = messageForError(e)
       toastError(message)
     } finally {
       setDeleting(null)
+      setDeleteConfirm(null)
     }
   }
 
@@ -162,8 +173,30 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
 
   const exportRequest = async (request: DataSubjectRequest) => {
     try {
-      // In a real implementation, this would trigger a data export
-      toastError("Export initiated. You will receive an email when ready.")
+      // Trigger a data export for this request
+      const res = await fetch(`/api/v1/data-requests/${encodeURIComponent(request.id)}/export`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+
+      if (!res.ok) {
+        throw new Error('Export failed')
+      }
+
+      const data = await res.json()
+
+      // Create and download the export file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `terramorph-data-export-${request.id}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      success(`Data export downloaded for ${request.email}`)
     } catch (e) {
       const { message } = messageForError(e)
       toastError(message)
@@ -281,11 +314,15 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
                             variant="ghost"
                             size="sm"
                             className="text-danger"
-                            disabled={deleting === req.id}
+                            disabled={deleting === req.id || (deleteConfirm !== null && deleteConfirm.id !== req.id)}
                             onClick={() => handleDelete(req.id)}
                             aria-label={`Delete ${TYPE_LABELS[req.type]}`}
                           >
-                            {deleting === req.id ? (
+                            {deleteConfirm?.id === req.id ? (
+                              <>
+                                <AlertTriangle size={14} className="animate-pulse" /> Confirm
+                              </>
+                            ) : deleting === req.id ? (
                               <RefreshCw size={14} className="animate-spin" />
                             ) : (
                               <Trash2 size={14} />
@@ -388,6 +425,37 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
               </Button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {deleteConfirm && (
+        <Modal
+          title="Confirm Deletion"
+          onClose={() => setDeleteConfirm(null)}
+          wide
+        >
+          <div className="space-y-4">
+            <p>Are you sure you want to delete this data subject request?</p>
+            <p className="text-sm text-navy-2">
+              <strong>Type:</strong> {TYPE_LABELS[deleteConfirm.type]} &nbsp;|&nbsp;
+              <strong>Email:</strong> {deleteConfirm.email}
+            </p>
+            <p className="text-sm text-slate">
+              This action cannot be undone. The request record will be permanently removed.
+            </p>
+            <div className="flex justify-end gap-2 pt-4 border-t border-line">
+              <Button type="button" variant="secondary" onClick={() => setDeleteConfirm(null)}>
+                Cancel
+              </Button>
+              <Button type="button" variant="secondary" disabled={deleting === deleteConfirm?.id} onClick={confirmDelete}>
+                {deleting === deleteConfirm?.id ? (
+                  <span className="flex items-center gap-2"><RefreshCw size={14} className="animate-spin" /> Deleting...</span>
+                ) : (
+                  "Delete Request"
+                )}
+              </Button>
+            </div>
+          </div>
         </Modal>
       )}
     </section>

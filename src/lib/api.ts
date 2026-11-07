@@ -963,6 +963,40 @@ export const api = {
       method: "DELETE",
     }),
 
+  /* Marketing Consent */
+
+  marketingConsentSubscribe: (data: {
+    email: string
+    lists: string[]
+    source?: string
+    locale?: string
+  }) =>
+    request<{ email: string; lists: string[]; status: string; message: string }>(
+      "/api/v1/marketing-consent",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    ),
+
+  marketingConsentUnsubscribe: (data: {
+    email: string
+    list: string
+    token: string
+  }) =>
+    request<{ email: string; lists: string[]; message: string }>(
+      "/api/v1/marketing-consent/unsubscribe",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    ),
+
+  marketingConsentGet: (email: string) =>
+    request<{ email: string; lists: string[]; status: string; confirmedAt: string | null; unsubscribedAt: string | null }>(
+      `/api/v1/marketing-consent?email=${encodeURIComponent(email)}`,
+    ),
+
   /** Get a user-friendly error message from any caught error. */
   errorMessage: (err: unknown, fallback?: string) => {
     const { message } = messageForError(err)
