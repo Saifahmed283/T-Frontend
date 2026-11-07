@@ -91,6 +91,17 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
+  // Close the privacy tooltip when clicking outside the info button.
+  useEffect(() => {
+    const onDocClick = (e: MouseEvent) => {
+      if (showPrivacyTooltip && infoBtnRef.current && !infoBtnRef.current.contains(e.target as Node)) {
+        setShowPrivacyTooltip(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [showPrivacyTooltip]);
+
   /* ------------------------------------------------------------------ */
   /*  Interactive message content                                       */
   /* ------------------------------------------------------------------ */
@@ -574,13 +585,21 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 if (r) setTooltipRect({ top: r.top, left: r.left });
               }}
               onMouseLeave={() => setShowPrivacyTooltip(false)}
-              onFocus={() => {
+              onFocus={(e) => {
                 setShowPrivacyTooltip(true);
                 const r = infoBtnRef.current?.getBoundingClientRect();
                 if (r) setTooltipRect({ top: r.top, left: r.left });
               }}
-              onBlur={() => setShowPrivacyTooltip(false)}
-              onClick={() => setShowPrivacyTooltip((v) => !v)}
+              onBlur={() => {
+                // Delay hide so a click can register before the tooltip closes
+                setTimeout(() => setShowPrivacyTooltip(false), 150);
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowPrivacyTooltip(true);
+                const r = infoBtnRef.current?.getBoundingClientRect();
+                if (r) setTooltipRect({ top: r.top, left: r.left });
+              }}
               aria-label={t("Privacy information", "معلومات الخصوصية")}
               aria-describedby={
                 showPrivacyTooltip ? "morphe-privacy-tooltip" : undefined
