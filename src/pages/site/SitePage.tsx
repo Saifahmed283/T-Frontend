@@ -29,7 +29,7 @@ export const LangContext = createContext<{
 
 export function useLang() {
   const ctx = useContext(LangContext)
-  if (!ctx) throw new Error("useLang must be used within SitePage")
+  if (!ctx) return { lang: "en" as Lang, setLang: () => {} }
   return ctx
 }
 
