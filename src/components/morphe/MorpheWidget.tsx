@@ -20,6 +20,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { Send, Mic, Info } from "lucide-react";
 import { api } from "@/lib/api"
 import { MorpheIcon } from "./MorpheIcon"
 import { KNOWLEDGE_BASE, findKnowledgeAnswer } from "./knowledge-base"
@@ -70,6 +71,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const [thinking, setThinking] = useState(false)
   const [ended, setEnded] = useState(false)
   const [error, setError] = useState("")
+  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const launcherRef = useRef<HTMLButtonElement>(null)
@@ -343,6 +345,39 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 {ar ? "مساعد الاستقبال - شركة تيرامورف" : "TerraMorph intake assistant"}
               </div>
             </div>
+            <Info
+              size={14}
+              onMouseEnter={() => setShowPrivacyTooltip(true)}
+              onMouseLeave={() => setShowPrivacyTooltip(false)}
+              style={{
+                color: "rgba(255,255,255,0.7)",
+                cursor: "pointer",
+                marginRight: 8,
+              }}
+            />
+            {showPrivacyTooltip && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: -40,
+                  right: 40,
+                  background: COLORS.navy,
+                  color: COLORS.cream,
+                  padding: "8px 12px",
+                  borderRadius: 8,
+                  fontSize: 11,
+                  lineHeight: 1.4,
+                  zIndex: 2000,
+                  border: `1px solid ${COLORS.gold}`,
+                  whiteSpace: "nowrap",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                }}
+              >
+                {ar
+                  ? "مorphe يستخدم نموذجًا محليًا لتصنيف نواياك. لا تُستخدم بياناتك في تدريب نماذج الذكاء الاصطناعي."
+                  : "Morphe uses a local AI model. Your data is never used for training."}
+              </div>
+            )}
             <button
               onClick={() => setOpen(false)}
               aria-label={t("إغلاق", "Close")}
@@ -351,7 +386,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 border: "none",
                 color: COLORS.cream,
                 cursor: "pointer",
-                fontSize: 22,
+                fontSize: 20,
                 padding: 0,
                 lineHeight: 1,
                 width: 32,
@@ -546,33 +581,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             </div>
           )}
 
-          {/* Disclosure before contact capture */}
-          {!ended && messages.some((m) => m.role === "morphe") && (
-            <div
-              style={{
-                padding: "10px 18px",
-                borderTop: `1px solid ${COLORS.gold}44`,
-                fontSize: 11,
-                color: COLORS.slate,
-                lineHeight: 1.4,
-                background: COLORS.ivory,
-              }}
-            >
-              {ar
-                ? "مorphe يستخدم نموذجًا محليًا لتصنيف نواياك. لا تُستخدم بياناتك في تدريب نماذج الذكاء الاصطناعي. عند مشاركة بيانات التواصل، تُحفظ كإشعارlead وفقًا لسياسة الخصوصية."
-                : "Morphe uses a local model to classify your intent. Your data is never used to train AI models. When you share contact details, they are stored as a lead per our Privacy Policy."}
-              <br />
-              <a
-                href="/legal/privacy-policy"
-                style={{ color: COLORS.navy, textDecoration: "underline", textDecorationColor: COLORS.gold }}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {ar ? "سياسة الخصوصية" : "Privacy Policy"}
-              </a>
-            </div>
-          )}
-
           {/* Input */}
           {!ended ? (
             <div
@@ -624,7 +632,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 }}
                 title={ar ? "تسجيل صوتي" : "Voice Record"}
               >
-                {voiceActive ? "⏹" : "🎙"}
+                {voiceActive ? <Mic size={14} strokeWidth={2} /> : <Mic size={14} strokeWidth={2} opacity={0.8} />}
               </button>
               <input
                 value={input}
@@ -661,7 +669,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   boxShadow: loading || ended ? "none" : `0 4px 12px rgba(175,140,62,0.35)`,
                 }}
               >
-                {ar ? "إرسال" : "Send"}
+                <Send size={14} strokeWidth={2} />
               </button>
             </div>
           ) : (
