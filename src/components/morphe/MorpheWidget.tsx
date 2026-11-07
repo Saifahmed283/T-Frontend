@@ -66,6 +66,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const [ended, setEnded] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [greeted, setGreeted] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -343,7 +344,29 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       {/* Launcher */}
       <button
         ref={launcherRef}
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          const willOpen = !open;
+          setOpen(willOpen);
+          if (willOpen && messages.length === 0 && !greeted) {
+            setGreeted(true);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: crypto.randomUUID(),
+                role: "morphe",
+                text: t(
+                  "Hello! I'm Morphe, TerraMorph's AI intake assistant. I can help you explore our advisory method, services, case studies, or start a partnership conversation. How can I assist you today?",
+                  "مرحباً! أنا مورفي، المساعد الذكي لاستقبال العملاء في تيرامورف. يمكنني مساعدتك في استكشاف منهجيتنا الاستشارية، خدماتنا، دراسات الحالة، أو بدء محادثة شراكة. كيف يمكنني مساعدتك اليوم؟",
+                ),
+                content: t(
+                  "Hello! I'm Morphe, TerraMorph's AI intake assistant. I can help you explore our advisory method, services, case studies, or start a partnership conversation. How can I assist you today?",
+                  "مرحباً! أنا مورفي، المساعد الذكي لاستقبال العملاء في تيرامورف. يمكنني مساعدتك في استكشاف منهجيتنا الاستشارية، خدماتنا، دراسات الحالة، أو بدء محادثة شراكة. كيف يمكنني مساعدتك اليوم؟",
+                ),
+                timestamp: new Date().toISOString(),
+              },
+            ]);
+          }
+        }}
         aria-label={open ? t("Close chat", "إغلاق المحادثة") : t("Open chat with Morphe", "فتح محادثة مع مورفي")}
         style={{
           position: "fixed",
@@ -557,45 +580,87 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               background: C.ivory,
             }}
           >
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: m.role === "user" ? "flex-end" : "flex-start",
-                  animation: "slideInMsg 0.3s ease-out forwards",
-                }}
-              >
+            {messages.map((m) => {
+              const isMorphe = m.role === "morphe";
+              const time = m.timestamp
+                ? new Date(m.timestamp).toLocaleTimeString(ar ? "ar-EG" : "en-US", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })
+                : "";
+              return (
                 <div
+                  key={m.id}
                   style={{
-                    maxWidth: "90%",
-                    padding: "13px 18px",
-                    borderRadius: 18,
-                    fontSize: 14.5,
-                    lineHeight: 1.7,
-                    background: m.role === "user" ? C.navy : C.white,
-                    color: m.role === "user" ? C.cream : C.ink,
-                    border: m.role === "morphe" ? `1px solid ${C.border}` : "none",
-                    boxShadow: m.role === "morphe" ? "0 4px 20px rgba(0,0,0,0.06)" : "none",
-                    whiteSpace: "pre-wrap",
-                    wordBreak: "break-word",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: isMorphe ? "flex-start" : "flex-end",
+                    animation: "slideInMsg 0.3s ease-out forwards",
+                    gap: 6,
                   }}
                 >
-                  {m.content}
-                  {m.role === "morphe" && m.searchUsed && (
-                    <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ fontSize: 10, color: C.gold, fontWeight: 700 }}>
-                        🔍
-                      </span>
-                      <span style={{ fontSize: 10.5, color: C.slate }}>
-                        {ar ? "بحث على الويب" : "Web search used"}
-                      </span>
-                    </div>
-                  )}
+                  {/* Sender label */}
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      letterSpacing: "0.05em",
+                      textTransform: "uppercase",
+                      color: isMorphe ? C.gold : C.slate,
+                      marginLeft: isMorphe ? 0 : "auto",
+                      marginRight: isMorphe ? "auto" : 0,
+                      marginBottom: 2,
+                    }}
+                  >
+                    {isMorphe ? t("Morphe", "مورفي") : t("You", "أنت")}
+                  </div>
+
+                  {/* Message bubble */}
+                  <div
+                    style={{
+                      maxWidth: "90%",
+                      padding: "12px 16px",
+                      borderRadius: isMorphe ? 16 : 16,
+                      background: isMorphe ? C.white : C.navy,
+                      color: isMorphe ? C.ink : C.cream,
+                      border: isMorphe ? `1px solid ${C.border}` : "none",
+                      boxShadow: isMorphe ? "0 4px 20px rgba(0,0,0,0.06)" : "none",
+                      whiteSpace: "pre-wrap",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    {m.content}
+                    {m.role === "morphe" && m.searchUsed && (
+                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                        <span style={{ fontSize: 10, color: C.gold, fontWeight: 700 }}>
+                          🔍
+                        </span>
+                        <span style={{ fontSize: 10.5, color: C.slate }}>
+                          {ar ? "بحث على الويب" : "Web search used"}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Timestamp */}
+                  <div
+                    style={{
+                      fontSize: 9.5,
+                      color: C.slate,
+                      marginLeft: isMorphe ? 4 : "auto",
+                      marginRight: isMorphe ? "auto" : 4,
+                    }}
+                  >
+                    {time}
+                  </div>
                 </div>
+              );
+            })}
+            {messages.length === 0 && (
+              <div style={{ alignSelf: "center", color: C.slate, fontSize: 13, paddingTop: 40 }}>
+                {ar ? "انقر على الأيقونة لبدء المحادثة مع مورفي" : "Tap the icon to start a conversation with Morphe"}
               </div>
-            ))}
+            )}
             {streaming && (
               <div style={{ alignSelf: "flex-start", marginBottom: 8 }} role="status">
                 <div style={{ display: "flex", gap: 5, alignItems: "center" }} aria-hidden="true">
@@ -610,6 +675,47 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             )}
             {error && (
               <div role="alert" style={{ fontSize: 12, color: C.error, marginTop: 8, padding: "8px 12px", background: "rgba(180,35,24,0.1)", borderRadius: 8, border: `1px solid ${C.error}33` }}>{error}</div>
+            )}
+
+            {/* Suggested actions after greeting */}
+            {messages.length === 1 && messages[0]?.role === "morphe" && !streaming && !ended && (
+              <div style={{ marginTop: 10, padding: "0 18px", display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: C.slate, marginBottom: 6 }}>
+                  {t("Quick actions", "إجراءات سريعة")}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {[
+                    { key: "about", label: t("About TerraMorph", "عن تيرامورف"), message: t("Tell me about TerraMorph", "أخبرني عن تيرامورف") },
+                    { key: "services", label: t("Services", "الخدمات"), message: t("What services do you offer?", "ما الخدمات التي تقدمونها؟") },
+                    { key: "case-studies", label: t("Case Studies", "دراسات الحالة"), message: t("Show me case studies", "أظهر لي دراسات الحالة") },
+                    { key: "contact", label: t("Contact Team", "تواصل مع الفريق"), message: t("How can I contact the team?", "كيف يمكنني التواصل مع الفريق؟") },
+                  ].map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => {
+                        setInput(item.message);
+                        textareaRef.current?.focus();
+                      }}
+                      style={{
+                        flexShrink: 0,
+                        padding: "8px 14px",
+                        borderRadius: 20,
+                        border: `1px solid ${C.border}`,
+                        background: C.white,
+                        color: C.ink,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
