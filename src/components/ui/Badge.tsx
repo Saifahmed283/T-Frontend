@@ -6,7 +6,14 @@ const tones = {
   risk: "bg-risk/10 text-risk-strong ring-risk/25",
   neutral: "bg-slate/10 text-slate ring-slate/25",
   gold: "bg-gold/10 text-gold-strong ring-gold/25",
+  // Aliases for dashboard compatibility
+  warning: "bg-warn/10 text-warn-strong ring-warn/25",
+  success: "bg-ok/10 text-ok-strong ring-ok/25",
+  brand: "bg-gold/10 text-gold-strong ring-gold/25",
+  error: "bg-risk/10 text-risk-strong ring-risk/25",
 } as const
+
+type Tone = keyof typeof tones
 
 export function Badge({
   tone = "neutral",
@@ -14,7 +21,7 @@ export function Badge({
   className = "",
   children,
 }: {
-  tone?: keyof typeof tones
+  tone?: Tone
   pulse?: boolean
   className?: string
   children: ReactNode

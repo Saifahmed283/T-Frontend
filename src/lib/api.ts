@@ -270,17 +270,30 @@ export type DataRequestType =
   | "objection"
   | "withdraw_consent"
 
-export type DataSubjectRequest = {
+export type DataRequestStatus = "pending" | "in_progress" | "completed" | "rejected"
+
+export interface DataSubjectRequest {
   id: string
   type: DataRequestType
   email: string
   name?: string
   details?: string
-  status: "pending" | "in_progress" | "completed" | "rejected"
+  status: DataRequestStatus
   createdAt: string
   updatedAt: string
   completedAt?: string
   response?: string
+  verificationToken?: string
+  verifiedAt?: string
+  timeline?: DataRequestTimelineEvent[]
+}
+
+export interface DataRequestTimelineEvent {
+  id: string
+  status: DataRequestStatus
+  message: string
+  createdAt: string
+  actor?: string
 }
 
 export type ActivityItem = {

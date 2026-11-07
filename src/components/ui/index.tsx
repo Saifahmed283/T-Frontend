@@ -13,6 +13,12 @@ export { GoldLine } from "./GoldLine"
 export { Card, CardHeader, CardContent, CardFooter } from "./Card"
 export { Accordion, AccordionItem } from "./Accordion"
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./Table"
+export { Select } from "./Select"
+export { Tabs, TabsList, TabsTrigger, TabsContent } from "./Tabs"
+export { Field } from "./Field"
+export { Input } from "./Input"
+export { Textarea } from "./Textarea"
+export { Modal } from "./Modal"
 export {
   DashboardSkeleton,
   Skeleton,

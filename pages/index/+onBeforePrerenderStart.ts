@@ -18,9 +18,13 @@ export default async function onBeforePrerenderStart(): Promise<string[]> {
   urls.add("/legal/privacy-policy")
   urls.add("/legal/terms-of-service")
   urls.add("/legal/cookie-policy")
+  urls.add("/legal/sub-processors")
 
   // Unsubscribe page
   urls.add("/unsubscribe")
+
+  // Data request page
+  urls.add("/data-request")
 
   try {
     const slugs = await fetchPublicSlugs()
