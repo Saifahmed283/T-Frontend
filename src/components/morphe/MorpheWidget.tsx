@@ -91,6 +91,82 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
+  /* ------------------------------------------------------------------ */
+  /*  Interactive message content                                       */
+  /* ------------------------------------------------------------------ */
+
+  /* Turns plain text into clickable interactive elements:
+     http/https URLs  -> <a href> that navigates to the route directly
+     email addresses  -> mailto: links
+     phone numbers    -> tel: links
+  */
+  const renderInteractiveContent = (content: string) => {
+    // Split on URL, email, or phone patterns while keeping the delimiters
+    const parts = content.split(
+      /(https?:\/\/[^\s<>"'()]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\+?\d[\d\s().-]{7,}\d)/g,
+    );
+
+    return parts.map((part, i) => {
+      if (/^https?:\/\//i.test(part)) {
+        return (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              color: C.gold,
+              textDecoration: "underline",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {part}
+          </a>
+        );
+      }
+      if (/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(part)) {
+        return (
+          <a
+            key={i}
+            href={`mailto:${part}`}
+            style={{
+              color: C.gold,
+              textDecoration: "underline",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {part}
+          </a>
+        );
+      }
+      if (/^\+?\d[\d\s().-]{7,}\d$/.test(part)) {
+        return (
+          <a
+            key={i}
+            href={`tel:${part.replace(/[\s().-]/g, "")}`}
+            style={{
+              color: C.gold,
+              textDecoration: "underline",
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            {part}
+          </a>
+        );
+      }
+      return part;
+    });
+  };
+
+  /* Sends a quick-action chip message immediately (auto-submit). */
+  const sendQuickAction = (message: string) => {
+    setInput(message);
+    submit(message);
+  };
+
   const submit = (rawText?: string) => {
     const text = (rawText ?? input).trim();
 
@@ -629,7 +705,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                       wordBreak: "break-word",
                     }}
                   >
-                    {m.content}
+                    {renderInteractiveContent(m.content ?? "")}
                     {m.role === "morphe" && m.searchUsed && (
                       <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
                         <span style={{ fontSize: 10, color: C.gold, fontWeight: 700 }}>
@@ -693,10 +769,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                     <button
                       key={item.key}
                       type="button"
-                      onClick={() => {
-                        setInput(item.message);
-                        textareaRef.current?.focus();
-                      }}
+                      onClick={() => sendQuickAction(item.message)}
                       style={{
                         flexShrink: 0,
                         padding: "8px 14px",
