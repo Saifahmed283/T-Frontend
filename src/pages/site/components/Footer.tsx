@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { footer, footerAr, footerHeadingAr } from "@/content/data"
 import { labelPath } from "@/content/pages"
 import { useCookieConsent } from "@/components/ui/CookieBanner"
@@ -7,9 +6,6 @@ import { GoldLine, Logo } from "@/components/motion/fx"
 import { Cookie } from "lucide-react"
 
 import type { Lang } from "../types"
-
-/* Every footer link resolves to its own dedicated page (content/pages.ts). The
-   column heading falls back to the matching homepage section anchor. */
 
 const COLUMN_FALLBACK: Record<string, string> = {
   Evidence: "/evidence",
@@ -43,11 +39,10 @@ const legalLinks = [
 function Footer({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
   const { openPreferences } = useCookieConsent()
-  const [legalOpen, setLegalOpen] = useState(false)
 
   return (
     <footer className="border-t border-line bg-ivory">
-      <div className="mx-auto max-w-[1320px] px-4 pt-12 pb-8 sm:px-5 sm:pt-16 sm:pb-10 md:px-10 md:pt-20">
+      <div className="mx-auto max-w-[1320px] px-4 py-12 sm:px-5 sm:pt-16 sm:pb-10 md:px-10 md:py-20">
         <div className="flex flex-wrap items-end justify-between gap-4 sm:gap-6">
           <Logo />
           <p className="max-w-sm font-display text-lg italic text-navy-2 sm:text-xl">
@@ -78,6 +73,8 @@ function Footer({ lang }: { lang: Lang }) {
             </div>
           ))}
         </div>
+
+        {/* Legal identity row */}
         <div className="mt-10 grid gap-4 border-t border-line pt-6 text-xs text-slate sm:mt-12 sm:gap-6 sm:pt-8 md:mt-16 md:grid-cols-4">
           {(ar ? legalAr : legal).map(([l, v]) => (
             <div key={l}>
@@ -85,60 +82,38 @@ function Footer({ lang }: { lang: Lang }) {
               <p className="mt-1.5 sm:mt-2">{v}</p>
             </div>
           ))}
-          <div
-            onClick={() => setLegalOpen(!legalOpen)}
-            className="cursor-pointer hover:text-navy transition"
-          >
-            <div className="flex items-center gap-2">
-              <p className="eyebrow text-navy">{ar ? "القانونية" : "Legal"}</p>
-              <span
-                className={`text-gold-strong text-xs transition-transform duration-200 ${
-                  legalOpen ? "rotate-180" : ""
-                }`}
-              >
-                ▾
-              </span>
-            </div>
-            {legalOpen && (
-              <ul className="mt-3 space-y-1.5 text-sm text-navy-2 sm:mt-5 sm:space-y-2.5">
-                {legalLinks.map((link) => (
-                  <li key={link.slug}>
-                    <a
-                      href={`/legal/${link.slug}`}
-                      className="hover:text-navy hover:underline decoration-gold underline-offset-4 inline-block py-0.5"
-                    >
-                      {ar ? link.label.ar : link.label.en}
-                    </a>
-                  </li>
-                ))}
-                <li>
-                  <button
-                    type="button"
-                    onClick={openPreferences}
-                    className="flex items-center gap-1.5 eyebrow text-slate transition hover:text-navy py-1"
-                    aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
-                  >
-                    <Cookie className="text-gold-strong" size={14} aria-hidden="true" />
-                    {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
-                  </button>
-                </li>
-              </ul>
-            )}
-          </div>
         </div>
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-6 sm:mt-8 sm:gap-4 sm:pt-8">
-          <p className="eyebrow text-slate">
-            {ar
-              ? "© 2026 TerraMorph · رافعة للخير"
-              : "© 2026 TerraMorph · Leverage for good"}
-          </p>
-          <div className="flex items-center gap-4">
-            <a
-              href="/dashboard"
-              className="eyebrow text-slate transition hover:text-navy py-1"
-            >
-              {ar ? "بوابة العملاء ↗" : "Client portal ↗"}
-            </a>
+
+        {/* Bottom bar: copyright + legal links inline */}
+        <div className="mt-12 pt-8 border-t border-line">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 sm:justify-between">
+            <p className="eyebrow text-slate">
+              {ar ? "© 2026 شركة تيرامورف. جميع الحقوق محفوظة." : "© 2026 TerraMorph. All rights reserved."}
+            </p>
+            <div className="flex items-center gap-3 sm:gap-6 text-sm text-slate">
+              <a
+                href="/legal/privacy-policy"
+                className="underline decoration-gold underline-offset-2 hover:text-navy"
+              >
+                {ar ? "سياسة الخصوصية" : "Privacy Policy"}
+              </a>
+              <span className="text-gold-strong">/</span>
+              <a
+                href="/legal/terms-of-service"
+                className="underline decoration-gold underline-offset-2 hover:text-navy"
+              >
+                {ar ? "شروط الخدمة" : "Terms of Service"}
+              </a>
+              <span className="text-gold-strong">/</span>
+              <button
+                type="button"
+                onClick={openPreferences}
+                className="underline decoration-gold underline-offset-2 hover:text-navy"
+                aria-label={ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+              >
+                {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie preferences"}
+              </button>
+            </div>
           </div>
         </div>
       </div>
