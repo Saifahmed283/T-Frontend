@@ -34,6 +34,16 @@ const legalPages = [
     },
     lastUpdated: "2026-11-07",
   },
+  {
+    slug: "dmca-policy",
+    icon: Gavel,
+    title: { en: "DMCA Policy", ar: "سياسة DMCA" },
+    description: {
+      en: "How to submit a copyright takedown notice to TerraMorph Advisory LLC.",
+      ar: "كيفية تقديم إشعار إزالة devido إلى انتهاك حقوق النشر إلى شركة تيرامورف للاستشارات.",
+    },
+    lastUpdated: "2026-11-07",
+  },
 ];
 
 export default function LegalIndexPage() {

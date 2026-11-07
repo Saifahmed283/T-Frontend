@@ -223,6 +223,8 @@ export function Conversation({ lang }: { lang: Lang }) {
 
   const [error, setError] = useState("")
 
+  const [termsAccepted, setTermsAccepted] = useState(false)
+
   const pickRole = (r: string) => {
     setRole(r)
 
@@ -249,6 +251,16 @@ export function Conversation({ lang }: { lang: Lang }) {
       return
     }
 
+    if (!termsAccepted) {
+      setError(
+        ar ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة." : "Please accept the Privacy Policy and Terms of Service to continue.",
+      )
+
+      setSending(false)
+
+      return
+    }
+
     setSending(true)
 
     try {
@@ -267,6 +279,14 @@ export function Conversation({ lang }: { lang: Lang }) {
       })
 
       setSent(true)
+
+      // Record terms acceptance with backend (non-blocking)
+      void api.termsAcceptanceRecord({
+        email: email.trim(),
+        privacyVersion: '1.0',
+        termsVersion: '1.0',
+        source: 'conversation',
+      }).catch(() => { /* non-blocking */ })
     } catch (err) {
       setError(
         err instanceof ApiError
@@ -376,6 +396,40 @@ export function Conversation({ lang }: { lang: Lang }) {
                   })}
                 </div>
               </div>
+              <label className="flex items-start gap-3 mt-4 border-t border-ivory/30 pt-4">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-ivory/30 text-gold-light focus:ring-2 focus:ring-gold focus:ring-offset-2"
+                  required
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="block text-sm text-ivory/80">
+                    {ar ? "أوافق على " : "I accept the "}
+                    <a
+                      href="/legal/privacy-policy"
+                      className="underline decoration-gold-light underline-offset-2 hover:text-ivory"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {ar ? "سياسة الخصوصية" : "Privacy Policy"}
+                    </a>{" "}
+                    {ar ? " و " : " and "}
+                    <a
+                      href="/legal/terms-of-service"
+                      className="underline decoration-gold-light underline-offset-2 hover:text-ivory"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {ar ? "شروط الخدمة" : "Terms of Service"}
+                    </a>
+                  </span>
+                  <p className="mt-1 text-xs text-ivory/50">
+                    {ar ? "بإرسال هذا النموذج، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this form, you accept processing of your data per the Privacy Policy."}
+                  </p>
+                </div>
+              </label>
               <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-ivory/30 focus-within:border-gold-light sm:mt-10 sm:gap-4">
                 <input
                   required

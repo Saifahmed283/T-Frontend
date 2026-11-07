@@ -24,6 +24,7 @@ export function RequestDialog({
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [message, setMessage] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
   const [phase, setPhase] = useState<"idle" | "sending" | "done" | "error">(
     "idle",
   )
@@ -57,6 +58,12 @@ export function RequestDialog({
       return
     }
 
+    if (!termsAccepted) {
+      setError("Please accept the Privacy Policy and Terms of Service to continue.")
+
+      return
+    }
+
     setPhase("sending")
     try {
       await api.submit({
@@ -68,6 +75,14 @@ export function RequestDialog({
         payload: request.context,
       })
       setPhase("done")
+
+      // Record terms acceptance with backend
+      void api.termsAcceptanceRecord({
+        email,
+        privacyVersion: '1.0',
+        termsVersion: '1.0',
+        source: 'request-dialog',
+      }).catch(() => { /* non-blocking */ })
     } catch (err) {
       setPhase("error")
       setError(
@@ -173,6 +188,23 @@ export function RequestDialog({
                   />
                 </label>
               </div>
+              <label className="flex items-start gap-3 mt-4 border-t border-line pt-4">
+                <input
+                  type="checkbox"
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-1 h-4 w-4 shrink-0 rounded border-navy/30 text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2"
+                  required
+                />
+                <div className="flex-1 min-w-0">
+                  <span className="block text-sm text-navy-2">
+                    I accept the <a href="/legal/privacy-policy" className="underline decoration-gold underline-offset-2 hover:text-navy" target="_blank" rel="noopener noreferrer">Privacy Policy</a> and <a href="/legal/terms-of-service" className="underline decoration-gold underline-offset-2 hover:text-navy" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                  </span>
+                  <p className="mt-1 text-xs text-slate">
+                    By submitting this request, you accept processing of your data per the Privacy Policy.
+                  </p>
+                </div>
+              </label>
               {phase === "error" && (
                 <p role="alert" className="eyebrow mt-5 text-error">
                   {error}

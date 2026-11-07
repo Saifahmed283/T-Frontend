@@ -136,6 +136,8 @@ export const ledger = [
     geoAr: "الأردن",
 
     size: "< USD 100k",
+
+    aiGenerated: true,
   },
 
   {
@@ -199,6 +201,14 @@ type CaseView = {
   client: string
 
   clientAr: string
+
+  geo?: string
+
+  geoAr?: string
+
+  size?: string
+
+  aiGenerated?: boolean
 }
 
 export function Evidence({ lang }: { lang: Lang }) {
@@ -277,6 +287,11 @@ export function Evidence({ lang }: { lang: Lang }) {
                         {ar ? c.sectorAr : c.sector}
                       </span>
                       <span className="eyebrow text-slate">{c.year}</span>
+                      {c.aiGenerated && (
+                        <span className="eyebrow text-xs border border-line px-2 py-0.5 rounded text-navy-2 bg-ivory/30">
+                          {ar ? "مساعدة بالذكاء الاصطناعي" : "AI-assisted"}
+                        </span>
+                      )}
                     </div>
                     <div className="relative my-7 h-24 border-y border-line">
                       <svg

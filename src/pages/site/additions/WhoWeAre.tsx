@@ -184,6 +184,9 @@ export function WhoWeAre({ lang }: { lang: Lang }) {
           <p className="eyebrow text-slate">
             {ar ? "آراء العملاء" : "Testimonials"}
           </p>
+          <p className="text-xs text-slate/60 mt-1 mb-4">
+            {ar ? "شهادات توضيحية مستندة إلى تعليقات عملاء حقيقيين. تم إخفاء الأسماء والهيئات لحماية الخصوصية." : "Illustrative testimonials based on real client feedback. Names and organizations withheld to protect privacy."}
+          </p>
           {testimonials.map((x, k) => (
             <blockquote
               key={k}

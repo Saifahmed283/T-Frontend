@@ -81,6 +81,8 @@ const news = [
     dateAr: "سبتمبر 2026",
 
     likes: 204,
+
+    aiGenerated: true,
   },
 
   {
@@ -142,6 +144,8 @@ export function WhatsNew({ lang }: { lang: Lang }) {
     insights: false,
     careers: false,
   })
+
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   const [busy, setBusy] = useState<string | null>(null)
 
@@ -252,6 +256,16 @@ export function WhatsNew({ lang }: { lang: Lang }) {
       return
     }
 
+    if (!termsAccepted) {
+      setToast({
+        tone: "risk",
+
+        text: ar ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة." : "Please accept the Privacy Policy and Terms of Service to continue.",
+      })
+
+      return
+    }
+
     const selectedLists = Object.entries(marketingConsent)
       .filter(([, checked]) => checked)
       .map(([list]) => list)
@@ -286,6 +300,14 @@ export function WhatsNew({ lang }: { lang: Lang }) {
         insights: false,
         careers: false,
       })
+
+      // Record terms acceptance with backend (non-blocking)
+      void api.termsAcceptanceRecord({
+        email: email.trim(),
+        privacyVersion: '1.0',
+        termsVersion: '1.0',
+        source: 'whatsnew',
+      }).catch(() => { /* non-blocking */ })
     } catch {
       setToast({
         tone: "risk",
@@ -430,6 +452,11 @@ export function WhatsNew({ lang }: { lang: Lang }) {
             <div className="flex flex-1 flex-col p-8">
               <p className="eyebrow text-gold-strong">
                 {ar ? n.tagAr : n.tag} · {ar ? n.dateAr : n.date}
+                {n.aiGenerated && (
+                  <span className="ml-2 text-xs border border-line px-2 py-0.5 rounded text-navy-2 bg-ivory/30">
+                    {ar ? "مساعدة بالذكاء الاصطناعي" : "AI-assisted"}
+                  </span>
+                )}
               </p>
               <h3
                 id={`whatsnew-title-${open}`}
@@ -513,6 +540,41 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                     ))}
                   </div>
                 </fieldset>
+
+                <label className="flex items-start gap-3 mt-5 border-t border-line pt-4">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-line text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2"
+                    required
+                  />
+                  <div className="flex-1 min-w-0">
+                    <span className="block font-medium text-sm text-navy">
+                      {ar ? "أوافق على " : "I accept the "}
+                      <a
+                        href="/legal/privacy-policy"
+                        className="underline decoration-gold underline-offset-2 hover:text-navy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {ar ? "سياسة الخصوصية" : "Privacy Policy"}
+                      </a>{" "}
+                      {ar ? " و " : " and "}
+                      <a
+                        href="/legal/terms-of-service"
+                        className="underline decoration-gold underline-offset-2 hover:text-navy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {ar ? "شروط الخدمة" : "Terms of Service"}
+                      </a>
+                    </span>
+                    <p className="mt-1 text-xs text-slate">
+                      {ar ? "بإرسال هذا الطلب، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this request, you accept processing of your data per the Privacy Policy."}
+                    </p>
+                  </div>
+                </label>
 
                 <div className="mt-5 grid grid-cols-2 gap-px bg-line">
                   {actions.map((a, k) => (

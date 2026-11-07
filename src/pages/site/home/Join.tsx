@@ -220,6 +220,7 @@ export function Join({ lang }: { lang: Lang }) {
      file itself is requested during review rather than pretending to upload it. */
 
   const [cvName, setCvName] = useState("")
+  const [termsAccepted, setTermsAccepted] = useState(false)
 
   const [cvErr, setCvErr] = useState("")
 
@@ -327,6 +328,14 @@ export function Join({ lang }: { lang: Lang }) {
       return
     }
 
+    if (!termsAccepted) {
+      setExpertErr(
+        ar ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة." : "Please accept the Privacy Policy and Terms of Service to continue.",
+      )
+
+      return
+    }
+
     setSending(true)
 
     try {
@@ -351,6 +360,14 @@ export function Join({ lang }: { lang: Lang }) {
       })
 
       setStep(3)
+
+      // Record terms acceptance with backend (non-blocking)
+      void api.termsAcceptanceRecord({
+        email: emailVal,
+        privacyVersion: '1.0',
+        termsVersion: '1.0',
+        source: 'join',
+      }).catch(() => { /* terms acceptance recording should not block form submission */ })
     } catch (err) {
       setExpertErr(
         err instanceof ApiError
@@ -492,6 +509,40 @@ export function Join({ lang }: { lang: Lang }) {
                             {linkedinErr}
                           </p>
                         )}
+                        <label className="flex items-start gap-3 mt-4 border-t border-ivory/10 pt-4">
+                          <input
+                            type="checkbox"
+                            checked={termsAccepted}
+                            onChange={(e) => setTermsAccepted(e.target.checked)}
+                            className="mt-1 h-4 w-4 shrink-0 rounded border-ivory/30 text-gold-light focus:ring-2 focus:ring-gold focus:ring-offset-2"
+                            required
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="block text-sm text-ivory/80">
+                              {ar ? "أوافق على " : "I accept the "}
+                              <a
+                                href="/legal/privacy-policy"
+                                className="underline decoration-gold-light underline-offset-2 hover:text-ivory"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {ar ? "سياسة الخصوصية" : "Privacy Policy"}
+                              </a>{" "}
+                              {ar ? " و " : " and "}
+                              <a
+                                href="/legal/terms-of-service"
+                                className="underline decoration-gold-light underline-offset-2 hover:text-ivory"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {ar ? "شروط الخدمة" : "Terms of Service"}
+                              </a>
+                            </span>
+                            <p className="mt-1 text-xs text-ivory/50">
+                              {ar ? "بإرسال هذا النموذج، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this form, you accept processing of your data per the Privacy Policy."}
+                            </p>
+                          </div>
+                        </label>
                       </>
                     )}
                     {step === 1 && (

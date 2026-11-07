@@ -60,6 +60,12 @@ const LEGAL_PAGES = {
     icon: Cookie,
     fallbackTitle: { en: "Cookie Policy", ar: "سياسة ملفات تعريف الارتباط" },
   },
+  "dmca-policy": {
+    en: () => import("@/content/legal/dmca-policy.en").then((m) => m.dmcaPolicy),
+    ar: () => import("@/content/legal/dmca-policy.en").then((m) => m.dmcaPolicy),
+    icon: Gavel,
+    fallbackTitle: { en: "DMCA Policy", ar: "سياسة DMCA" },
+  },
 } as const;
 
 type LegalSlug = keyof typeof LEGAL_PAGES;

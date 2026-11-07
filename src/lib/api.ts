@@ -997,6 +997,39 @@ export const api = {
       `/api/v1/marketing-consent?email=${encodeURIComponent(email)}`,
     ),
 
+  /* Terms Acceptance */
+
+  termsAcceptanceRecord: (data: {
+    email: string
+    privacyVersion?: string
+    termsVersion?: string
+    ipAddress?: string
+    userAgent?: string
+    source?: string
+  }) =>
+    request<{ id: string; email: string; privacyVersion: string; termsVersion: string; acceptedAt: string; message: string }>(
+      "/api/v1/terms-acceptance",
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+      },
+    ),
+
+  termsAcceptanceCheck: (email: string) =>
+    request<{
+      email: string
+      accepted: boolean
+      privacyVersion: string
+      termsVersion: string
+      acceptedAt: string | null
+      source: string | null
+      currentPrivacyVersion: string
+      currentTermsVersion: string
+      message: string
+    }>(
+      `/api/v1/terms-acceptance?email=${encodeURIComponent(email)}`,
+    ),
+
   /** Get a user-friendly error message from any caught error. */
   errorMessage: (err: unknown, fallback?: string) => {
     const { message } = messageForError(err)
