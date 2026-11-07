@@ -35,6 +35,8 @@
   --color-risk: #a32d2d;
   --color-risk-strong: #8f1f1f;
   --color-error: #b42318;
+  /* Error text on navy surfaces (the on-light `error` token fails AA there). */
+  --color-error-light: #ffb3a8;
 
   /* The `* Fallback` families are metric-matched local faces (see
      fonts.css): they render during the webfont swap with identical

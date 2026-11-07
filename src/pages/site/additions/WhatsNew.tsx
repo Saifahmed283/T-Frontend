@@ -5,6 +5,12 @@ import { SplitText } from "@/components/motion/fx"
 import { Dialog } from "@/components/ui"
 
 import { api, type SubmissionKind } from "@/lib/api"
+import {
+  validateEmail,
+  validateOptionalEmail,
+  validateTerms,
+} from "@/lib/validation"
+import { useFormValidation } from "@/lib/useFormValidation"
 import { MARKETING_LISTS, type MarketingList } from "@/content/marketing-consent"
 
 import { img } from "./shared"
@@ -136,8 +142,6 @@ export function WhatsNew({ lang }: { lang: Lang }) {
 
   const [liked, setLiked] = useState<Record<number, boolean>>({})
 
-  const [email, setEmail] = useState("")
-
   const [marketingConsent, setMarketingConsent] = useState<Record<MarketingList, boolean>>({
     newsletter: false,
     events: false,
@@ -145,17 +149,92 @@ export function WhatsNew({ lang }: { lang: Lang }) {
     careers: false,
   })
 
-  const [termsAccepted, setTermsAccepted] = useState(false)
-
-  const [busy, setBusy] = useState<string | null>(null)
-
   const [toast, setToast] = useState<{
-    tone: "ok" | "risk"
-
     text: string
   } | null>(null)
 
   const startX = useRef<number | null>(null)
+
+  /* The email field is optional until the visitor picks an action that needs a
+     reply. The ref is set before calling `form.submit()` so validation and the
+     field's error state match the action that was actually chosen. */
+  const requireEmail = useRef(false)
+
+  const actionRef = useRef<Action | null>(null)
+
+  const n = open !== null ? news[open] : null
+
+  const form = useFormValidation({
+    fields: {
+      email: {
+        initial: "",
+        validate: (value) =>
+          requireEmail.current
+            ? validateEmail(value, lang)
+            : validateOptionalEmail(value, lang),
+      },
+      terms: {
+        initial: false,
+        validate: (value) => validateTerms(value, lang),
+      },
+    },
+    onSubmit: async (values) => {
+      const action = actionRef.current
+      if (!action) return
+
+      const emailVal = String(values.email).trim()
+
+      const selectedLists = Object.entries(marketingConsent)
+        .filter(([, checked]) => checked)
+        .map(([list]) => list)
+
+      try {
+        await api.submit({
+          kind: action.kind,
+          email: emailVal || undefined,
+          source: "whatsnew",
+          message: `What's new · ${n?.title ?? ""}`,
+          payload: {
+            action: action.action,
+            itemId: n?.id,
+            marketingConsent:
+              selectedLists.length > 0 ? selectedLists : undefined,
+          },
+        })
+      } catch {
+        throw new Error(
+          ar
+            ? "تعذّر الإرسال — حاول لاحقًا"
+            : "Could not send — please try again",
+        )
+      }
+
+      setToast({ text: ar ? action.doneAr : action.done })
+
+      setMarketingConsent({
+        newsletter: false,
+        events: false,
+        insights: false,
+        careers: false,
+      })
+
+      form.reset()
+
+      // Record terms acceptance with backend (non-blocking)
+      if (emailVal) {
+        void api
+          .termsAcceptanceRecord({
+            email: emailVal,
+            privacyVersion: "1.0",
+            termsVersion: "1.0",
+            source: "whatsnew",
+          })
+          .catch(() => {
+            /* non-blocking */
+          })
+      }
+    },
+  })
 
   useEffect(() => {
     if (open !== null) return
@@ -166,8 +245,6 @@ export function WhatsNew({ lang }: { lang: Lang }) {
   }, [open])
 
   const go = (d: number) => setI((x) => (x + d + news.length) % news.length)
-
-  const n = open !== null ? news[open] : null
 
   const actions: Action[] = [
     {
@@ -243,82 +320,11 @@ export function WhatsNew({ lang }: { lang: Lang }) {
     },
   ]
 
-  const submit = async (a: Action) => {
-    if (a.needsEmail && !email.trim()) {
-      setToast({
-        tone: "risk",
-
-        text: ar
-          ? "يرجى إدخال بريدك الإلكتروني أولًا"
-          : "Please add your email first",
-      })
-
-      return
-    }
-
-    if (!termsAccepted) {
-      setToast({
-        tone: "risk",
-
-        text: ar ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة." : "Please accept the Privacy Policy and Terms of Service to continue.",
-      })
-
-      return
-    }
-
-    const selectedLists = Object.entries(marketingConsent)
-      .filter(([, checked]) => checked)
-      .map(([list]) => list)
-
-    setBusy(a.key)
-
+  const runAction = (action: Action) => {
+    requireEmail.current = action.needsEmail
+    actionRef.current = action
     setToast(null)
-
-    try {
-      await api.submit({
-        kind: a.kind,
-
-        email: email.trim() || undefined,
-
-        source: "whatsnew",
-
-        message: `What's new · ${n?.title ?? ""}`,
-
-        payload: {
-          action: a.action,
-          itemId: n?.id,
-          marketingConsent: selectedLists.length > 0 ? selectedLists : undefined,
-        },
-      })
-
-      setToast({ tone: "ok", text: ar ? a.doneAr : a.done })
-
-      setEmail("")
-      setMarketingConsent({
-        newsletter: false,
-        events: false,
-        insights: false,
-        careers: false,
-      })
-
-      // Record terms acceptance with backend (non-blocking)
-      void api.termsAcceptanceRecord({
-        email: email.trim(),
-        privacyVersion: '1.0',
-        termsVersion: '1.0',
-        source: 'whatsnew',
-      }).catch(() => { /* non-blocking */ })
-    } catch {
-      setToast({
-        tone: "risk",
-
-        text: ar
-          ? "تعذّر الإرسال — حاول لاحقًا"
-          : "Could not send — please try again",
-      })
-    } finally {
-      setBusy(null)
-    }
+    void form.submit()
   }
 
   return (
@@ -370,7 +376,11 @@ export function WhatsNew({ lang }: { lang: Lang }) {
         {news.map((s, k) => (
           <button
             key={s.id}
-            onClick={() => setOpen(k)}
+            onClick={() => {
+              form.reset()
+              setToast(null)
+              setOpen(k)
+            }}
             aria-hidden={k !== i}
             tabIndex={k === i ? 0 : -1}
             className="absolute inset-0 text-start transition-[opacity,transform] duration-[1200ms] ease-[cubic-bezier(.2,.8,.2,1)]"
@@ -496,12 +506,24 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                       : "Your email (so we can reply)"}
                   </span>
                   <input
+                    {...form.input("email")}
                     type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    inputMode="email"
                     placeholder="you@example.com"
-                    className="mt-2 w-full border-b border-navy/20 bg-transparent py-2 text-sm focus:border-gold-strong focus:outline-none"
+                    className={`mt-2 w-full border-b bg-transparent py-2 text-sm focus:border-gold-strong focus:outline-none ${
+                      form.error("email") ? "border-error" : "border-navy/20"
+                    }`}
                   />
+                  {form.error("email") && (
+                    <p
+                      id={form.errorId("email")}
+                      role="alert"
+                      className="mt-2 text-xs font-medium text-error"
+                    >
+                      {form.error("email")}
+                    </p>
+                  )}
                 </label>
 
                 <fieldset className="mt-6 border-t border-line pt-6">
@@ -543,11 +565,13 @@ export function WhatsNew({ lang }: { lang: Lang }) {
 
                 <label className="flex items-start gap-3 mt-5 border-t border-line pt-4">
                   <input
+                    {...form.checkbox("terms")}
                     type="checkbox"
-                    checked={termsAccepted}
-                    onChange={(e) => setTermsAccepted(e.target.checked)}
-                    className="mt-1 h-4 w-4 shrink-0 rounded border-line text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2"
-                    required
+                    className={`mt-1 h-4 w-4 shrink-0 rounded text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2 ${
+                      form.error("terms")
+                        ? "border-error ring-1 ring-error"
+                        : "border-line"
+                    }`}
                   />
                   <div className="flex-1 min-w-0">
                     <span className="block font-medium text-sm text-navy">
@@ -573,6 +597,15 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                     <p className="mt-1 text-xs text-slate">
                       {ar ? "بإرسال هذا الطلب، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this request, you accept processing of your data per the Privacy Policy."}
                     </p>
+                    {form.error("terms") && (
+                      <p
+                        id={form.errorId("terms")}
+                        role="alert"
+                        className="mt-2 text-xs font-medium text-error"
+                      >
+                        {form.error("terms")}
+                      </p>
+                    )}
                   </div>
                 </label>
 
@@ -580,8 +613,9 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                   {actions.map((a, k) => (
                     <button
                       key={a.key}
-                      onClick={() => void submit(a)}
-                      disabled={busy === a.key}
+                      onClick={() => runAction(a)}
+                      disabled={form.isSubmitting}
+                      aria-busy={(form.isSubmitting && actionRef.current?.key === a.key) || undefined}
                       className={`p-5 text-start transition disabled:opacity-60 ${
                         k === 1
                           ? "bg-navy text-ivory hover:bg-navy-2"
@@ -601,15 +635,14 @@ export function WhatsNew({ lang }: { lang: Lang }) {
                     </button>
                   ))}
                 </div>
+                {form.submitError && (
+                  <p role="alert" className="eyebrow mt-4 text-error">
+                    ✕ {form.submitError}
+                  </p>
+                )}
                 {toast && (
-                  <p
-                    role="status"
-                    className={`eyebrow mt-4 ${
-                      toast.tone === "ok" ? "text-ok" : "text-error"
-                    }`}
-                  >
-                    {toast.tone === "ok" ? "✓ " : "✕ "}
-                    {toast.text}
+                  <p role="status" className="eyebrow mt-4 text-ok">
+                    ✓ {toast.text}
                   </p>
                 )}
               </div>

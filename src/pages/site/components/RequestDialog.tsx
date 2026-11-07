@@ -1,6 +1,12 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useState } from "react"
 import { Dialog } from "@/components/ui"
-import { api, ApiError, type SubmissionKind } from "@/lib/api"
+import { api, type SubmissionKind } from "@/lib/api"
+import {
+  validateEmail,
+  validateMessage,
+  validateTerms,
+} from "@/lib/validation"
+import { useFormValidation } from "@/lib/useFormValidation"
 
 export type RequestConfig = {
   kind: SubmissionKind
@@ -25,91 +31,77 @@ export function RequestDialog({
 }) {
   const ar = lang === "ar"
 
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [message, setMessage] = useState("")
-  const [termsAccepted, setTermsAccepted] = useState(false)
-  const [phase, setPhase] = useState<"idle" | "sending" | "done" | "error">(
-    "idle",
-  )
-  const [error, setError] = useState("")
-
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const [done, setDone] = useState(false)
 
   const open = !!request
 
-  useEffect(() => {
-    if (open) {
-      setName("")
-      setEmail("")
-      setMessage("")
-      setPhase("idle")
-      setError("")
-    }
-  }, [open])
+  const form = useFormValidation({
+    fields: {
+      name: { initial: "" },
+      email: {
+        initial: "",
+        validate: (value) => validateEmail(value, lang),
+      },
+      message: {
+        initial: "",
+        validate: (value) =>
+          request?.requireMessage ? validateMessage(value, lang) : null,
+      },
+      terms: {
+        initial: false,
+        validate: (value) => validateTerms(value, lang),
+      },
+    },
+    onSubmit: async (values) => {
+      if (!request) return
 
-  const isValidEmail = (value: string): boolean => EMAIL_REGEX.test(value.trim())
+      const emailVal = String(values.email).trim()
 
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-    if (!request) return
-
-    setError("")
-
-    if (!isValidEmail(email)) {
-      setError(
-        ar ? "يرجى إدخال عنوان بريد إلكتروني صحيح." : "Please enter a valid email address.",
-      )
-
-      return
-    }
-
-    if (!termsAccepted) {
-      setError(
-        ar
-          ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة."
-          : "Please accept the Privacy Policy and Terms of Service to continue.",
-      )
-
-      return
-    }
-
-    setPhase("sending")
-    try {
       await api.submit({
         kind: request.kind,
-        email,
-        name: name.trim() || undefined,
-        message: message.trim() || undefined,
+        email: emailVal,
+        name: String(values.name).trim() || undefined,
+        message: String(values.message).trim() || undefined,
         source: "site",
         payload: request.context,
       })
-      setPhase("done")
+
+      setDone(true)
 
       // Record terms acceptance with backend
-      void api.termsAcceptanceRecord({
-        email,
-        privacyVersion: '1.0',
-        termsVersion: '1.0',
-        source: 'request-dialog',
-      }).catch(() => { /* non-blocking */ })
-    } catch (err) {
-      setPhase("error")
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : ar
-            ? "حدث خطأ ما. حاول مرة أخرى."
-            : "Something went wrong. Please try again.",
-      )
-    }
+      void api
+        .termsAcceptanceRecord({
+          email: emailVal,
+          privacyVersion: "1.0",
+          termsVersion: "1.0",
+          source: "request-dialog",
+        })
+        .catch(() => {
+          /* non-blocking */
+        })
+    },
+  })
+
+  const close = () => {
+    setDone(false)
+    form.reset()
+    onClose()
   }
+
+  useEffect(() => {
+    if (open) {
+      setDone(false)
+      form.reset()
+    }
+    // Reset only when the dialog opens; `form.reset` is stable across renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   return (
     <Dialog
       open={open}
-      onClose={onClose}
-      onBackdropClick={onClose}
+      onClose={close}
+      onBackdropClick={close}
       labelledBy="request-dialog-title"
       className="grid place-items-center bg-navy-3/70 backdrop-blur-sm"
     >
@@ -117,7 +109,7 @@ export function RequestDialog({
         onClick={(e) => e.stopPropagation()}
         className={`animate-fade-in mx-5 w-[min(520px,92vw)] border border-line bg-ivory shadow-2xl dir-${ar ? "rtl" : "ltr"}`}
       >
-        {phase === "done" ? (
+        {done ? (
           <div className="p-10 text-center">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-ok text-ivory">
               ✓
@@ -131,7 +123,7 @@ export function RequestDialog({
                 : "A partner will reach out within two working days. We never share your details."}
             </p>
             <button
-              onClick={onClose}
+              onClick={close}
               className="mt-8 border border-navy px-6 py-3 text-xs tracking-cta text-navy uppercase transition hover:bg-navy hover:text-ivory"
             >
               {ar ? "إغلاق" : "Close"}
@@ -142,17 +134,17 @@ export function RequestDialog({
             <div className="flex items-center justify-between border-b border-line px-8 py-5">
               <p className="eyebrow text-gold-strong">{request?.title}</p>
               <button
-                onClick={onClose}
-                aria-label="Close"
+                onClick={close}
+                aria-label={ar ? "إغلاق" : "Close"}
                 className="grid h-8 w-8 place-items-center text-navy transition hover:bg-ivory-2"
               >
                 ✕
               </button>
             </div>
             <form
-              onSubmit={submit}
+              {...form.formProps}
               className="p-8"
-              aria-busy={phase === "sending"}
+              aria-busy={form.isSubmitting || undefined}
             >
               {request?.intro && (
                 <p className="text-sm text-slate">{request.intro}</p>
@@ -163,9 +155,8 @@ export function RequestDialog({
                     {ar ? "اسمك الكامل" : "Your name"}
                   </span>
                   <input
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    name="name"
+                    {...form.input("name")}
+                    type="text"
                     autoComplete="name"
                     placeholder={ar ? "الاسم الكامل" : "Full name"}
                     className="mt-2 w-full border-b border-navy/30 bg-transparent py-2 focus:border-gold focus:outline-none"
@@ -173,43 +164,68 @@ export function RequestDialog({
                 </label>
                 <label className="block">
                   <span className="eyebrow text-slate">
-                    {ar ? "البريد الإلكتروني ×" : "Work email "}
+                    {ar ? "البريد الإلكتروني " : "Work email "}
                     <span className="text-gold-strong">*</span>
                   </span>
                   <input
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
+                    {...form.input("email")}
                     type="email"
-                    name="email"
                     autoComplete="email"
+                    inputMode="email"
                     placeholder="you@organisation.org"
-                    className="mt-2 w-full border-b border-navy/30 bg-transparent py-2 focus:border-gold focus:outline-none"
+                    aria-required="true"
+                    className={`mt-2 w-full border-b bg-transparent py-2 focus:border-gold focus:outline-none ${
+                      form.error("email") ? "border-error" : "border-navy/30"
+                    }`}
                   />
+                  {form.error("email") && (
+                    <p
+                      id={form.errorId("email")}
+                      role="alert"
+                      className="mt-2 text-xs font-medium text-error"
+                    >
+                      {form.error("email")}
+                    </p>
+                  )}
                 </label>
                 <label className="block">
                   <span className="eyebrow text-slate">
                     {ar ? "رسالة" : "Message "}
-                    {request?.requireMessage ? " *" : " — optional"}
+                    {request?.requireMessage
+                      ? " *"
+                      : ar
+                        ? " — اختياري"
+                        : " — optional"}
                   </span>
                   <textarea
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    required={request?.requireMessage}
-                    name="message"
+                    {...form.input("message")}
                     rows={3}
                     placeholder={ar ? "أي شيء يجب أن نعلمه للاستعداد؟" : "Anything we should know to prepare?"}
-                    className="mt-2 w-full resize-none border-b border-navy/30 bg-transparent py-2 focus:border-gold focus:outline-none"
+                    aria-required={request?.requireMessage ? "true" : undefined}
+                    className={`mt-2 w-full resize-none border-b bg-transparent py-2 focus:border-gold focus:outline-none ${
+                      form.error("message") ? "border-error" : "border-navy/30"
+                    }`}
                   />
+                  {form.error("message") && (
+                    <p
+                      id={form.errorId("message")}
+                      role="alert"
+                      className="mt-2 text-xs font-medium text-error"
+                    >
+                      {form.error("message")}
+                    </p>
+                  )}
                 </label>
               </div>
               <label className="flex items-start gap-3 mt-4 border-t border-line pt-4">
                 <input
+                  {...form.checkbox("terms")}
                   type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-navy/30 text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2"
-                  required
+                  className={`mt-1 h-4 w-4 shrink-0 rounded text-gold-strong focus:ring-2 focus:ring-gold focus:ring-offset-2 ${
+                    form.error("terms")
+                      ? "border-error ring-1 ring-error"
+                      : "border-navy/30"
+                  }`}
                 />
                 <div className="flex-1 min-w-0">
                   <span className="block text-sm text-navy-2">
@@ -235,19 +251,29 @@ export function RequestDialog({
                   <p className="mt-1 text-xs text-slate">
                     {ar ? "بإرسال هذا الطلب، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this request, you accept processing of your data per the Privacy Policy."}
                   </p>
+                  {form.error("terms") && (
+                    <p
+                      id={form.errorId("terms")}
+                      role="alert"
+                      className="mt-2 text-xs font-medium text-error"
+                    >
+                      {form.error("terms")}
+                    </p>
+                  )}
                 </div>
               </label>
-              {phase === "error" && (
+              {form.submitError && (
                 <p role="alert" className="eyebrow mt-5 text-error">
-                  {error}
+                  {form.submitError}
                 </p>
               )}
               <button
                 type="submit"
-                disabled={phase === "sending"}
+                disabled={form.isSubmitting}
+                aria-busy={form.isSubmitting || undefined}
                 className="mt-8 w-full bg-navy px-6 py-4 text-xs tracking-cta text-ivory uppercase transition hover:bg-navy-2 disabled:opacity-60"
               >
-                {phase === "sending"
+                {form.isSubmitting
                   ? ar
                     ? "جارٍ الإرسال…"
                     : "Sending…"

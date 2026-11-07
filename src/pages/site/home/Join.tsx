@@ -4,7 +4,16 @@ import { Contours } from "@/components/motion/fx"
 
 import { Head } from "./Head"
 
-import { api, ApiError, type SubmissionKind } from "@/lib/api"
+import { api, type SubmissionKind } from "@/lib/api"
+
+import {
+  validateAtLeastOne,
+  validateEmail,
+  validateName,
+  validateOptionalUrl,
+  validateTerms,
+} from "@/lib/validation"
+import { useFormValidation } from "@/lib/useFormValidation"
 
 import {
   RequestDialog,
@@ -192,43 +201,74 @@ export function Join({ lang }: { lang: Lang }) {
     ? ["الملف", "الخبرة", "السيرة", "الحالة"]
     : ["Profile", "Expertise", "CV", "Status"]
 
-  const [name, setName] = useState("")
-
-  const [email, setEmail] = useState("")
-
-  const [location, setLocation] = useState("")
-
-  const [linkedin, setLinkedin] = useState("")
-
-  const [selAreas, setSelAreas] = useState<string[]>([])
-
-  const [expertErr, setExpertErr] = useState("")
-
-  const [nameErr, setNameErr] = useState("")
-
-  const [emailErr, setEmailErr] = useState("")
-
-  const [linkedinErr, setLinkedinErr] = useState("")
-
-  const [sending, setSending] = useState(false)
+  const [cvName, setCvName] = useState("")
+  const [cvErr, setCvErr] = useState("")
 
   const [req, setReq] = useState<RequestConfig | null>(null)
 
-  /* The public submissions API has no file field (it is a strict JSON schema),
-     so a CV cannot be stored from the browser. We capture and validate the file
-     name so the record shows an expert arrived with a CV, and the UI states the
-     file itself is requested during review rather than pretending to upload it. */
-
-  const [cvName, setCvName] = useState("")
-  const [termsAccepted, setTermsAccepted] = useState(false)
-
-  const [cvErr, setCvErr] = useState("")
-
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-  const URL_REGEX = /^https?:\/\/[^\s/$.?#].[^\s]*$/i
-
   const areasShown = ar ? areasAr : areas
+
+  const form = useFormValidation({
+    fields: {
+      name: {
+        initial: "",
+        validate: (value) => validateName(value, lang),
+      },
+      email: {
+        initial: "",
+        validate: (value) => validateEmail(value, lang),
+      },
+      location: {
+        initial: "",
+      },
+      linkedin: {
+        initial: "",
+        validate: (value) => validateOptionalUrl(value, lang),
+      },
+      areas: {
+        initial: [] as string[],
+        validate: (value) => validateAtLeastOne(value, lang),
+      },
+      terms: {
+        initial: false,
+        validate: (value) => validateTerms(value, lang),
+      },
+    },
+    onSubmit: async (values) => {
+      const emailVal = String(values.email).trim()
+      const nameVal = String(values.name).trim()
+      const linkedinVal = String(values.linkedin).trim()
+
+      await api.submit({
+        kind: "EXPERT_REGISTRATION",
+        email: emailVal,
+        name: nameVal || undefined,
+        source: "site",
+        payload: {
+          location: String(values.location).trim() || undefined,
+          linkedin: linkedinVal || undefined,
+          areas: (values.areas as string[]) ?? [],
+          ...(cvName ? { cvFileName: cvName } : {}),
+        },
+      })
+
+      setStep(3)
+
+      // Record terms acceptance with backend (non-blocking)
+      void api
+        .termsAcceptanceRecord({
+          email: emailVal,
+          privacyVersion: "1.0",
+          termsVersion: "1.0",
+          source: "join",
+        })
+        .catch(() => {
+          /* terms acceptance recording should not block form submission */
+        })
+    },
+  })
+
+  const selectedAreas = (form.values.areas as string[]) ?? []
 
   const rowText = (t: string, i: number) =>
     ar
@@ -242,8 +282,11 @@ export function Join({ lang }: { lang: Lang }) {
         }
 
   const toggleArea = (a: string) =>
-    setSelAreas(
-      selAreas.includes(a) ? selAreas.filter((x) => x !== a) : [...selAreas, a],
+    form.setValue(
+      "areas",
+      selectedAreas.includes(a)
+        ? selectedAreas.filter((x) => x !== a)
+        : [...selectedAreas, a],
     )
 
   const MAX_CV_BYTES = 10 * 1024 * 1024
@@ -282,103 +325,41 @@ export function Join({ lang }: { lang: Lang }) {
     setCvName(f.name)
   }
 
-  const finishExpert = async () => {
-    setNameErr("")
-    setEmailErr("")
-    setLinkedinErr("")
-    setExpertErr("")
+  /** Validate the fields owned by `step` before moving forward. */
+  const advance = () => {
+    if (step === 0) {
+      for (const field of ["name", "email", "linkedin", "terms"]) {
+        form.markTouched(field)
+      }
+      if (
+        form.rawError("name") ||
+        form.rawError("email") ||
+        form.rawError("linkedin") ||
+        form.rawError("terms")
+      ) {
+        return
+      }
+    }
 
-    const nameVal = name.trim()
+    if (step === 1) {
+      form.markTouched("areas")
+      if (form.rawError("areas")) return
+    }
 
-    const emailVal = email.trim()
-
-    const linkedinVal = linkedin.trim()
-
-    if (!nameVal) {
-      setNameErr(ar ? "الاسم الكامل مطلوب." : "Full name is required.")
-
+    if (step === 2) {
+      if (cvErr) return
+      void form.submit()
       return
     }
 
-    if (nameVal.length < 2) {
-      setNameErr(ar ? "الاسم قصير جدًا." : "Name is too short.")
+    setStep(step + 1)
+  }
 
-      return
-    }
-
-    if (!emailVal) {
-      setEmailErr(ar ? "البريد الإلكتروني مطلوب." : "An email address is required.")
-
-      return
-    }
-
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
-      setEmailErr(
-        ar ? "يرجى إدخال عنوان بريد إلكتروني صحيح." : "Please enter a valid email address.",
-      )
-
-      return
-    }
-
-    if (linkedinVal && !/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(linkedinVal)) {
-      setLinkedinErr(
-        ar ? "يرجى إدخال رابط LinkedIn صحيح." : "Please enter a valid LinkedIn URL.",
-      )
-
-      return
-    }
-
-    if (!termsAccepted) {
-      setExpertErr(
-        ar ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة." : "Please accept the Privacy Policy and Terms of Service to continue.",
-      )
-
-      return
-    }
-
-    setSending(true)
-
-    try {
-      await api.submit({
-        kind: "EXPERT_REGISTRATION",
-
-        email: emailVal,
-
-        name: nameVal || undefined,
-
-        source: "site",
-
-        payload: {
-          location: location.trim() || undefined,
-
-          linkedin: linkedinVal || undefined,
-
-          areas: selAreas,
-
-          ...(cvName ? { cvFileName: cvName } : {}),
-        },
-      })
-
-      setStep(3)
-
-      // Record terms acceptance with backend (non-blocking)
-      void api.termsAcceptanceRecord({
-        email: emailVal,
-        privacyVersion: '1.0',
-        termsVersion: '1.0',
-        source: 'join',
-      }).catch(() => { /* terms acceptance recording should not block form submission */ })
-    } catch (err) {
-      setExpertErr(
-        err instanceof ApiError
-          ? err.message
-          : ar
-            ? "حدث خطأ ما. حاول مرة أخرى."
-            : "Something went wrong. Please try again.",
-      )
-    } finally {
-      setSending(false)
-    }
+  const startOver = () => {
+    setStep(0)
+    form.reset()
+    setCvName("")
+    setCvErr("")
   }
 
   return (
@@ -468,54 +449,77 @@ export function Join({ lang }: { lang: Lang }) {
                     {step === 0 && (
                       <>
                         <input
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
+                          {...form.input("name")}
+                          autoComplete="name"
                           placeholder={ar ? "الاسم الكامل" : "Full name"}
-                          className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
+                          className={`w-full border-b bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none ${
+                            form.error("name") ? "border-error-light" : "border-ivory/20"
+                          }`}
                         />
-                        {nameErr && (
-                          <p role="alert" className="eyebrow mt-1 text-error">
-                            {nameErr}
+                        {form.error("name") && (
+                          <p
+                            id={form.errorId("name")}
+                            role="alert"
+                            className="eyebrow mt-1 text-error-light"
+                          >
+                            {form.error("name")}
                           </p>
                         )}
                         <input
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
+                          {...form.input("email")}
                           type="email"
+                          autoComplete="email"
+                          inputMode="email"
                           placeholder="you@example.com"
-                          className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
+                          className={`w-full border-b bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none ${
+                            form.error("email") ? "border-error-light" : "border-ivory/20"
+                          }`}
                         />
-                        {emailErr && (
-                          <p role="alert" className="eyebrow mt-1 text-error">
-                            {emailErr}
+                        {form.error("email") && (
+                          <p
+                            id={form.errorId("email")}
+                            role="alert"
+                            className="eyebrow mt-1 text-error-light"
+                          >
+                            {form.error("email")}
                           </p>
                         )}
                         <input
-                          value={location}
-                          onChange={(e) => setLocation(e.target.value)}
+                          {...form.input("location")}
+                          autoComplete="address-level2"
                           placeholder={
                             ar ? "الدولة · المدينة" : "Country · city"
                           }
                           className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
                         />
                         <input
-                          value={linkedin}
-                          onChange={(e) => setLinkedin(e.target.value)}
+                          {...form.input("linkedin")}
+                          type="url"
+                          inputMode="url"
+                          autoComplete="url"
                           placeholder={ar ? "رابط LinkedIn" : "LinkedIn URL"}
-                          className="w-full border-b border-ivory/20 bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none"
+                          className={`w-full border-b bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none ${
+                            form.error("linkedin") ? "border-error-light" : "border-ivory/20"
+                          }`}
                         />
-                        {linkedinErr && (
-                          <p role="alert" className="eyebrow mt-1 text-error">
-                            {linkedinErr}
+                        {form.error("linkedin") && (
+                          <p
+                            id={form.errorId("linkedin")}
+                            role="alert"
+                            className="eyebrow mt-1 text-error-light"
+                          >
+                            {form.error("linkedin")}
                           </p>
                         )}
                         <label className="flex items-start gap-3 mt-4 border-t border-ivory/10 pt-4">
                           <input
+                            {...form.checkbox("terms")}
                             type="checkbox"
-                            checked={termsAccepted}
-                            onChange={(e) => setTermsAccepted(e.target.checked)}
-                            className="mt-1 h-4 w-4 shrink-0 rounded border-ivory/30 text-gold-light focus:ring-2 focus:ring-gold focus:ring-offset-2"
-                            required
+                            className={`mt-1 h-4 w-4 shrink-0 rounded text-gold-light focus:ring-2 focus:ring-gold focus:ring-offset-2 ${
+                              form.error("terms")
+                                ? "border-error-light ring-1 ring-error-light"
+                                : "border-ivory/30"
+                            }`}
                           />
                           <div className="flex-1 min-w-0">
                             <span className="block text-sm text-ivory/80">
@@ -541,30 +545,51 @@ export function Join({ lang }: { lang: Lang }) {
                             <p className="mt-1 text-xs text-ivory/50">
                               {ar ? "بإرسال هذا النموذج، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this form, you accept processing of your data per the Privacy Policy."}
                             </p>
+                            {form.error("terms") && (
+                              <p
+                                id={form.errorId("terms")}
+                                role="alert"
+                                className="mt-2 text-xs font-medium text-error-light"
+                              >
+                                {form.error("terms")}
+                              </p>
+                            )}
                           </div>
                         </label>
                       </>
                     )}
                     {step === 1 && (
-                      <div className="flex flex-wrap gap-2">
-                        {areasShown.map((a, k) => (
-                          <label
-                            key={a}
-                            className={`cursor-pointer border px-3 py-2 text-sm transition ${
-                              selAreas.includes(areas[k])
-                                ? "border-gold-light bg-gold-light text-navy"
-                                : "border-ivory/20"
-                            }`}
+                      <div>
+                        <div className="flex flex-wrap gap-2">
+                          {areasShown.map((a, k) => (
+                            <label
+                              key={a}
+                              className={`cursor-pointer border px-3 py-2 text-sm transition ${
+                                selectedAreas.includes(areas[k])
+                                  ? "border-gold-light bg-gold-light text-navy"
+                                  : "border-ivory/20"
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selectedAreas.includes(areas[k])}
+                                onChange={() => toggleArea(areas[k])}
+                                onBlur={() => form.markTouched("areas")}
+                                className="sr-only"
+                              />
+                              {a}
+                            </label>
+                          ))}
+                        </div>
+                        {form.error("areas") && (
+                          <p
+                            id={form.errorId("areas")}
+                            role="alert"
+                            className="eyebrow mt-3 text-error-light"
                           >
-                            <input
-                              type="checkbox"
-                              checked={selAreas.includes(areas[k])}
-                              onChange={() => toggleArea(areas[k])}
-                              className="sr-only"
-                            />
-                            {a}
-                          </label>
-                        ))}
+                            {form.error("areas")}
+                          </p>
+                        )}
                       </div>
                     )}
                     {step === 2 && (
@@ -590,7 +615,7 @@ export function Join({ lang }: { lang: Lang }) {
                         {cvErr && (
                           <p
                             role="alert"
-                            className="eyebrow mt-3 text-gold-light"
+                            className="eyebrow mt-3 text-error-light"
                           >
                             {cvErr}
                           </p>
@@ -598,13 +623,14 @@ export function Join({ lang }: { lang: Lang }) {
                       </div>
                     )}
                   </div>
-                  {expertErr && (
-                    <p role="alert" className="eyebrow mt-4 text-gold-light">
-                      {expertErr}
+                  {form.submitError && (
+                    <p role="alert" className="eyebrow mt-4 text-error-light">
+                      {form.submitError}
                     </p>
                   )}
                   <div className="mt-8 flex justify-between">
                     <button
+                      type="button"
                       disabled={!step}
                       onClick={() => setStep(step - 1)}
                       className="eyebrow text-ivory/65 disabled:opacity-30"
@@ -612,14 +638,14 @@ export function Join({ lang }: { lang: Lang }) {
                       {ar ? "رجوع →" : "← Back"}
                     </button>
                     <button
-                      disabled={sending}
-                      onClick={() =>
-                        step === 2 ? void finishExpert() : setStep(step + 1)
-                      }
+                      type="button"
+                      disabled={form.isSubmitting}
+                      aria-busy={form.isSubmitting || undefined}
+                      onClick={advance}
                       className="bg-gold-light px-6 py-3 text-xs tracking-cta text-navy uppercase transition hover:bg-ivory disabled:opacity-60 rtl:normal-case rtl:tracking-normal"
                     >
                       {step === 2
-                        ? sending
+                        ? form.isSubmitting
                           ? ar
                             ? "جارٍ الإرسال…"
                             : "Submitting…"
@@ -649,23 +675,8 @@ export function Join({ lang }: { lang: Lang }) {
                       : "We'll match you to live assignments and onboard you with the TerraMorph welcome method."}
                   </p>
                   <button
-                    onClick={() => {
-                      setStep(0)
-
-                      setSelAreas([])
-
-                      setName("")
-
-                      setEmail("")
-
-                      setLocation("")
-
-                      setLinkedin("")
-
-                      setCvName("")
-
-                      setCvErr("")
-                    }}
+                    type="button"
+                    onClick={startOver}
                     className="eyebrow mt-6 border-b border-gold-light pb-1"
                   >
                     {ar ? "ابدأ من جديد" : "Start over"}

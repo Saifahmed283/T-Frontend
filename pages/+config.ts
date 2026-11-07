@@ -29,5 +29,15 @@ export default {
       (href) =>
         `<link rel="preload" as="font" type="font/woff2" crossorigin href="${href}" />`,
     ),
+    // Google Tag Manager (GTM)
+    '<script async src="https://www.googletagmanager.com/gtm.js?id=GTM-PFCD4L4H"></script>',
+    // Google Analytics 4 (gtag.js) — direct Measurement ID
+    '<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ2BKDEXPL"></script>',
+    `<script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-MJ2BKDEXPL');
+    </script>`,
   ].join("\n"),
 } satisfies Config

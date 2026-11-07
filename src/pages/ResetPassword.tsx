@@ -1,6 +1,13 @@
-import { useEffect, useState, type FormEvent } from "react"
+import { useEffect, useState } from "react"
 import { LockKeyhole } from "lucide-react"
-import { api, ApiError } from "@/lib/api"
+import { api } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import {
+  passwordStrength,
+  validatePassword,
+  validatePasswordMatch,
+} from "@/lib/validation"
+import { useFormValidation } from "@/lib/useFormValidation"
 import { Button, Field, Heading, Input } from "@/pages/dashboard/ui"
 
 /* Landing page for the single-use link in a password-reset email. Rendered
@@ -9,10 +16,6 @@ import { Button, Field, Heading, Input } from "@/pages/dashboard/ui"
 export default function ResetPassword() {
   const [token, setToken] = useState<string | null>(null)
   const [ready, setReady] = useState(false)
-  const [password, setPassword] = useState("")
-  const [confirm, setConfirm] = useState("")
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState("")
   const [done, setDone] = useState(false)
 
   useEffect(() => {
@@ -21,30 +24,41 @@ export default function ResetPassword() {
     setReady(true)
   }, [])
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!token) return
-    if (password.length < 12) {
-      return setError("Choose a password of at least 12 characters.")
-    }
-    if (password !== confirm) {
-      return setError("The two passwords do not match.")
-    }
-    setBusy(true)
-    setError("")
-    try {
-      await api.resetPassword(token, password)
-      setDone(true)
-    } catch (ex) {
-      setError(
-        ex instanceof ApiError
-          ? ex.message
-          : "Could not reset the password. Request a new link and try again.",
-      )
-    } finally {
-      setBusy(false)
-    }
-  }
+  const form = useFormValidation({
+    fields: {
+      password: {
+        initial: "",
+        validate: (value) => validatePassword(value, "en"),
+      },
+      confirm: {
+        initial: "",
+        validate: (value, values) =>
+          validatePasswordMatch(values.password, value, "en"),
+      },
+    },
+    onSubmit: async (values) => {
+      if (!token) return
+      try {
+        await api.resetPassword(token, String(values.password))
+        setDone(true)
+      } catch (cause) {
+        const { message } = messageForError(cause, "en")
+        throw new Error(
+          message ||
+            "Could not reset the password. Request a new link and try again.",
+        )
+      }
+    },
+  })
+
+  const password = String(form.values.password ?? "")
+  const strength = passwordStrength(password)
+  const strengthTone =
+    strength.score >= 3
+      ? "bg-ok-strong"
+      : strength.score === 2
+        ? "bg-warn-strong"
+        : "bg-error"
 
   return (
     <div className="tm-workspace">
@@ -94,45 +108,69 @@ export default function ResetPassword() {
                 Use at least 12 characters. The reset link works once and
                 expires shortly after it is sent.
               </p>
-              <form onSubmit={submit}>
+              <form {...form.formProps}>
                 <Field
                   label="New password"
                   required
                   hint="At least 12 characters."
+                  error={form.error("password") ?? undefined}
                 >
                   <Input
+                    {...form.input("password")}
                     type="password"
                     autoComplete="new-password"
                     autoFocus
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
                     required
                     minLength={12}
                   />
                 </Field>
-                <Field label="Confirm new password" required>
+                {password.length > 0 && (
+                  <div
+                    className="mt-2 mb-3 flex items-center gap-2"
+                    aria-live="polite"
+                  >
+                    <span className="flex gap-1" aria-hidden="true">
+                      {[0, 1, 2, 3].map((i) => (
+                        <span
+                          key={i}
+                          className={`h-1 w-8 rounded ${
+                            i < strength.score ? strengthTone : "bg-line"
+                          }`}
+                        />
+                      ))}
+                    </span>
+                    <span className="text-xs text-slate-strong">
+                      {strength.label.en}
+                    </span>
+                  </div>
+                )}
+                <Field
+                  label="Confirm new password"
+                  required
+                  error={form.error("confirm") ?? undefined}
+                >
                   <Input
+                    {...form.input("confirm")}
                     type="password"
                     autoComplete="new-password"
-                    value={confirm}
-                    onChange={(event) => setConfirm(event.target.value)}
                     required
                     minLength={12}
                   />
                 </Field>
-                {error && (
+                {form.submitError && (
                   <p role="alert" className="auth-error text-error">
-                    {error}
+                    {form.submitError}
                   </p>
                 )}
                 <Button
                   variant="primary"
                   type="submit"
                   className="auth-submit"
-                  disabled={busy}
+                  disabled={form.isSubmitting}
+                  aria-busy={form.isSubmitting || undefined}
                 >
                   <LockKeyhole size={15} />
-                  {busy ? "Updating…" : "Update password"}
+                  {form.isSubmitting ? "Updating…" : "Update password"}
                 </Button>
               </form>
             </>

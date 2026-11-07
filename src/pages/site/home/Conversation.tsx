@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState, type FormEvent } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Contours, Emblem } from "@/components/motion/fx"
 
-import { api, ApiError } from "@/lib/api"
+import { api } from "@/lib/api"
+import {
+  validateEmail,
+  validateTerms,
+} from "@/lib/validation"
+import { useFormValidation } from "@/lib/useFormValidation"
 
 import type { Lang } from "../types"
 
@@ -211,93 +216,50 @@ export function Conversation({ lang }: { lang: Lang }) {
 
   const [sel, setSel] = useState<string[]>([])
 
-  const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
   const [sent, setSent] = useState(false)
 
-  const [email, setEmail] = useState("")
-
-  const [emailErr, setEmailErr] = useState("")
-
-  const [sending, setSending] = useState(false)
-
-  const [error, setError] = useState("")
-
-  const [termsAccepted, setTermsAccepted] = useState(false)
-
-  const pickRole = (r: string) => {
-    setRole(r)
-
-    // Marketing consent is explicit opt-in only — never pre-select a list.
-  }
-
-  const isValidEmail = (value: string): boolean => EMAIL_REGEX.test(value.trim())
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault()
-
-    setError("")
-    setEmailErr("")
-
-    if (!isValidEmail(email)) {
-      setEmailErr(
-        ar
-          ? "يرجى إدخال عنوان بريد إلكتروني صحيح."
-          : "Please enter a valid email address.",
-      )
-
-      setSending(false)
-
-      return
-    }
-
-    if (!termsAccepted) {
-      setError(
-        ar ? "يرجى قبول سياسة الخصوصية وشروط الخدمة للمتابعة." : "Please accept the Privacy Policy and Terms of Service to continue.",
-      )
-
-      setSending(false)
-
-      return
-    }
-
-    setSending(true)
-
-    try {
+  const form = useFormValidation({
+    fields: {
+      email: {
+        initial: "",
+        validate: (value) => validateEmail(value, lang),
+      },
+      terms: {
+        initial: false,
+        validate: (value) => validateTerms(value, lang),
+      },
+    },
+    onSubmit: async (values) => {
       await api.submit({
         kind: "CONTACT",
-
-        email: email.trim(),
-
+        email: String(values.email).trim(),
         source: "site",
-
         message: ar
           ? `أنا ${role}، وأود أن ${intent}. أتطلّع إلى ${fw}.`
           : `I am a ${role}, and I would like to ${intent}. I'm looking forward to ${fw}.`,
-
         payload: { role, intent, forward: fw, lists: sel },
       })
 
       setSent(true)
 
       // Record terms acceptance with backend (non-blocking)
-      void api.termsAcceptanceRecord({
-        email: email.trim(),
-        privacyVersion: '1.0',
-        termsVersion: '1.0',
-        source: 'conversation',
-      }).catch(() => { /* non-blocking */ })
-    } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : ar
-            ? "حدث خطأ ما. حاول مرة أخرى."
-            : "Something went wrong. Please try again.",
-      )
-    } finally {
-      setSending(false)
-    }
+      void api
+        .termsAcceptanceRecord({
+          email: String(values.email).trim(),
+          privacyVersion: "1.0",
+          termsVersion: "1.0",
+          source: "conversation",
+        })
+        .catch(() => {
+          /* non-blocking */
+        })
+    },
+  })
+
+  const pickRole = (r: string) => {
+    setRole(r)
+
+    // Marketing consent is explicit opt-in only — never pre-select a list.
   }
 
   return (
@@ -328,8 +290,8 @@ export function Conversation({ lang }: { lang: Lang }) {
               <button
                 onClick={() => {
                   setSent(false)
-
-                  setEmail("")
+                  form.setValue("email", "")
+                  form.markTouched("email")
                 }}
                 className="eyebrow mt-8 border-b border-gold-light pb-1"
               >
@@ -337,7 +299,7 @@ export function Conversation({ lang }: { lang: Lang }) {
               </button>
             </div>
           ) : (
-            <form onSubmit={submit}>
+            <form {...form.formProps}>
               {ar ? (
                 <p className="mt-6 font-display text-h2 font-medium sm:mt-8">
                   مرحبًا! أنا{" "}
@@ -398,11 +360,13 @@ export function Conversation({ lang }: { lang: Lang }) {
               </div>
               <label className="flex items-start gap-3 mt-4 border-t border-ivory/30 pt-4">
                 <input
+                  {...form.checkbox("terms")}
                   type="checkbox"
-                  checked={termsAccepted}
-                  onChange={(e) => setTermsAccepted(e.target.checked)}
-                  className="mt-1 h-4 w-4 shrink-0 rounded border-ivory/30 text-gold-light focus:ring-2 focus:ring-gold focus:ring-offset-2"
-                  required
+                  className={`mt-1 h-4 w-4 shrink-0 rounded text-gold-light focus:ring-2 focus:ring-gold focus:ring-offset-2 ${
+                    form.error("terms")
+                      ? "border-error-light ring-1 ring-error-light"
+                      : "border-ivory/30"
+                  }`}
                 />
                 <div className="flex-1 min-w-0">
                   <span className="block text-sm text-ivory/80">
@@ -428,28 +392,42 @@ export function Conversation({ lang }: { lang: Lang }) {
                   <p className="mt-1 text-xs text-ivory/50">
                     {ar ? "بإرسال هذا النموذج، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this form, you accept processing of your data per the Privacy Policy."}
                   </p>
+                  {form.error("terms") && (
+                    <p
+                      id={form.errorId("terms")}
+                      role="alert"
+                      className="mt-2 text-xs font-medium text-error-light"
+                    >
+                      {form.error("terms")}
+                    </p>
+                  )}
                 </div>
               </label>
               <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-ivory/30 focus-within:border-gold-light sm:mt-10 sm:gap-4">
                 <input
-                  required
+                  {...form.input("email")}
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  inputMode="email"
                   placeholder="you@organisation.org"
                   className="min-w-0 flex-1 bg-transparent py-3 text-base placeholder:text-ivory/30 focus:outline-none sm:py-4 sm:text-lg"
                 />
-                {emailErr && (
-                  <p role="alert" className="eyebrow mt-2 text-error">
-                    {emailErr}
+                {form.error("email") && (
+                  <p
+                    id={form.errorId("email")}
+                    role="alert"
+                    className="eyebrow mt-2 text-error-light"
+                  >
+                    {form.error("email")}
                   </p>
                 )}
                 <button
                   type="submit"
-                  disabled={sending || !isValidEmail(email)}
+                  disabled={form.isSubmitting}
+                  aria-busy={form.isSubmitting || undefined}
                   className="cursor-pointer eyebrow py-3 text-gold-light transition hover:text-ivory disabled:opacity-60 min-h-[44px] sm:py-4"
                 >
-                  {sending
+                  {form.isSubmitting
                     ? ar
                       ? "جارٍ الإرسال…"
                       : "Sending…"
@@ -458,9 +436,9 @@ export function Conversation({ lang }: { lang: Lang }) {
                       : "Let's collaborate →"}
                 </button>
               </div>
-              {error && (
-                <p role="alert" className="eyebrow mt-4 text-gold-light">
-                  {error}
+              {form.submitError && (
+                <p role="alert" className="eyebrow mt-4 text-error-light">
+                  {form.submitError}
                 </p>
               )}
             </form>

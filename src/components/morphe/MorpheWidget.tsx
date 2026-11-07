@@ -49,10 +49,14 @@ const C = {
 
 const SESSION_KEY = "morphe_v3_session_id";
 const ALLOWED_EXTS = [".pdf", ".docx", ".txt", ".md", ".csv", ".json", ".png", ".jpg", ".jpeg"];
+const MAX_MESSAGE = 4000;
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
 export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const ar = lang !== "en";
   const dir = ar ? "rtl" : "ltr";
+
+  const t = (en: string, arText: string) => (ar ? arText : en);
 
   const [open, setOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -65,17 +69,44 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const [voiceActive, setVoiceActive] = useState(false);
   const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
   const [error, setError] = useState("");
+  const [inputError, setInputError] = useState("");
   const [ended, setEnded] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [recognition, setRecognition] = useState<any>(null);
 
   const submit = () => {
     const text = input.trim();
-    if (!text && attachments.length === 0) return;
+
+    if (!text && attachments.length === 0) {
+      setInputError(
+        t(
+          "Type a message before sending.",
+          "اكتب رسالة قبل الإرسال.",
+        ),
+      );
+      textareaRef.current?.focus();
+      return;
+    }
+
+    if (text.length > MAX_MESSAGE) {
+      setInputError(
+        t(
+          `Messages are limited to ${MAX_MESSAGE.toLocaleString()} characters.`,
+          `الرسائل محدودة بـ ${MAX_MESSAGE.toLocaleString()} حرفًا.`,
+        ),
+      );
+      textareaRef.current?.focus();
+      return;
+    }
+
     if (loading || streaming) return;
+
+    setInputError("");
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -97,7 +128,12 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     setStreaming(true);
 
     void sendMessage(text).catch(() => {
-      setError("Failed to send message. Please try again.");
+      setError(
+        t(
+          "Couldn't send the message. Check your connection and try again.",
+          "تعذّر إرسال الرسالة. تحقّق من اتصالك وحاول مرة أخرى.",
+        ),
+      );
     }).finally(() => {
       setLoading(false);
       setStreaming(false);
@@ -160,7 +196,11 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       };
       rec.onerror = () => {
         setVoiceActive(false);
-        setError("Voice input not available. Please type instead.");
+        setError(
+          ar
+            ? "الإدخال الصوتي غير متاح. يرجى الكتابة بدلًا من ذلك."
+            : "Voice input not available. Please type instead.",
+        );
       };
       rec.onend = () => {
         setVoiceActive(false);
@@ -186,7 +226,11 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   // Voice recording
   const startVoice = () => {
     if (!recognition) {
-      setError("Voice input not supported in this browser.");
+      setError(
+        ar
+          ? "الإدخال الصوتي غير مدعوم في هذا المتصفح."
+          : "Voice input is not supported in this browser.",
+      );
       return;
     }
     try {
@@ -195,7 +239,11 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       setError("");
     } catch {
       setVoiceActive(false);
-      setError("Failed to start voice input.");
+      setError(
+        ar
+          ? "تعذّر بدء الإدخال الصوتي."
+          : "Could not start voice input.",
+      );
     }
   };
 
@@ -213,11 +261,19 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     for (const f of files) {
       const ext = "." + f.name.split(".").pop()?.toLowerCase();
       if (!ALLOWED_EXTS.includes(ext)) {
-        setError(`${f.name}: file type not allowed`);
+        setError(
+          ar
+            ? `${f.name}: نوع الملف غير مسموح.`
+            : `${f.name}: file type not allowed.`,
+        );
         continue;
       }
-      if (f.size > 10 * 1024 * 1024) {
-        setError(`${f.name}: too large (max 10MB)`);
+      if (f.size > MAX_FILE_BYTES) {
+        setError(
+          ar
+            ? `${f.name}: الملف أكبر من 10 ميغابايت.`
+            : `${f.name}: too large (max 10 MB).`,
+        );
         continue;
       }
       valid.push(f);
@@ -303,8 +359,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     setVoiceActive(false);
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
   };
-
-  const t = (en: string, arText: string) => (ar ? arText : en);
 
   return (
     <div dir={dir} style={{ fontFamily: "Jost, system-ui, -apple-system, sans-serif" }}>
@@ -421,24 +475,40 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                 {ar ? "مساعد ذكي - شركة تيرامورف" : "AI Intake Assistant"}
               </div>
             </div>
-            <div
+            <button
+              type="button"
               onMouseEnter={() => setShowPrivacyTooltip(true)}
               onMouseLeave={() => setShowPrivacyTooltip(false)}
+              onFocus={() => setShowPrivacyTooltip(true)}
+              onBlur={() => setShowPrivacyTooltip(false)}
+              onClick={() => setShowPrivacyTooltip((v) => !v)}
+              aria-label={t("Privacy information", "معلومات الخصوصية")}
+              aria-describedby={
+                showPrivacyTooltip ? "morphe-privacy-tooltip" : undefined
+              }
               style={{
+                background: "none",
+                border: "none",
+                padding: 0,
                 cursor: "pointer",
                 color: "rgba(255,255,255,0.7)",
                 transition: "color 0.2s",
+                display: "flex",
+                alignItems: "center",
               }}
             >
-              <Info size={14} strokeWidth={1.5} />
-            </div>
+              <Info size={14} strokeWidth={1.5} aria-hidden="true" />
+            </button>
             {showPrivacyTooltip && (
               <div
+                id="morphe-privacy-tooltip"
+                role="tooltip"
                 style={{
                   position: "absolute",
-                  top: -52,
+                  top: -64,
                   right: ar ? "auto" : 40,
                   left: ar ? 40 : "auto",
+                  width: 260,
                   background: C.navy,
                   color: C.cream,
                   padding: "10px 14px",
@@ -447,14 +517,13 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   lineHeight: 1.5,
                   zIndex: 2000,
                   border: `1px solid ${C.gold}`,
-                  whiteSpace: "nowrap",
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   animation: "slideInMsg 0.3s ease-out forwards",
                 }}
               >
                 {ar
-                  ? "مorphe يستخدم نموذجًا محليًا للذكاء الاصطناعي. بياناتك لا تُستخدم في التدريب."
-                  : "Morphe uses a local AI model. Your data is never used for training."}
+                  ? "مورفي هو المساعد الذكي لشركة تيرامورف. تُعالج رسائلك للرد عليك ولا تُستخدم لتدريب النماذج."
+                  : "Morphe is TerraMorph's AI assistant. Messages are processed to answer you and are not used for model training."}
               </div>
             )}
             <button

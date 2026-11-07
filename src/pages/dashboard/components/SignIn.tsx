@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useRef,
   useState,
   type FormEvent,
   type KeyboardEvent,
@@ -9,6 +10,7 @@ import {
 import { api } from "@/lib/api"
 import { ensureArabicFonts } from "@/lib/fonts"
 import { messageForError, getMessage } from "@/lib/messages"
+import { VALIDATION_MESSAGES, validateEmail } from "@/lib/validation"
 
 import "@/styles/dashboard.css"
 
@@ -35,8 +37,6 @@ import {
    brand panel folds away and the wordmark takes its place.
 
    No testimonial, statistic or placeholder claim is rendered here. */
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 type Pt = [number, number]
 
@@ -180,10 +180,15 @@ export function SignInPage({
   const [mode, setMode] = useState<"signin" | "forgot">("signin")
   const [showPassword, setShowPassword] = useState(false)
   const [capsLock, setCapsLock] = useState(false)
-  const [touched, setTouched] = useState(false)
+  const [touched, setTouched] = useState<{
+    email: boolean
+    password: boolean
+  }>({ email: false, password: false })
+  const [attempted, setAttempted] = useState(false)
   const [notice, setNotice] = useState("")
   const [resetError, setResetError] = useState("")
   const [resetBusy, setResetBusy] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
 
   const ar = lang === "ar"
   const t = ar ? AR : EN
@@ -192,17 +197,38 @@ export function SignInPage({
     if (ar) ensureArabicFonts()
   }, [ar])
 
-  const emailValid = EMAIL_RE.test(email.trim())
-  const emailError = touched && email.length > 0 && !emailValid
-  const canSubmit =
-    mode === "forgot"
-      ? emailValid && !resetBusy
-      : emailValid && password.length > 0 && !busy
+  const emailValid = validateEmail(email, lang) === null
+  const emailRequired = ar
+    ? VALIDATION_MESSAGES.emailRequired.ar
+    : VALIDATION_MESSAGES.emailRequired.en
+  const emailInvalid = ar
+    ? VALIDATION_MESSAGES.emailInvalid.ar
+    : VALIDATION_MESSAGES.emailInvalid.en
+  const passwordRequired = ar
+    ? VALIDATION_MESSAGES.passwordRequired.ar
+    : VALIDATION_MESSAGES.passwordRequired.en
+
+  const emailMessage = email.trim().length === 0 ? emailRequired : emailValid ? null : emailInvalid
+  const passwordMessage =
+    mode === "signin" && password.trim().length === 0 ? passwordRequired : null
+
+  const showEmailError = (attempted || touched.email) && emailMessage !== null
+  const showPasswordError =
+    mode === "signin" && (attempted || touched.password) && passwordMessage !== null
 
   const submit = useCallback(
     (e: FormEvent) => {
       e.preventDefault()
-      if (!canSubmit) return
+      setAttempted(true)
+
+      if (emailMessage || passwordMessage) {
+        requestAnimationFrame(() => {
+          formRef.current
+            ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+            ?.focus()
+        })
+        return
+      }
 
       if (mode === "signin") {
         void onLogin(email.trim(), password)
@@ -222,22 +248,39 @@ export function SignInPage({
         })
         .finally(() => setResetBusy(false))
     },
-    [canSubmit, email, mode, onLogin, password, t.resetFailed, t.sent],
+    [
+      ar,
+      email,
+      emailMessage,
+      mode,
+      onLogin,
+      password,
+      passwordMessage,
+      t.resetFailed,
+      t.sent,
+    ],
   )
 
   const readCaps = (e: KeyboardEvent<HTMLInputElement>) =>
     setCapsLock(e.getModifierState("CapsLock"))
 
+  const resetValidation = () => {
+    setAttempted(false)
+    setTouched({ email: false, password: false })
+  }
+
   const toSignIn = () => {
     setMode("signin")
     setNotice("")
     setResetError("")
+    resetValidation()
   }
 
   const toForgot = () => {
     setMode("forgot")
     setNotice("")
     setResetError("")
+    resetValidation()
   }
 
   const Arrow = ar ? ArrowLeft : ArrowRight
@@ -327,7 +370,12 @@ export function SignInPage({
             TerraMorph<span>.</span>
           </div>
 
-          <form className="tm-login__form" onSubmit={submit} noValidate>
+          <form
+            ref={formRef}
+            className="tm-login__form"
+            onSubmit={submit}
+            noValidate
+          >
             <p className="tm-login__eyebrow">{t.eyebrow}</p>
 
             <h1 className="tm-login__h">
@@ -349,7 +397,7 @@ export function SignInPage({
                 <span>{t.email}</span>
                 <em aria-hidden="true">*</em>
               </label>
-              <div className="tm-login__control" data-invalid={emailError}>
+              <div className="tm-login__control" data-invalid={showEmailError}>
                 <Mail
                   className="tm-login__icon"
                   size={16}
@@ -367,14 +415,18 @@ export function SignInPage({
                   placeholder="you@askterramorph.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => setTouched(true)}
-                  aria-invalid={emailError}
-                  aria-describedby={emailError ? "tm-login-email-error" : undefined}
+                  onBlur={() =>
+                    setTouched((prev) => ({ ...prev, email: true }))
+                  }
+                  aria-invalid={showEmailError || undefined}
+                  aria-describedby={
+                    showEmailError ? "tm-login-email-error" : undefined
+                  }
                   disabled={busy || resetBusy}
                   autoFocus
                   required
                 />
-                {emailValid && !emailError && (
+                {emailValid && !showEmailError && (
                   <CheckCircle2
                     className="tm-login__valid"
                     size={16}
@@ -383,10 +435,10 @@ export function SignInPage({
                   />
                 )}
               </div>
-              {emailError && (
+              {showEmailError && (
                 <p className="tm-login__hint" id="tm-login-email-error" role="alert">
                   <AlertCircle size={12} strokeWidth={1.8} aria-hidden="true" />
-                  {t.emailError}
+                  {emailMessage}
                 </p>
               )}
             </div>
@@ -398,7 +450,10 @@ export function SignInPage({
                     <span>{t.password}</span>
                     <em aria-hidden="true">*</em>
                   </label>
-                  <div className="tm-login__control">
+                  <div
+                    className="tm-login__control"
+                    data-invalid={showPasswordError}
+                  >
                     <LockKeyhole
                       className="tm-login__icon"
                       size={16}
@@ -414,9 +469,20 @@ export function SignInPage({
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
+                      onBlur={() =>
+                        setTouched((prev) => ({ ...prev, password: true }))
+                      }
                       onKeyDown={readCaps}
                       onKeyUp={readCaps}
-                      aria-describedby={capsLock ? "tm-login-caps" : undefined}
+                      aria-invalid={showPasswordError || undefined}
+                      aria-describedby={
+                        [
+                          showPasswordError ? "tm-login-password-error" : null,
+                          capsLock ? "tm-login-caps" : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" ") || undefined
+                      }
                       disabled={busy}
                       required
                     />
@@ -435,6 +501,20 @@ export function SignInPage({
                       )}
                     </button>
                   </div>
+                  {showPasswordError && (
+                    <p
+                      className="tm-login__hint"
+                      id="tm-login-password-error"
+                      role="alert"
+                    >
+                      <AlertCircle
+                        size={12}
+                        strokeWidth={1.8}
+                        aria-hidden="true"
+                      />
+                      {passwordMessage}
+                    </p>
+                  )}
                   {capsLock && (
                     <p className="tm-login__hint" id="tm-login-caps" role="status">
                       <AlertCircle size={12} strokeWidth={1.8} aria-hidden="true" />
@@ -476,7 +556,12 @@ export function SignInPage({
               </p>
             )}
 
-            <button type="submit" className="tm-login__submit" disabled={!canSubmit}>
+            <button
+              type="submit"
+              className="tm-login__submit"
+              disabled={busy || resetBusy}
+              aria-busy={busy || resetBusy || undefined}
+            >
               {busy || resetBusy ? (
                 <>
                   <span className="tm-login__spinner" aria-hidden="true" />

@@ -1,69 +1,65 @@
 /**
- * Marketing Consent types and utilities
+ * Marketing Consent types and content.
+ *
+ * Tokens are generated and verified only on the backend (HMAC-SHA256); the
+ * browser never holds the signing secret or derives an unsubscribe token.
  */
-export type MarketingList = 'newsletter' | 'events' | 'insights' | 'careers';
+export type MarketingList = "newsletter" | "events" | "insights" | "careers"
 
-export const MARKETING_LISTS: { value: MarketingList; label: string; description: string }[] = [
+export const MARKETING_LISTS: {
+  value: MarketingList
+  label: string
+  labelAr: string
+  description: string
+  descriptionAr: string
+}[] = [
   {
-    value: 'newsletter',
-    label: 'Monthly newsletter',
-    description: 'Our monthly note: what we published, what we learned, and one thing we got wrong.',
+    value: "newsletter",
+    label: "Monthly newsletter",
+    labelAr: "النشرة الشهرية",
+    description:
+      "Our monthly note: what we published, what we learned, and one thing we got wrong.",
+    descriptionAr:
+      "ملاحظتنا الشهرية: ما نشرناه، وما تعلّمناه، وخطأ واحد ارتكبناه.",
   },
   {
-    value: 'events',
-    label: 'Event invitations',
-    description: 'Invitations to webinars, workshops, and public events.',
+    value: "events",
+    label: "Event invitations",
+    labelAr: "دعوات الفعاليات",
+    description: "Invitations to webinars, workshops, and public events.",
+    descriptionAr: "دعوات إلى ندوات عبر الإنترنت وورش عمل وفعاليات عامة.",
   },
   {
-    value: 'insights',
-    label: 'Insights & publications',
-    description: 'New policy briefs, practice notes, data products, and podcast episodes.',
+    value: "insights",
+    label: "Insights & publications",
+    labelAr: "الرؤى والمنشورات",
+    description:
+      "New policy briefs, practice notes, data products, and podcast episodes.",
+    descriptionAr:
+      "موجزات سياسات جديدة وملاحظات ممارسة ومنتجات بيانات وحلقات بودكاست.",
   },
   {
-    value: 'careers',
-    label: 'Careers & opportunities',
-    description: 'Open roles, expert network registration, and internship announcements.',
+    value: "careers",
+    label: "Careers & opportunities",
+    labelAr: "الوظائف والفرص",
+    description:
+      "Open roles, expert network registration, and internship announcements.",
+    descriptionAr:
+      "الوظائف المتاحة والتسجيل في شبكة الخبراء وإعلانات التدريب.",
   },
-];
+]
 
 export interface MarketingConsent {
-  email: string;
-  lists: MarketingList[];
-  consentedAt: string;
-  source: string; // 'footer' | 'contact' | 'join' | 'checkout' | 'dashboard'
-  ipAddress?: string;
-  userAgent?: string;
+  email: string
+  lists: MarketingList[]
+  consentedAt: string
+  source: string
+  ipAddress?: string
+  userAgent?: string
 }
 
 export interface UnsubscribeRequest {
-  email: string;
-  token: string; // HMAC of email + list + secret
-  lists?: MarketingList[]; // if undefined, unsubscribe from all
-}
-
-export function generateUnsubscribeToken(email: string, list: MarketingList | 'all', secret: string): string {
-  // In production, use proper HMAC with crypto.subtle or Node crypto
-  const msg = `${email}:${list}:${secret}`;
-  // Simple hash for demo - replace with HMAC-SHA256 in production
-  let hash = 0;
-  for (let i = 0; i < msg.length; i++) {
-    hash = ((hash << 5) - hash) + msg.charCodeAt(i);
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
-}
-
-export function verifyUnsubscribeToken(email: string, list: MarketingList, token: string, secret: string): boolean {
-  return generateUnsubscribeToken(email, list, secret) === token;
-}
-
-export function buildUnsubscribeUrl(baseUrl: string, email: string, list: MarketingList, secret: string): string {
-  const token = generateUnsubscribeToken(email, list, secret);
-  return `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&list=${list}&token=${token}`;
-}
-
-export function buildUnsubscribeAllUrl(baseUrl: string, email: string, secret: string): string {
-  // Token for "all lists" - use a special marker
-  const token = generateUnsubscribeToken(email, 'all', secret);
-  return `${baseUrl}/unsubscribe?email=${encodeURIComponent(email)}&list=all&token=${token}`;
+  email: string
+  token: string
+  lists?: MarketingList[]
 }

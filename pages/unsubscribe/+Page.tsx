@@ -1,163 +1,265 @@
-import { useEffect, useState } from "react";
-import { usePageContext } from "vike-react/usePageContext";
-import { Mail, X, CheckCircle, AlertCircle, Loader2, ArrowLeft } from "lucide-react";
+import { useEffect, useRef, useState } from "react"
+import { usePageContext } from "vike-react/usePageContext"
+import {
+  Mail,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  ArrowLeft,
+} from "lucide-react"
 
-import SitePage from "@/pages/site/SitePage";
-import { Heading, Button, Prose, GoldLine, Card, CardContent } from "@/components/ui";
-import { MARKETING_LISTS } from "@/content/marketing-consent";
+import SitePage, { useLang } from "@/pages/site/SitePage"
+import {
+  Heading,
+  Button,
+  Prose,
+  Card,
+  CardContent,
+} from "@/components/ui"
+import { MARKETING_LISTS } from "@/content/marketing-consent"
+import { api } from "@/lib/api"
+import { messageForError } from "@/lib/messages"
+import { validateEmail } from "@/lib/validation"
 
-type UnsubscribeStatus = 'idle' | 'loading' | 'success' | 'error';
+type Status = "checking" | "loading" | "success" | "error" | "invalid"
 
-function UnsubscribePage() {
-  const { urlParsed } = usePageContext();
-  const email = urlParsed.search.email ?? '';
-  const list = urlParsed.search.list ?? '';
-  const token = urlParsed.search.token ?? '';
+const ALL_LISTS: string[] = MARKETING_LISTS.map((list) => list.value)
 
-  const [status, setStatus] = useState<UnsubscribeStatus>('idle');
-  const [message, setMessage] = useState('');
-  const [unsubscribedLists, setUnsubscribedLists] = useState<string[]>([]);
+function UnsubscribeContent() {
+  const { lang } = useLang()
+  const ar = lang === "ar"
+  const { urlParsed } = usePageContext()
+
+  const email = urlParsed.search.email ?? ""
+  const list = urlParsed.search.list ?? ""
+  const token = urlParsed.search.token ?? ""
+
+  const listValid = list === "all" || ALL_LISTS.includes(list)
+  const linkValid =
+    validateEmail(email, "en") === null && listValid && token.trim().length > 0
+
+  const [status, setStatus] = useState<Status>(
+    linkValid ? "loading" : "invalid",
+  )
+  const [error, setError] = useState<unknown>(null)
+  const postedRef = useRef(false)
 
   useEffect(() => {
-    if (!email || !list || !token) {
-      setStatus('error');
-      setMessage('Invalid unsubscribe link. Please check the link or contact us.');
-      return;
+    if (!linkValid) {
+      setStatus("invalid")
+      return
     }
 
-    const performUnsubscribe = async () => {
-      setStatus('loading');
-      try {
-        // In production, call your API endpoint
-        // const res = await fetch('/api/unsubscribe', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ email, list, token })
-        // });
+    // React 19 StrictMode runs effects twice in development; the token must
+    // only be consumed once per visit.
+    if (postedRef.current) return
+    postedRef.current = true
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    let cancelled = false
+    setStatus("loading")
 
-        // For demo, we'll just mark as success
-        const lists = list === 'all' ? MARKETING_LISTS.map(l => l.value) : [list];
-        setUnsubscribedLists(lists);
-        setStatus('success');
-        setMessage(list === 'all'
-          ? 'You have been unsubscribed from all marketing communications.'
-          : `You have been unsubscribed from ${MARKETING_LISTS.find(l => l.value === list)?.label ?? list}.`);
-      } catch (e) {
-        setStatus('error');
-        setMessage('Something went wrong. Please try again or contact us.');
-      }
-    };
+    api
+      .marketingConsentUnsubscribe({ email, list, token })
+      .then(() => {
+        if (!cancelled) setStatus("success")
+      })
+      .catch((cause) => {
+        if (cancelled) return
+        setError(cause)
+        setStatus("error")
+      })
 
-    performUnsubscribe();
-  }, [email, list, token]);
+    return () => {
+      cancelled = true
+    }
+  }, [email, linkValid, list, token])
 
-  const targetList = list === 'all'
-    ? 'all marketing communications'
-    : MARKETING_LISTS.find(l => l.value === list)?.label ?? list;
+  const listLabel = MARKETING_LISTS.find((entry) => entry.value === list)
+  const targetList =
+    list === "all"
+      ? ar
+        ? "جميع رسائل التسويق"
+        : "all marketing communications"
+      : ar
+        ? (listLabel?.labelAr ?? list)
+        : (listLabel?.label ?? list)
+
+  const errorMessage = error
+    ? messageForError(error, lang).message
+    : ar
+      ? "حدث خطأ ما. حاول مرة أخرى أو تواصل معنا."
+      : "Something went wrong. Please try again or contact us."
 
   return (
-    <SitePage lang="en">
-      <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16 md:px-10 md:py-20">
-        <div className="text-center mb-8">
-          <Mail className="mx-auto h-12 w-12 text-navy-2" aria-hidden="true" />
-          <Heading level={1} className="mt-4 text-h2">
-            Unsubscribe
-          </Heading>
-          <p className="mt-2 text-navy-2">
-            Manage your subscription to <strong>{targetList}</strong>
-          </p>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            {status === 'loading' && (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <Loader2 className="h-8 w-8 text-gold animate-spin" aria-hidden="true" />
-                <p className="text-navy-2">Processing your request...</p>
-              </div>
-            )}
-
-            {status === 'success' && (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <CheckCircle className="h-12 w-12 text-green-600" aria-hidden="true" />
-                <Heading level={2} className="text-xl">You're unsubscribed</Heading>
-                <Prose className="text-center text-navy-2 max-w-xs">
-                  <p>{message}</p>
-                  <p className="mt-2 text-sm">
-                    {list === 'all'
-                      ? 'You will no longer receive any marketing emails from us.'
-                      : `You may still receive other communications you've consented to.`}
-                  </p>
-                </Prose>
-                <div className="mt-4 flex flex-col gap-2">
-                  <Button variant="secondary" asChild>
-                    <a href="/join/newsletter">Manage other subscriptions</a>
-                  </Button>
-                  <Button variant="ghost" asChild>
-                    <a href="/"><ArrowLeft className="mr-1 h-4 w-4" /> Back to home</a>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {status === 'error' && (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <AlertCircle className="h-12 w-12 text-red-600" aria-hidden="true" />
-                <Heading level={2} className="text-xl">Unable to unsubscribe</Heading>
-                <Prose className="text-center text-navy-2 max-w-xs">
-                  <p>{message || 'The unsubscribe link is invalid or has expired.'}</p>
-                  <p className="mt-2 text-sm">
-                    Please check the link in your email or{' '}
-                    <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">
-                      contact us
-                    </a>
-                    {' '}for assistance.
-                  </p>
-                </Prose>
-                <Button variant="ghost" asChild>
-                  <a href="/"><ArrowLeft className="mr-1 h-4 w-4" /> Back to home</a>
-                </Button>
-              </div>
-            )}
-
-            {status === 'idle' && (
-              <div className="flex flex-col items-center gap-4 py-8">
-                <AlertCircle className="h-12 w-12 text-yellow-600" aria-hidden="true" />
-                <Heading level={2} className="text-xl">Invalid link</Heading>
-                <Prose className="text-center text-navy-2 max-w-xs">
-                  <p>This unsubscribe link is missing required parameters.</p>
-                  <p className="mt-2 text-sm">
-                    Please use the link from your email or{' '}
-                    <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy">
-                      contact us
-                    </a>
-                    {' '}for assistance.
-                  </p>
-                </Prose>
-                <Button variant="ghost" asChild>
-                  <a href="/"><ArrowLeft className="mr-1 h-4 w-4" /> Back to home</a>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <footer className="mt-10 text-center">
-          <p className="text-sm text-navy-2">
-            TerraMorph Advisory LLC · CR No. 184 562 · Cairo
-          </p>
-          <p className="mt-1 text-sm text-navy-2">
-            <a href="/legal/privacy-policy" className="underline decoration-gold underline-offset-2 hover:text-navy">Privacy Policy</a>
-            {' '}·{' '}
-            <a href="/legal/terms-of-service" className="underline decoration-gold underline-offset-2 hover:text-navy">Terms of Service</a>
-          </p>
-        </footer>
+    <div className="mx-auto max-w-md px-4 py-12 sm:px-6 sm:py-16 md:px-10 md:py-20">
+      <div className="text-center mb-8">
+        <Mail className="mx-auto h-12 w-12 text-navy-2" aria-hidden="true" />
+        <Heading level={1} className="mt-4 text-h2">
+          {ar ? "إلغاء الاشتراك" : "Unsubscribe"}
+        </Heading>
+        <p className="mt-2 text-navy-2">
+          {ar ? "إدارة اشتراكك في " : "Manage your subscription to "}
+          <strong>{targetList}</strong>
+        </p>
       </div>
-    </SitePage>
-  );
+
+      <Card>
+        <CardContent className="pt-6">
+          {status === "loading" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <Loader2
+                className="h-8 w-8 text-gold animate-spin"
+                aria-hidden="true"
+              />
+              <p className="text-navy-2" role="status">
+                {ar ? "جارٍ معالجة طلبك…" : "Processing your request…"}
+              </p>
+            </div>
+          )}
+
+          {status === "success" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <CheckCircle
+                className="h-12 w-12 text-green-600"
+                aria-hidden="true"
+              />
+              <Heading level={2} className="text-xl">
+                {ar ? "تم إلغاء اشتراكك" : "You're unsubscribed"}
+              </Heading>
+              <Prose className="text-center text-navy-2 max-w-xs">
+                <p role="status">
+                  {ar
+                    ? `تم إلغاء اشتراكك من ${targetList}.`
+                    : `You have been unsubscribed from ${targetList}.`}
+                </p>
+                <p className="mt-2 text-sm">
+                  {list === "all"
+                    ? ar
+                      ? "لن تتلقى أي رسائل تسويقية منّا بعد الآن."
+                      : "You will no longer receive any marketing emails from us."
+                    : ar
+                      ? "قد تتلقى اتصالات أخرى وافقت عليها."
+                      : "You may still receive other communications you've consented to."}
+                </p>
+              </Prose>
+              <div className="mt-4 flex flex-col gap-2">
+                <Button variant="secondary" asChild>
+                  <a href="/join/newsletter">
+                    {ar ? "إدارة الاشتراكات الأخرى" : "Manage other subscriptions"}
+                  </a>
+                </Button>
+                <Button variant="ghost" asChild>
+                  <a href="/">
+                    <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+                    {ar ? "العودة إلى الرئيسية" : "Back to home"}
+                  </a>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {status === "error" && (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <AlertCircle
+                className="h-12 w-12 text-red-600"
+                aria-hidden="true"
+              />
+              <Heading level={2} className="text-xl">
+                {ar ? "تعذّر إلغاء الاشتراك" : "Unable to unsubscribe"}
+              </Heading>
+              <Prose className="text-center text-navy-2 max-w-xs">
+                <p role="alert">{errorMessage}</p>
+                <p className="mt-2 text-sm">
+                  {ar
+                    ? "يرجى التحقق من الرابط في بريدك أو "
+                    : "Please check the link in your email or "}
+                  <a
+                    href="mailto:privacy@askterramorph.com"
+                    className="underline decoration-gold underline-offset-2 hover:text-navy"
+                  >
+                    {ar ? "تواصل معنا" : "contact us"}
+                  </a>
+                  {ar ? " للحصول على المساعدة." : " for assistance."}
+                </p>
+              </Prose>
+              <Button variant="ghost" asChild>
+                <a href="/">
+                  <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+                  {ar ? "العودة إلى الرئيسية" : "Back to home"}
+                </a>
+              </Button>
+            </div>
+          )}
+
+          {status === "invalid" || status === "checking" ? (
+            <div className="flex flex-col items-center gap-4 py-8">
+              <AlertCircle
+                className="h-12 w-12 text-yellow-600"
+                aria-hidden="true"
+              />
+              <Heading level={2} className="text-xl">
+                {ar ? "رابط غير صالح" : "Invalid link"}
+              </Heading>
+              <Prose className="text-center text-navy-2 max-w-xs">
+                <p role="alert">
+                  {ar
+                    ? "يفتقد رابط إلغاء الاشتراك إلى معلمات مطلوبة."
+                    : "This unsubscribe link is missing required parameters."}
+                </p>
+                <p className="mt-2 text-sm">
+                  {ar
+                    ? "يرجى استخدام الرابط من بريدك أو "
+                    : "Please use the link from your email or "}
+                  <a
+                    href="mailto:privacy@askterramorph.com"
+                    className="underline decoration-gold underline-offset-2 hover:text-navy"
+                  >
+                    {ar ? "تواصل معنا" : "contact us"}
+                  </a>
+                  {ar ? " للحصول على المساعدة." : " for assistance."}
+                </p>
+              </Prose>
+              <Button variant="ghost" asChild>
+                <a href="/">
+                  <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+                  {ar ? "العودة إلى الرئيسية" : "Back to home"}
+                </a>
+              </Button>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <footer className="mt-10 text-center">
+        <p className="text-sm text-navy-2">
+          {ar
+            ? "TerraMorph Advisory LLC · س.ت 184 562 · القاهرة"
+            : "TerraMorph Advisory LLC · CR No. 184 562 · Cairo"}
+        </p>
+        <p className="mt-1 text-sm text-navy-2">
+          <a
+            href="/legal/privacy-policy"
+            className="underline decoration-gold underline-offset-2 hover:text-navy"
+          >
+            {ar ? "سياسة الخصوصية" : "Privacy Policy"}
+          </a>{" "}
+          ·{" "}
+          <a
+            href="/legal/terms-of-service"
+            className="underline decoration-gold underline-offset-2 hover:text-navy"
+          >
+            {ar ? "شروط الخدمة" : "Terms of Service"}
+          </a>
+        </p>
+      </footer>
+    </div>
+  )
 }
 
-export default UnsubscribePage;
+export default function UnsubscribePage() {
+  return (
+    <SitePage lang="en">
+      <UnsubscribeContent />
+    </SitePage>
+  )
+}
