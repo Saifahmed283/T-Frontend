@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, createContext, useContext, ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { X, Cookie, Shield, Check, ChevronDown, ChevronUp } from "lucide-react";
 
 import { Button, Badge } from "@/components/ui";
+import { useLang } from "@/pages/site/SitePage";
 
 /* Cookie consent categories */
 export type CookieCategory = "essential" | "analytics" | "marketing";
@@ -178,6 +179,8 @@ export function CookieConsentProvider({ children }: { children: ReactNode }) {
 
 /* Banner UI */
 function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; onOpenPreferences: () => void }) {
+  const { lang } = useLang()
+  const ar = lang === "ar"
   return (
     <div
       className="fixed bottom-0 left-0 right-0 z-50 md:bottom-4 md:left-auto md:right-4 md:w-[420px] animate-slide-up"
@@ -191,10 +194,12 @@ function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; o
             <Cookie className="text-gold-strong" size={20} aria-hidden="true" />
             <div>
               <p id="cookie-banner-desc" className="font-medium text-navy text-sm">
-                We value your privacy
+                {ar ? "نحترم خصوصيتك" : "We value your privacy"}
               </p>
               <p className="text-xs text-navy-2 mt-0.5">
-                We use cookies to improve your experience and analyse site traffic. Essential cookies cannot be disabled.
+                {ar
+                  ? "نستخدم ملفات تعريف الارتباط لتحسين تجربتك وتحليل زيارات الموقع. ملفات الارتباط الأساسية لا يمكن إيقافها."
+                  : "We use cookies to improve your experience and analyse site traffic. Essential cookies cannot be disabled."}
               </p>
             </div>
           </div>
@@ -210,11 +215,15 @@ function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; o
               <span className="font-medium text-navy">Essential</span>
               <Badge tone="neutral" className="text-xs">Always on</Badge>
             </div>
-            <span className="text-xs text-slate-strong">Session, security, preferences</span>
+            <span className="text-xs text-slate-strong">
+              {ar ? "الجلسة، الحماية، التفضيلات" : "Session, security, preferences"}
+            </span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-navy">Analytics</span>
+              <span className="font-medium text-navy">
+                {ar ? "إحصائيات الاستخدام" : "Analytics"}
+              </span>
             </div>
             <Button
               variant="secondary"
@@ -222,12 +231,14 @@ function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; o
               onClick={onOpenPreferences}
               className="min-w-[80px]"
             >
-              Manage
+              {ar ? "إدارة" : "Manage"}
             </Button>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-medium text-navy">Marketing</span>
+              <span className="font-medium text-navy">
+                {ar ? "التسويق" : "Marketing"}
+              </span>
             </div>
             <Button
               variant="secondary"
@@ -235,30 +246,30 @@ function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; o
               onClick={onOpenPreferences}
               className="min-w-[80px]"
             >
-              Manage
+              {ar ? "إدارة" : "Manage"}
             </Button>
           </div>
         </div>
 
         <div className="px-4 pb-4 sm:px-5 sm:pb-5 flex flex-wrap gap-2">
           <Button variant="primary" size="sm" onClick={onClose} className="flex-1 sm:flex-none">
-            Accept all
+            {ar ? "قبول الكل" : "Accept all"}
           </Button>
           <Button variant="secondary" size="sm" onClick={onOpenPreferences} className="flex-1 sm:flex-none">
-            Manage preferences
+            {ar ? "إدارة التفضيلات" : "Manage preferences"}
           </Button>
           <Button variant="ghost" size="sm" onClick={() => { onClose(); onOpenPreferences(); }} className="flex-1 sm:flex-none">
-            Reject all
+            {ar ? "رفض الكل" : "Reject all"}
           </Button>
         </div>
 
         <p className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs text-slate-strong text-center border-t border-line">
           <a href="/legal/cookie-policy" className="underline decoration-gold underline-offset-2 hover:text-navy">
-            Cookie Policy
+            {ar ? "سياسة ملفات تعريف الارتباط" : "Cookie Policy"}
           </a>{" "}
           ·{" "}
           <a href="/legal/privacy-policy" className="underline decoration-gold underline-offset-2 hover:text-navy">
-            Privacy Policy
+            {ar ? "سياسة الخصوصية" : "Privacy Policy"}
           </a>
         </p>
       </div>
@@ -268,29 +279,37 @@ function CookieBannerUI({ onClose, onOpenPreferences }: { onClose: () => void; o
 
 /* Preferences Modal */
 function CookiePreferencesModal({ onClose }: { onClose: () => void }) {
+  const { lang } = useLang()
+  const ar = lang === "ar"
   const { consent, toggleCategory, acceptAll, rejectAll, closeBanner } = useCookieConsent();
 
   const categories = [
     {
       key: "essential" as const,
-      title: "Essential Cookies",
-      description: "Required for the website to function properly. Cannot be disabled.",
+      title: ar ? "ملفات تعريف الارتباط الأساسية" : "Essential Cookies",
+      description: ar ? "ضرورية لعمل الموقع بشكل صحيح. لا يمكن إيقافها." : "Required for the website to function properly. Cannot be disabled.",
       icon: Shield,
-      items: ["Session authentication (tm_session)", "CSRF protection", "Cookie consent preferences"],
+      items: ar
+        ? ["مصادقة الجلسة (tm_session)", "حماية CSRF", "تفضيلات ملفات تعريف الارتباط"]
+        : ["Session authentication (tm_session)", "CSRF protection", "Cookie consent preferences"],
     },
     {
       key: "analytics" as const,
-      title: "Analytics Cookies",
-      description: "Help us understand how visitors interact with our site (pseudonymised).",
+      title: ar ? "ملفات تعريف الإحصائيات" : "Analytics Cookies",
+      description: ar ? "تساعدنا في فهم كيفية تفاعل الزوار مع موقعنا (مُعرّضات بشكل مستعار)." : "Help us understand how visitors interact with our site (pseudonymised).",
       icon: Cookie,
-      items: ["Page views, referrer, dwell time", "Pseudonymised IP address", "No personal identifiers"],
+      items: ar
+        ? ["مشاهدات الصفحات، المحيل، وقت البقاء", "عنوان IP مستعار (مُخفي)", "لا تحتوي على معرفات شخصية"]
+        : ["Page views, referrer, dwell time", "Pseudonymised IP address", "No personal identifiers"],
     },
     {
       key: "marketing" as const,
-      title: "Marketing Cookies",
-      description: "Used to deliver relevant ads and measure campaign effectiveness.",
+      title: ar ? "ملفات تعريف التسويق" : "Marketing Cookies",
+      description: ar ? "تُستخدم لتقديم إعلانات ذات صلة وقياس فعالية الحملات." : "Used to deliver relevant ads and measure campaign effectiveness.",
       icon: Cookie,
-      items: ["Conversion tracking (Meta, Google)", "Retargeting audiences", "Only if we run paid campaigns"],
+      items: ar
+        ? ["تتبع التحويلات (ميتا، غوغل)", "جماهير الاستهداف", "فقط إذا كانت لدينا حملات إعلانية مدفوعة"]
+        : ["Conversion tracking (Meta, Google)", "Retargeting audiences", "Only if we run paid campaigns"],
     },
   ];
 
@@ -308,9 +327,9 @@ function CookiePreferencesModal({ onClose }: { onClose: () => void }) {
       >
         <div className="p-4 sm:p-5 border-b border-line flex items-center justify-between">
           <h2 id="cookie-modal-title" className="font-medium text-navy">
-            Cookie Preferences
+            {ar ? "تفضيلات ملفات تعريف الارتباط" : "Cookie Preferences"}
           </h2>
-          <Button variant="ghost" size="sm" className="p-1" onClick={onClose} aria-label="Close preferences">
+          <Button variant="ghost" size="sm" className="p-1" onClick={onClose} aria-label={ar ? "إغلاق التفضيلات" : "Close preferences"}>
             <X size={20} />
           </Button>
         </div>

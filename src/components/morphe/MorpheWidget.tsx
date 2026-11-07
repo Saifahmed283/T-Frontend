@@ -10,12 +10,11 @@
  * - Bilingual EN/AR with RTL support
  * - All Lucide-react icons (Send, Mic, Info, Search, Send)
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Send, Mic, Info, Search } from "lucide-react";
 import { api } from "@/lib/api";
 import { MorpheIcon } from "./MorpheIcon";
-import { KNOWLEDGE_BASE, findKnowledgeAnswer } from "./knowledge-base";
 import type { Lang } from "@/pages/site/types";
 
 type ChatMessage = {
@@ -24,12 +23,8 @@ type ChatMessage = {
   text: string;
   content?: string;
   links?: Array<{ id: string; url: string; label: string }>;
-  chips?: string[];
   terminal?: boolean;
-  thinking?: boolean;
   searchUsed?: boolean;
-  attachments?: Array<{ id: string; filename: string; size: number }>;
-  sources?: Array<{ id: string; url: string; label: string }>;
   timestamp?: string;
 };
 
@@ -48,9 +43,8 @@ const C = {
 };
 
 const SESSION_KEY = "morphe_v3_session_id";
-const ALLOWED_EXTS = [".pdf", ".docx", ".txt", ".md", ".csv", ".json", ".png", ".jpg", ".jpeg"];
-const MAX_MESSAGE = 4000;
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+/* Matches the backend's `message.max(2000)` on /api/v1/morphe/chat. */
+const MAX_MESSAGE = 2000;
 
 export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const ar = lang !== "en";
@@ -62,7 +56,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  const [attachments, setAttachments] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [streaming, setStreaming] = useState(false);
   const [useSearch, setUseSearch] = useState(false);
@@ -76,13 +69,12 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const [recognition, setRecognition] = useState<any>(null);
 
-  const submit = () => {
-    const text = input.trim();
+  const submit = (rawText?: string) => {
+    const text = (rawText ?? input).trim();
 
-    if (!text && attachments.length === 0) {
+    if (!text) {
       setInputError(
         t(
           "Type a message before sending.",
@@ -104,60 +96,64 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       return;
     }
 
-    if (loading || streaming) return;
+    if (loading || streaming || ended) return;
 
     setInputError("");
+    setError("");
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
       role: "user",
-      text: text || "[Attachment]",
-      content: text || "[Attachment]",
-      attachments: [...attachments].map((f) => ({
-        id: crypto.randomUUID(),
-        filename: f.name,
-        size: f.size,
-      })),
+      text,
+      content: text,
       timestamp: new Date().toISOString(),
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
-    setError("");
     setStreaming(true);
 
-    void sendMessage(text).catch(() => {
-      setError(
-        t(
-          "Couldn't send the message. Check your connection and try again.",
-          "تعذّر إرسال الرسالة. تحقّق من اتصالك وحاول مرة أخرى.",
-        ),
-      );
-    }).finally(() => {
-      setLoading(false);
-      setStreaming(false);
-    });
+    void sendMessage(text)
+      .catch(() => {
+        setError(
+          t(
+            "Couldn't send the message. Check your connection and try again.",
+            "تعذّر إرسال الرسالة. تحقّق من اتصالك وحاول مرة أخرى.",
+          ),
+        );
+      })
+      .finally(() => {
+        setLoading(false);
+        setStreaming(false);
+      });
   };
 
+  /* Talks to the deployed Fastify Morphe flow engine. The old widget streamed
+     from a separate Python service that is not deployed, so every message
+     failed in production; this endpoint is the one that is actually live. */
   const sendMessage = async (text: string) => {
-    const fileIds: string[] = [];
-    for (const f of attachments) {
-      const formData = new FormData();
-      formData.append("file", f);
-      if (sessionId) formData.append("session_id", sessionId);
-      const res = await fetch(`${api.baseUrl}/api/v1/morphe-ai/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      if (res.ok) {
-        const data = await res.json();
-        fileIds.push(data.file_id);
-      }
-    }
-    setAttachments([]);
+    const res = await api.morpheChat(sessionId, text, lang, useSearch);
 
-    await sendToAi(text, fileIds);
+    if (res.session_id && res.session_id !== sessionId) {
+      setSessionId(res.session_id);
+    }
+
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "morphe",
+        text: res.reply,
+        content: res.reply,
+        links: res.links,
+        searchUsed: res.search_used,
+        terminal: res.terminal,
+        timestamp: new Date().toISOString(),
+      },
+    ]);
+
+    if (res.terminal) setEnded(true);
   };
 
   // Restore session
@@ -191,11 +187,14 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       rec.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         setInput(transcript);
+        setInputError("");
         setVoiceActive(false);
-        submit();
+        textareaRef.current?.focus();
       };
-      rec.onerror = () => {
+      rec.onerror = (event: any) => {
         setVoiceActive(false);
+        // Stopping the recogniser or a silent pause is not a user-facing error.
+        if (event?.error === "aborted" || event?.error === "no-speech") return;
         setError(
           ar
             ? "الإدخال الصوتي غير متاح. يرجى الكتابة بدلًا من ذلك."
@@ -209,19 +208,54 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     }
   }, [ar]);
 
-  // Keyboard handling
+  // Keyboard handling: Escape closes the panel. Enter is handled on the
+  // textarea itself — a document-level listener fired twice per keypress
+  // because the event bubbles, which sent every message twice.
   useEffect(() => {
+    if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (!open) return;
-      if (e.key === "Escape") setOpen(false);
-      if (e.key === "Enter" && !e.shiftKey && !loading && !streaming) {
-        e.preventDefault();
-        submit();
+      if (e.key === "Escape") {
+        setOpen(false);
+        launcherRef.current?.focus();
       }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open, loading, streaming]);
+  }, [open]);
+
+  // Move focus into the composer when the panel opens.
+  useEffect(() => {
+    if (!open) return;
+    const id = requestAnimationFrame(() => textareaRef.current?.focus());
+    return () => cancelAnimationFrame(id);
+  }, [open]);
+
+  // Keep Tab inside the panel while it is open (aria-modal).
+  useEffect(() => {
+    if (!open) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+    const onTab = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const focusables = Array.from(
+        panel.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener("keydown", onTab);
+    return () => panel.removeEventListener("keydown", onTab);
+  }, [open]);
 
   // Voice recording
   const startVoice = () => {
@@ -254,109 +288,16 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     }
   };
 
-  // File selection
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const valid: File[] = [];
-    for (const f of files) {
-      const ext = "." + f.name.split(".").pop()?.toLowerCase();
-      if (!ALLOWED_EXTS.includes(ext)) {
-        setError(
-          ar
-            ? `${f.name}: نوع الملف غير مسموح.`
-            : `${f.name}: file type not allowed.`,
-        );
-        continue;
-      }
-      if (f.size > MAX_FILE_BYTES) {
-        setError(
-          ar
-            ? `${f.name}: الملف أكبر من 10 ميغابايت.`
-            : `${f.name}: too large (max 10 MB).`,
-        );
-        continue;
-      }
-      valid.push(f);
-    }
-    if (valid.length > 0) setAttachments((prev) => [...prev, ...valid]);
-    e.target.value = "";
-  };
-
-  const removeAttachment = (index: number) => {
-    setAttachments((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const sendToAi = async (text: string, fileIds: string[] = []) => {
-    const res = await fetch(`${api.baseUrl}/api/v1/morphe-ai/chat/stream`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        session_id: sessionId ?? null,
-        message: text,
-        lang,
-        mode: "chat",
-        stream: true,
-        use_search: useSearch,
-        temperature: 0.7,
-        max_tokens: 2000,
-        file_ids: fileIds,
-      }),
-    });
-    if (!res.ok) throw new Error("Chat failed");
-
-    const reader = res.body?.getReader();
-    if (!reader) throw new Error("No response stream");
-
-    const aiMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "morphe",
-      text: "",
-      content: "",
-      sources: [],
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, aiMessage]);
-    const aiIndex = messages.length;
-
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += new TextDecoder().decode(value);
-      const lines = buffer.split("\n\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
-          try {
-            const payload = JSON.parse(line.slice(6));
-            if (payload.chunk) {
-              aiMessage.content += payload.chunk;
-              setMessages((prev) =>
-                prev.map((m, i) => (i === aiIndex ? { ...m, content: aiMessage.content } : m))
-              );
-            }
-            if (payload.done) {
-              aiMessage.sources = payload.sources || [];
-              aiMessage.searchUsed = payload.searchUsed || false;
-              setMessages((prev) =>
-                prev.map((m, i) => (i === aiIndex ? { ...aiMessage } : m))
-              );
-            }
-          } catch { /* ignore */ }
-        }
-      }
-    }
-  };
+  // File attachments are not offered: the flow engine has no upload endpoint.
 
   const startOver = () => {
     setMessages([]);
     setSessionId(null);
     setError("");
-    setAttachments([]);
+    setInputError("");
     setStreaming(false);
     setVoiceActive(false);
+    setEnded(false);
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
   };
 
@@ -366,7 +307,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
       <button
         ref={launcherRef}
         onClick={() => setOpen((v) => !v)}
-        aria-label={open ? t("إغلاق المحادثة", "Close chat") : t("فتح محادثة مع مورفي", "Open chat with Morphe")}
+        aria-label={open ? t("Close chat", "إغلاق المحادثة") : t("Open chat with Morphe", "فتح محادثة مع مورفي")}
         style={{
           position: "fixed",
           bottom: ar ? 28 : 28,
@@ -399,7 +340,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
           ref={panelRef}
           role="dialog"
           aria-modal="true"
-          aria-label={t("محادثة مورفي", "Morphe AI chat")}
+          aria-label={t("Morphe AI chat", "محادثة مورفي")}
           style={{
             position: "fixed",
             bottom: 100,
@@ -527,8 +468,12 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               </div>
             )}
             <button
-              onClick={() => setOpen(false)}
-              aria-label={t("إغلاق", "Close")}
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                launcherRef.current?.focus();
+              }}
+              aria-label={t("Close", "إغلاق")}
               style={{
                 background: "rgba(251,249,240,0.1)",
                 border: `1px solid ${C.border}`,
@@ -550,65 +495,13 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             </button>
           </div>
 
-          {/* Controls: web search + voice */}
-          <div
-            style={{
-              padding: "10px 18px",
-              display: "flex",
-              gap: 10,
-              alignItems: "center",
-              background: C.ivory,
-              borderBottom: `1px solid ${C.border}`,
-            }}
-          >
-            <button
-              onClick={() => setUseSearch((p) => { setError(""); return !p })}
-              style={{
-                background: useSearch ? C.gold : "transparent",
-                border: `1px solid ${useSearch ? C.gold : C.border}`,
-                color: useSearch ? C.navy : C.slate,
-                borderRadius: 10,
-                padding: "6px 14px",
-                fontSize: 11.5,
-                fontWeight: 600,
-                cursor: "pointer",
-                transition: "all 0.2s",
-                whiteSpace: "nowrap",
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <Search size={12} strokeWidth={1.5} />
-              {useSearch ? ar ? "إيقاف البحث على الويب" : "Web Search On" : ar ? "بحث على الويب" : "Web Search"}
-            </button>
-            <button
-              onMouseDown={startVoice}
-              onMouseUp={stopVoice}
-              onMouseLeave={stopVoice}
-              disabled={voiceActive}
-              style={{
-                background: voiceActive ? C.error : C.white,
-                border: `1px solid ${voiceActive ? C.error : C.gold}`,
-                color: voiceActive ? C.white : C.navy,
-                borderRadius: "50%",
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: voiceActive ? "not-allowed" : "pointer",
-                transition: "all 0.2s",
-              }}
-              title={ar ? "تسجيل صوتي" : "Voice Record"}
-            >
-              <Mic size={14} strokeWidth={1.5} />
-            </button>
-          </div>
-
           {/* Messages */}
           <div
             ref={scrollRef}
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+            aria-label={t("Conversation", "المحادثة")}
             style={{
               flex: 1,
               overflowY: "auto",
@@ -629,17 +522,6 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   animation: "slideInMsg 0.3s ease-out forwards",
                 }}
               >
-                {m.role === "user" && m.attachments && m.attachments.length > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                    {m.attachments.map((a) => (
-                      <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 7, background: C.white, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", fontSize: 12, color: C.slate }}>
-                        <span style={{ fontSize: 14 }}>📎</span>
-                        <span style={{ fontWeight: 600, color: C.ink }}>{a.filename}</span>
-                        <span style={{ fontSize: 10, color: C.slate }}>({Math.round(a.size / 1024)} KB)</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
                 <div
                   style={{
                     maxWidth: "90%",
@@ -670,8 +552,8 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               </div>
             ))}
             {streaming && (
-              <div style={{ alignSelf: "flex-start", marginBottom: 8 }}>
-                <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+              <div style={{ alignSelf: "flex-start", marginBottom: 8 }} role="status">
+                <div style={{ display: "flex", gap: 5, alignItems: "center" }} aria-hidden="true">
                   {[1, 2, 3].map((i) => (
                     <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold, animation: "pulseDot 1.4s infinite", animationDelay: `${i * 0.2}s` }} />
                   ))}
@@ -682,121 +564,163 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               </div>
             )}
             {error && (
-              <div style={{ fontSize: 12, color: C.error, marginTop: 8, padding: "8px 12px", background: "rgba(180,35,24,0.1)", borderRadius: 8, border: `1px solid ${C.error}33` }}>{error}</div>
+              <div role="alert" style={{ fontSize: 12, color: C.error, marginTop: 8, padding: "8px 12px", background: "rgba(180,35,24,0.1)", borderRadius: 8, border: `1px solid ${C.error}33` }}>{error}</div>
             )}
           </div>
-
-          {/* Quick-reply chips */}
-          {false && null}
 
           {/* Input */}
           {!ended ? (
             <div
               style={{
-                display: "flex",
                 borderTop: `1px solid ${C.border}`,
                 padding: 14,
-                gap: 8,
                 background: C.cream,
-                alignItems: "center",
               }}
             >
-              <input
-                type="file"
-                multiple
-                onChange={handleFileSelect}
-                style={{ display: "none" }}
-              />
-              <label
-                onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-                style={{
-                  color: C.gold,
-                  cursor: "pointer",
-                  fontSize: 15,
-                }}
-              >
-                📎
-              </label>
-              <textarea
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
-                }}
-                placeholder={ar ? "اكتب رسالتك..." : "Type your message..."}
-                style={{
-                  flex: 1,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 14,
-                  padding: "13px 48px 13px 48px",
-                  fontSize: 14.5,
-                  outline: "none",
-                  background: C.white,
-                  color: C.ink,
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                  minHeight: "48px",
-                  maxHeight: "140px",
-                }}
-              />
-              {attachments.length > 0 && (
-                <div style={{ position: "absolute", right: 10, top: 10, display: "flex", gap: 5 }}>
-                  {attachments.map((f, i) => (
-                    <span key={i} style={{ background: C.navy, color: C.cream, borderRadius: "50%", width: 22, height: 22, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: 10 }} onClick={() => removeAttachment(i)}>×</span>
-                  ))}
-                </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                {/* Web search */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setError("");
+                    setUseSearch((p) => !p);
+                  }}
+                  aria-label={t(
+                    "Toggle web search",
+                    "تفعيل أو إيقاف البحث على الويب",
+                  )}
+                  aria-pressed={useSearch}
+                  title={t("Toggle web search", "تفعيل أو إيقاف البحث على الويب")}
+                  style={{
+                    background: useSearch ? C.gold : C.white,
+                    border: `1px solid ${useSearch ? C.gold : C.border}`,
+                    color: useSearch ? C.navy : C.slate,
+                    borderRadius: 12,
+                    width: 38,
+                    height: 38,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <Search size={15} strokeWidth={1.6} aria-hidden="true" />
+                </button>
+
+                {/* Voice dictation */}
+                <button
+                  type="button"
+                  onClick={() => (voiceActive ? stopVoice() : startVoice())}
+                  aria-label={t("Dictate a message", "إملاء رسالة")}
+                  aria-pressed={voiceActive}
+                  title={t("Dictate a message", "إملاء رسالة")}
+                  style={{
+                    background: voiceActive ? C.error : C.white,
+                    border: `1px solid ${voiceActive ? C.error : C.gold}`,
+                    color: voiceActive ? C.white : C.navy,
+                    borderRadius: "50%",
+                    width: 38,
+                    height: 38,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    transition: "all 0.2s",
+                  }}
+                >
+                  <Mic size={15} strokeWidth={1.6} aria-hidden="true" />
+                </button>
+
+                <textarea
+                  id="morphe-composer"
+                  ref={textareaRef}
+                  value={input}
+                  maxLength={MAX_MESSAGE}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                    if (inputError) setInputError("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      submit();
+                    }
+                  }}
+                  aria-label={t("Message Morphe", "راسل مورفي")}
+                  aria-invalid={inputError ? true : undefined}
+                  aria-describedby={
+                    inputError ? "morphe-input-error" : undefined
+                  }
+                  placeholder={
+                    ar ? "اكتب رسالتك..." : "Type your message..."
+                  }
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    border: `1px solid ${inputError ? C.error : C.border}`,
+                    borderRadius: 14,
+                    padding: "12px 14px",
+                    fontSize: 14.5,
+                    outline: "none",
+                    background: C.white,
+                    color: C.ink,
+                    resize: "none",
+                    fontFamily: "inherit",
+                    minHeight: "44px",
+                    maxHeight: "140px",
+                  }}
+                />
+
+                {/* Send */}
+                <button
+                  type="button"
+                  onClick={() => submit()}
+                  disabled={loading || streaming}
+                  aria-label={t("Send message", "إرسال الرسالة")}
+                  aria-busy={loading || streaming || undefined}
+                  style={{
+                    background: C.gold,
+                    color: C.navy,
+                    border: "none",
+                    borderRadius: "50%",
+                    width: 38,
+                    height: 38,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: loading || streaming ? "not-allowed" : "pointer",
+                    flexShrink: 0,
+                    opacity: loading || streaming ? 0.5 : 1,
+                    transition: "all 0.2s",
+                    boxShadow: "0 4px 12px rgba(201,162,39,0.35)",
+                  }}
+                >
+                  <Send size={15} strokeWidth={2} aria-hidden="true" />
+                </button>
+              </div>
+              {inputError && (
+                <p
+                  id="morphe-input-error"
+                  role="alert"
+                  style={{
+                    margin: "8px 2px 0",
+                    fontSize: 12,
+                    lineHeight: 1.5,
+                    color: C.error,
+                  }}
+                >
+                  {inputError}
+                </p>
               )}
-              {/* Voice record */}
-              <button
-                onMouseDown={startVoice}
-                onMouseUp={stopVoice}
-                onMouseLeave={stopVoice}
-                disabled={voiceActive}
-                style={{
-                  background: voiceActive ? C.error : C.white,
-                  border: `1px solid ${voiceActive ? C.error : C.gold}`,
-                  color: voiceActive ? C.white : C.navy,
-                  borderRadius: "50%",
-                  width: 36,
-                  height: 36,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: voiceActive ? "not-allowed" : "pointer",
-                  transition: "all 0.2s",
-                  marginRight: 8,
-                }}
-                title={ar ? "تسجيل صوتي" : "Voice Record"}
-              >
-                <Mic size={14} strokeWidth={1.5} />
-              </button>
-              {/* Send */}
-              <button
-                onClick={() => submit()}
-                disabled={loading || streaming || (!input.trim() && attachments.length === 0)}
-                style={{
-                  background: C.gold,
-                  color: C.navy,
-                  border: "none",
-                  borderRadius: "50%",
-                  width: 38,
-                  height: 38,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  opacity: (loading || streaming || (!input.trim() && attachments.length === 0)) ? 0.5 : 1,
-                  transition: "all 0.2s",
-                  boxShadow: "0 4px 12px rgba(201,162,39,0.35)",
-                }}
-              >
-                <Send size={14} strokeWidth={2} />
-              </button>
             </div>
           ) : (
             <div style={{ padding: 16, textAlign: "center", fontSize: 13, color: C.slate, borderTop: `1px solid ${C.border}`, background: C.cream }}>
               {ar ? "اكتملت المحادثة." : "Conversation complete."}{" "}
               <button
+                type="button"
                 onClick={startOver}
                 style={{ color: C.navy, textDecoration: "underline", background: "none", border: "none", cursor: "pointer", fontWeight: 600 }}
               >
