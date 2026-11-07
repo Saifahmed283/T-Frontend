@@ -177,6 +177,7 @@ export function SignInPage({
   const [lang, setLang] = useState<"en" | "ar">("en")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [remember, setRemember] = useState(false)
   const [mode, setMode] = useState<"signin" | "forgot">("signin")
   const [showPassword, setShowPassword] = useState(false)
   const [capsLock, setCapsLock] = useState(false)
@@ -196,6 +197,17 @@ export function SignInPage({
   useEffect(() => {
     if (ar) ensureArabicFonts()
   }, [ar])
+
+  // Restore a remembered email so a returning visitor isn't asked to retype it.
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("tm-remember-email")
+      if (saved) {
+        setEmail(saved)
+        setRemember(true)
+      }
+    } catch { /* storage unavailable */ }
+  }, [])
 
   const emailValid = validateEmail(email, lang) === null
   const emailRequired = ar
@@ -232,6 +244,10 @@ export function SignInPage({
 
       if (mode === "signin") {
         void onLogin(email.trim(), password)
+        try {
+          if (remember) localStorage.setItem("tm-remember-email", email.trim())
+          else localStorage.removeItem("tm-remember-email")
+        } catch { /* storage unavailable */ }
         return
       }
 
@@ -525,7 +541,13 @@ export function SignInPage({
 
                 <div className="tm-login__options">
                   <label className="tm-login__remember">
-                    <input type="checkbox" name="remember" />
+                    <input
+                      type="checkbox"
+                      name="remember"
+                      checked={remember}
+                      onChange={() => setRemember((r) => !r)}
+                      aria-label={t.remember}
+                    />
                     {t.remember}
                   </label>
                   <button type="button" className="tm-login__link" onClick={toForgot}>
