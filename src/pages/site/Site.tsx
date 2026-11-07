@@ -159,7 +159,7 @@ export default function Site(props: Props) {
         )}
       </main>
       <Footer lang={props.lang} />
-      {!props.page && <MorpheWidget lang={props.lang} />}
+      {!intro && <MorpheWidget lang={props.lang} />}
     </div>
   )
 }

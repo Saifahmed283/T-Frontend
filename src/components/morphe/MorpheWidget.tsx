@@ -64,12 +64,23 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const [error, setError] = useState("");
   const [inputError, setInputError] = useState("");
   const [ended, setEnded] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const infoBtnRef = useRef<HTMLButtonElement>(null);
+  const [tooltipRect, setTooltipRect] = useState<{ top: number; left: number } | null>(null);
   const [recognition, setRecognition] = useState<any>(null);
+
+  // Responsive sizing: smaller launcher + taller-but-capped panel on mobile.
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   const submit = (rawText?: string) => {
     const text = (rawText ?? input).trim();
@@ -310,17 +321,17 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
         aria-label={open ? t("Close chat", "إغلاق المحادثة") : t("Open chat with Morphe", "فتح محادثة مع مورفي")}
         style={{
           position: "fixed",
-          bottom: ar ? 28 : 28,
-          right: ar ? undefined : 28,
-          left: ar ? 28 : undefined,
-          width: 56,
-          height: 56,
+          bottom: isMobile ? 20 : 28,
+          right: ar ? undefined : isMobile ? 16 : 28,
+          left: ar ? isMobile ? 16 : 28 : undefined,
+          width: isMobile ? 48 : 56,
+          height: isMobile ? 48 : 56,
           borderRadius: "50%",
           background: open ? C.gold : C.navy,
           border: `2px solid ${C.gold}`,
           color: open ? C.navy : C.cream,
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 22,
+          fontSize: isMobile ? 18 : 22,
           fontWeight: 700,
           cursor: "pointer",
           boxShadow: "0 12px 32px rgba(15,28,46,0.4)",
@@ -343,15 +354,17 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
           aria-label={t("Morphe AI chat", "محادثة مورفي")}
           style={{
             position: "fixed",
-            bottom: 100,
-            right: 20,
-            width: 420,
-            maxWidth: "92vw",
-            height: 720,
-            maxHeight: "94vh",
+            bottom: isMobile ? 88 : 100,
+            right: ar ? undefined : isMobile ? 12 : 20,
+            left: ar ? isMobile ? 12 : undefined : undefined,
+            width: isMobile ? "92vw" : 420,
+            maxWidth: "96vw",
+            minHeight: isMobile ? "44vh" : undefined,
+            height: "auto",
+            maxHeight: isMobile ? "88vh" : 720,
             background: `linear-gradient(135deg, ${C.cream}, ${C.white})`,
             border: `1px solid ${C.border}`,
-            borderRadius: 24,
+            borderRadius: isMobile ? 16 : 24,
             boxShadow: "0 30px 80px rgba(15,28,46,0.35)",
             display: "flex",
             flexDirection: "column",
@@ -417,10 +430,19 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
               </div>
             </div>
             <button
+              ref={infoBtnRef}
               type="button"
-              onMouseEnter={() => setShowPrivacyTooltip(true)}
+              onMouseEnter={(e) => {
+                setShowPrivacyTooltip(true);
+                const r = infoBtnRef.current?.getBoundingClientRect();
+                if (r) setTooltipRect({ top: r.top, left: r.left });
+              }}
               onMouseLeave={() => setShowPrivacyTooltip(false)}
-              onFocus={() => setShowPrivacyTooltip(true)}
+              onFocus={() => {
+                setShowPrivacyTooltip(true);
+                const r = infoBtnRef.current?.getBoundingClientRect();
+                if (r) setTooltipRect({ top: r.top, left: r.left });
+              }}
               onBlur={() => setShowPrivacyTooltip(false)}
               onClick={() => setShowPrivacyTooltip((v) => !v)}
               aria-label={t("Privacy information", "معلومات الخصوصية")}
@@ -440,15 +462,16 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
             >
               <Info size={14} strokeWidth={1.5} aria-hidden="true" />
             </button>
-            {showPrivacyTooltip && (
+            {showPrivacyTooltip && tooltipRect && (
               <div
                 id="morphe-privacy-tooltip"
                 role="tooltip"
                 style={{
-                  position: "absolute",
-                  top: -64,
-                  right: ar ? "auto" : 40,
-                  left: ar ? 40 : "auto",
+                  position: "fixed",
+                  top: tooltipRect.top - 70,
+                  left: ar
+                    ? Math.max(8, tooltipRect.left - 260 + 24)
+                    : Math.max(8, tooltipRect.left),
                   width: 260,
                   background: C.navy,
                   color: C.cream,
@@ -456,7 +479,7 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
                   borderRadius: 10,
                   fontSize: 11,
                   lineHeight: 1.5,
-                  zIndex: 2000,
+                  zIndex: 9999,
                   border: `1px solid ${C.gold}`,
                   boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
                   animation: "slideInMsg 0.3s ease-out forwards",
