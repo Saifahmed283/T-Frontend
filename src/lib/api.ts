@@ -262,15 +262,15 @@ export type Paginated<T> = {
 }
 
 export type DataRequestType =
-  | "access"
-  | "rectification"
-  | "erasure"
-  | "restriction"
-  | "portability"
-  | "objection"
-  | "withdraw_consent"
+  | "ACCESS"
+  | "RECTIFICATION"
+  | "ERASURE"
+  | "RESTRICTION"
+  | "PORTABILITY"
+  | "OBJECTION"
+  | "WITHDRAW_CONSENT"
 
-export type DataRequestStatus = "pending" | "in_progress" | "completed" | "rejected"
+export type DataRequestStatus = "PENDING" | "IN_PROGRESS" | "COMPLETED" | "REJECTED"
 
 export interface DataSubjectRequest {
   id: string
@@ -294,6 +294,34 @@ export interface DataRequestTimelineEvent {
   message: string
   createdAt: string
   actor?: string
+}
+
+export interface DataRequestExport {
+  request: DataSubjectRequest
+  personalData: {
+    submissions: Array<{
+      id: string
+      kind: string
+      status: string
+      email: string
+      name: string | null
+      createdAt: string
+    }>
+    contentItems: Array<{
+      id: string
+      kind: string
+      status: string
+      title: string
+      createdAt: string
+    }>
+    sessions: Array<{
+      id: string
+      activeWorkspaceId: string | null
+      createdAt: string
+      lastUsedAt: string | null
+    }>
+    exportedAt: string
+  }
 }
 
 export type ActivityItem = {
@@ -344,6 +372,8 @@ export const submissionKinds = [
   "NEWSLETTER",
 
   "CONTRIBUTION",
+
+  "MORPHE_LEAD",
 ] as const
 
 export type SubmissionKind = typeof submissionKinds[number]
@@ -972,6 +1002,17 @@ export const api = {
     request<{ deleted: boolean }>(`/api/v1/data-requests/${encodeURIComponent(id)}`, {
       method: "DELETE",
     }),
+
+  dataRequestVerify: (token: string) =>
+    request<{ id: string; email: string; type: string; message: string }>(
+      `/api/v1/data-requests/verify?token=${encodeURIComponent(token)}`,
+    ),
+
+  dataRequestExport: (id: string) =>
+    request<DataRequestExport>(
+      `/api/v1/data-requests/${encodeURIComponent(id)}/export`,
+      { method: "POST" },
+    ),
 
   /* Marketing Consent */
 

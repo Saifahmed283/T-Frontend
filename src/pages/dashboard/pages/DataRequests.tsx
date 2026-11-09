@@ -10,27 +10,27 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Empty } from "../shared"
 
 const TYPE_LABELS: Record<DataRequestType, string> = {
-  access: "Access my data",
-  rectification: "Correct my data",
-  erasure: "Delete my data",
-  restriction: "Restrict processing",
-  portability: "Port my data",
-  objection: "Object to processing",
-  withdraw_consent: "Withdraw consent",
+  ACCESS: "Access my data",
+  RECTIFICATION: "Correct my data",
+  ERASURE: "Delete my data",
+  RESTRICTION: "Restrict processing",
+  PORTABILITY: "Port my data",
+  OBJECTION: "Object to processing",
+  WITHDRAW_CONSENT: "Withdraw consent",
 }
 
 const STATUS_LABELS: Record<DataSubjectRequest["status"], string> = {
-  pending: "Pending",
-  in_progress: "In progress",
-  completed: "Completed",
-  rejected: "Rejected",
+  PENDING: "Pending",
+  IN_PROGRESS: "In progress",
+  COMPLETED: "Completed",
+  REJECTED: "Rejected",
 }
 
 const STATUS_TONES: Record<DataSubjectRequest["status"], "neutral" | "warning" | "success" | "brand" | "error"> = {
-  pending: "warning",
-  in_progress: "brand",
-  completed: "success",
-  rejected: "error",
+  PENDING: "warning",
+  IN_PROGRESS: "brand",
+  COMPLETED: "success",
+  REJECTED: "error",
 }
 
 const PAGE_SIZE = 20
@@ -55,7 +55,7 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
     name: string
     details: string
   }>({
-    type: "access",
+    type: "ACCESS",
     email: "",
     name: "",
     details: "",
@@ -85,18 +85,22 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
   }, [search, statusFilter, page])
 
   useEffect(() => {
-    void load()
-  }, [load])
+    if (canEdit) {
+      void load()
+    } else {
+      setLoading(false)
+    }
+  }, [load, canEdit])
 
   const validateForm = () => {
     const errors: Record<string, string> = {}
     if (!formData.email) errors.email = "Email is required"
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = "Enter a valid email address"
     if (!formData.type) errors.type = "Select a request type"
-    if (formData.type === "rectification" && !formData.details) {
+    if (formData.type === "RECTIFICATION" && !formData.details) {
       errors.details = "Details are required for rectification requests"
     }
-    if (formData.type === "erasure" && !formData.details) {
+    if (formData.type === "ERASURE" && !formData.details) {
       errors.details = "Please explain the reason for erasure request"
     }
     setFormErrors(errors)
@@ -112,14 +116,14 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
     try {
       if (editing) {
         await api.dataRequestUpdate(editing.id, formData)
-        toastError("Request updated")
+        success("Request updated")
       } else {
         await api.dataRequestCreate(formData)
-        toastError("Request submitted")
+        success("Request submitted")
       }
       setShowCreate(false)
       setEditing(null)
-      setFormData({ type: "access", email: "", name: "", details: "" })
+      setFormData({ type: "ACCESS", email: "", name: "", details: "" })
       setFormErrors({})
       await load()
     } catch (e) {
@@ -154,7 +158,7 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
 
   const openCreate = () => {
     setEditing(null)
-    setFormData({ type: "access", email: "", name: "", details: "" })
+    setFormData({ type: "ACCESS", email: "", name: "", details: "" })
     setFormErrors({})
     setShowCreate(true)
   }
@@ -174,16 +178,7 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
   const exportRequest = async (request: DataSubjectRequest) => {
     try {
       // Trigger a data export for this request
-      const res = await fetch(`/api/v1/data-requests/${encodeURIComponent(request.id)}/export`, {
-        method: 'POST',
-        credentials: 'include',
-      })
-
-      if (!res.ok) {
-        throw new Error('Export failed')
-      }
-
-      const data = await res.json()
+      const data = await api.dataRequestExport(request.id)
 
       // Create and download the export file
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -236,10 +231,10 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
             }}
           >
             <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="in_progress">In progress</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Rejected</option>
+            <option value="PENDING">Pending</option>
+            <option value="IN_PROGRESS">In progress</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="REJECTED">Rejected</option>
           </Select>
         </Field>
       </div>
@@ -369,7 +364,7 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
           onClose={() => {
             setShowCreate(false)
             setEditing(null)
-            setFormData({ type: "access", email: "", name: "", details: "" })
+            setFormData({ type: "ACCESS", email: "", name: "", details: "" })
             setFormErrors({})
           }}
           wide
@@ -380,13 +375,13 @@ export function DataRequestsPage({ canEdit }: { canEdit: boolean }) {
                 value={formData.type}
                 onChange={(e) => setFormData((prev) => ({ ...prev, type: e.target.value as DataRequestType }))}
               >
-                <option value="access">Access my data</option>
-                <option value="rectification">Correct my data</option>
-                <option value="erasure">Delete my data</option>
-                <option value="restriction">Restrict processing</option>
-                <option value="portability">Port my data</option>
-                <option value="objection">Object to processing</option>
-                <option value="withdraw_consent">Withdraw consent</option>
+                <option value="ACCESS">Access my data</option>
+                <option value="RECTIFICATION">Correct my data</option>
+                <option value="ERASURE">Delete my data</option>
+                <option value="RESTRICTION">Restrict processing</option>
+                <option value="PORTABILITY">Port my data</option>
+                <option value="OBJECTION">Object to processing</option>
+                <option value="WITHDRAW_CONSENT">Withdraw consent</option>
               </Select>
             </Field>
 

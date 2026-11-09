@@ -209,6 +209,19 @@ export function WhatsNew({ lang }: { lang: Lang }) {
         )
       }
 
+      // Record marketing consent with backend (non-blocking)
+      if (emailVal && selectedLists.length > 0) {
+        void api
+          .marketingConsentSubscribe({
+            email: emailVal,
+            lists: selectedLists,
+            source: "whatsnew",
+          })
+          .catch(() => {
+            /* non-blocking */
+          })
+      }
+
       setToast({ text: ar ? action.doneAr : action.done })
 
       setMarketingConsent({

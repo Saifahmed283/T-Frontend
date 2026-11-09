@@ -727,7 +727,7 @@ export function Join({ lang }: { lang: Lang }) {
           </ul>
         )}
       </div>
-      <RequestDialog request={req} onClose={() => setReq(null)} />
+      <RequestDialog request={req} onClose={() => setReq(null)} lang={lang} />
     </section>
   )
 }

@@ -1,6 +1,7 @@
 import { footer, footerAr, footerHeadingAr } from "@/content/data"
 import { labelPath } from "@/content/pages"
 import { useCookieConsent } from "@/components/ui/CookieBanner"
+import { usePublicSettings } from "@/lib/publicContent"
 
 import { GoldLine, Logo } from "@/components/motion/fx"
 import { Cookie } from "lucide-react"
@@ -16,29 +17,25 @@ const COLUMN_FALLBACK: Record<string, string> = {
   Join: "/join",
 }
 
-const legal = [
-  ["Legal identity", "TerraMorph Advisory LLC"],
-  ["Commercial reg.", "CR No. 184 562 · Cairo"],
-  ["Tax ID", "TIN 742-118-903"],
-  ["Registered address", "New Cairo, Egypt"],
-]
-
-const legalAr = [
-  ["الكيان القانوني", "TerraMorph Advisory LLC"],
-  ["السجل التجاري", "CR No. 184 562 · القاهرة"],
-  ["الرقم الضريبي", "TIN 742-118-903"],
-  ["المقر المسجّل", "القاهرة الجديدة، مصر"],
-]
-
 const legalLinks = [
   { slug: "privacy-policy", label: { en: "Privacy Policy", ar: "سياسة الخصوصية" } },
   { slug: "terms-of-service", label: { en: "Terms of Service", ar: "شروط الخدمة" } },
   { slug: "cookie-policy", label: { en: "Cookie Policy", ar: "سياسة ملفات تعريف الارتباط" } },
 ] as const
 
+function setting(obj: Record<string, unknown> | null | undefined, key: string): string {
+  const value = obj?.[key]
+  return typeof value === "string" && value.trim() ? value : ""
+}
+
 function Footer({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
   const { openPreferences } = useCookieConsent()
+  const { settings, live } = usePublicSettings()
+
+  const contact = live && settings ? settings.contact as Record<string, unknown> : {}
+  const legal = live && settings ? settings.legal as Record<string, unknown> : {}
+  const social = live && settings ? settings.social as Record<string, unknown> : {}
 
   return (
     <footer className="border-t border-line bg-ivory">
@@ -76,7 +73,12 @@ function Footer({ lang }: { lang: Lang }) {
 
         {/* Legal identity row */}
         <div className="mt-10 grid gap-4 border-t border-line pt-6 text-xs text-slate sm:mt-12 sm:gap-6 sm:pt-8 md:mt-16 md:grid-cols-4">
-          {(ar ? legalAr : legal).map(([l, v]) => (
+          {[
+            ["Legal identity", setting(legal, "companyName") || "TerraMorph Advisory LLC"],
+            ["Commercial reg.", setting(legal, "registrationNumber") || "CR No. 184 562 · Cairo"],
+            ["Tax ID", setting(legal, "vatNumber") || "TIN 742-118-903"],
+            ["Registered address", setting(contact, "address") || "New Cairo, Egypt"],
+          ].map(([l, v]) => (
             <div key={l}>
               <p className="eyebrow text-navy">{l}</p>
               <p className="mt-1.5 sm:mt-2">{v}</p>
@@ -92,14 +94,14 @@ function Footer({ lang }: { lang: Lang }) {
             </p>
             <div className="flex items-center gap-3 sm:gap-6 text-sm text-slate">
               <a
-                href="/legal/privacy-policy"
+                href={setting(legal, "privacyPolicyUrl") || "/legal/privacy-policy"}
                 className="underline decoration-gold underline-offset-2 hover:text-navy"
               >
                 {ar ? "سياسة الخصوصية" : "Privacy Policy"}
               </a>
               <span className="text-gold-strong">/</span>
               <a
-                href="/legal/terms-of-service"
+                href={setting(legal, "termsOfServiceUrl") || "/legal/terms-of-service"}
                 className="underline decoration-gold underline-offset-2 hover:text-navy"
               >
                 {ar ? "شروط الخدمة" : "Terms of Service"}

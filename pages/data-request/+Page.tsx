@@ -40,7 +40,7 @@ function DataRequestForm() {
 
   const form = useFormValidation({
     fields: {
-      type: { initial: "access" as DataRequestType },
+      type: { initial: "ACCESS" as DataRequestType },
       email: {
         initial: "",
         validate: (value) => validateEmail(value, lang),

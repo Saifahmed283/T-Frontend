@@ -395,7 +395,6 @@ function loadAnalytics() {
   const win = window as Window & { gtag?: (...args: unknown[]) => void };
   if (!win.gtag && document.getElementById("ga-script")) return;
   // Add your analytics initialization here
-  console.log("[CookieConsent] Analytics consent granted - load scripts");
 }
 
 function unloadAnalytics() {
@@ -403,15 +402,12 @@ function unloadAnalytics() {
   const win = window as Window & { gtag?: (...args: unknown[]) => void };
   // Disable analytics - gtag('consent', 'update', { analytics_storage: 'denied' })
   win.gtag?.("consent", "update", { analytics_storage: "denied" });
-  console.log("[CookieConsent] Analytics consent revoked");
 }
 
 function loadMarketing() {
   if (typeof window === "undefined") return;
-  console.log("[CookieConsent] Marketing consent granted - load scripts");
 }
 
 function unloadMarketing() {
   if (typeof window === "undefined") return;
-  console.log("[CookieConsent] Marketing consent revoked");
 }

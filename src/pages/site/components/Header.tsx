@@ -19,6 +19,8 @@ import { Logo } from "@/components/motion/fx"
 
 import { SearchOverlay } from "@/pages/site/home"
 
+import { usePublicSettings } from "@/lib/publicContent"
+
 import type { Lang } from "../types"
 
 const nav = [
@@ -65,6 +67,11 @@ const sectionRoutes = new Set([
 
 function isSectionRoute(pathname: string): boolean {
   return sectionRoutes.has(pathname.replace(/\/+$/, "") || "/")
+}
+
+function setting(obj: Record<string, unknown> | null | undefined, key: string): string {
+  const value = obj?.[key]
+  return typeof value === "string" && value.trim() ? value : ""
 }
 
 const navColumn: Record<string, ColumnKey> = {
@@ -184,6 +191,10 @@ function Header({
   setLang: (l: Lang) => void
 }) {
   const { urlPathname } = usePageContext()
+  const { settings, live } = usePublicSettings()
+
+  const contact = live && settings ? (settings.contact as Record<string, unknown>) : {}
+  const contactEmail = setting(contact, "email")
 
   const onSectionRoute = isSectionRoute(urlPathname)
 
@@ -422,7 +433,7 @@ function Header({
               <LangSwitch lang={lang} setLang={setLang} dark />
             </div>
             <a
-              href="/contact"
+              href={contactEmail ? `mailto:${contactEmail}` : "/contact"}
               className="hidden bg-gold-light px-5 py-2.5 text-label font-medium tracking-cta text-navy uppercase transition hover:bg-ivory min-[1320px]:block"
             >
               {ar ? "تواصل" : "Contact"}
@@ -533,7 +544,7 @@ function Header({
           <div className="mt-auto flex items-center justify-between pt-10">
             <LangSwitch lang={lang} setLang={setLang} dark />
             <a
-              href="/contact"
+              href={contactEmail ? `mailto:${contactEmail}` : "/contact"}
               onClick={() => setOpen(false)}
               className="bg-gold-light px-5 py-3 text-xs tracking-cta text-navy uppercase"
             >

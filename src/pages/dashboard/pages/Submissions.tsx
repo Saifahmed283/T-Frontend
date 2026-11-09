@@ -20,6 +20,7 @@ const kindLabel: Record<SubmissionKind, string> = {
   PUBLICATION_REQUEST: "Publication",
   NEWSLETTER: "Newsletter",
   CONTRIBUTION: "Contribution",
+  MORPHE_LEAD: "Morphe lead",
 }
 
 const statusOrder: SubmissionStatus[] = ["NEW", "IN_REVIEW", "APPROVED", "REJECTED", "ARCHIVED"]

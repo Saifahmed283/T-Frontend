@@ -164,7 +164,7 @@ export function SettingsPage({ session }: { session: Session }) {
           </form>
           {done && (
             <p className="mt-4 text-ok">
-              ✓ Your password was updated and every other session was signed out.
+              ✓ Your password was updated. You will need to sign in again on all devices.
             </p>
           )}
         </div>

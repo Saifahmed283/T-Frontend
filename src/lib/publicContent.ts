@@ -206,6 +206,71 @@ export function usePublicItem(
   return { item, loading }
 }
 
+/* Public site settings (contact, legal, social, SEO, hero, announcement,
+   navigation). Loaded once and polled at the public cache TTL so a published
+   edit reaches readers without a redeploy. Falls back to static defaults when
+   the API is unreachable. */
+export type PublicSettingsState = {
+  settings: Record<string, unknown> | null
+  updatedAt: string | null
+  live: boolean
+  loading: boolean
+}
+
+const EMPTY_SETTINGS: PublicSettingsState = {
+  settings: null,
+  updatedAt: null,
+  live: false,
+  loading: true,
+}
+
+const SETTINGS_CACHE_MS = 60_000
+let settingsCache: { at: number; value: PublicSettingsState } | null = null
+
+export function usePublicSettings(): PublicSettingsState {
+  const [state, setState] = useState<PublicSettingsState>(EMPTY_SETTINGS)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = () => {
+      if (settingsCache && Date.now() - settingsCache.at < SETTINGS_CACHE_MS) {
+        if (!cancelled) setState(settingsCache.value)
+        return
+      }
+
+      api
+        .publicSettings()
+        .then((result) => {
+          if (cancelled) return
+
+          const next: PublicSettingsState = {
+            settings: result,
+            updatedAt: null,
+            live: true,
+            loading: false,
+          }
+          settingsCache = { at: Date.now(), value: next }
+          if (!cancelled) setState(next)
+        })
+        .catch(() => {
+          if (!cancelled) setState({ ...EMPTY_SETTINGS, loading: false })
+        })
+    }
+
+    load()
+
+    const timer = window.setInterval(load, SETTINGS_CACHE_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(timer)
+    }
+  }, [])
+
+  return state
+}
+
 export function localized(value: unknown, lang: Lang): string | undefined {
   if (typeof value === "string") return value || undefined
 
