@@ -227,4 +227,80 @@ test.describe("Cookie consent", () => {
       await expect(banner(page)).toHaveCount(0)
     })
   }
+
+  for (const width of [320, 390]) {
+    test(`header wordmark is visible at ${width}px without overflow`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 })
+      await skipIntro(page)
+      await page.goto("/", { waitUntil: "domcontentloaded" })
+
+      const wordmark = page
+        .locator("header")
+        .getByText("TERRAMORPH", { exact: true })
+      await expect(wordmark).toBeVisible()
+
+      const tagline = page
+        .locator("header")
+        .getByText("LEVERAGE FOR GOOD", { exact: true })
+      await expect(tagline).toBeVisible()
+
+      const box = await wordmark.boundingBox()
+      expect(box).not.toBeNull()
+      expect(box!.x).toBeGreaterThanOrEqual(0)
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width)
+
+      const tagBox = await tagline.boundingBox()
+      expect(tagBox).not.toBeNull()
+      expect(tagBox!.x).toBeGreaterThanOrEqual(0)
+      expect(tagBox!.x + tagBox!.width).toBeLessThanOrEqual(width)
+
+      // The wordmark + tagline column must not run under the search/menu controls.
+      const controls = await page
+        .locator("header")
+        .getByRole("button", { name: /search/i })
+        .first()
+        .boundingBox()
+      if (controls) {
+        expect(Math.max(box!.x + box!.width, tagBox!.x + tagBox!.width)).toBeLessThanOrEqual(
+          controls.x,
+        )
+      }
+
+      const overflow = await page.evaluate(
+        () => document.documentElement.scrollWidth - window.innerWidth,
+      )
+      expect(overflow).toBeLessThanOrEqual(0)
+
+      // The page spacer reads --tm-header-h, which the header measures live and
+      // the ResizeObserver writes after layout/fonts settle. Wait for the token
+      // to catch up, then assert the spacer matches the rendered header even
+      // after the extra tagline line.
+      await page.waitForFunction(() => {
+        const header = document.querySelector("header")
+        const token = parseFloat(
+          getComputedStyle(document.documentElement).getPropertyValue("--tm-header-h"),
+        )
+        return (
+          !!header &&
+          Number.isFinite(token) &&
+          Math.abs(token - Math.round(header.getBoundingClientRect().height)) <= 1
+        )
+      })
+
+      const headerHeights = await page.evaluate(() => {
+        const header = document.querySelector("header")
+        const main = document.querySelector("#main")
+        return {
+          rendered: header?.getBoundingClientRect().height ?? 0,
+          token: parseFloat(
+            getComputedStyle(document.documentElement).getPropertyValue("--tm-header-h"),
+          ),
+          spacer: main?.getBoundingClientRect().top ?? 0,
+        }
+      })
+      expect(headerHeights.rendered).toBeGreaterThan(0)
+      expect(Math.abs(headerHeights.token - headerHeights.rendered)).toBeLessThanOrEqual(1)
+      expect(Math.abs(headerHeights.spacer - headerHeights.rendered)).toBeLessThanOrEqual(1)
+    })
+  }
 })

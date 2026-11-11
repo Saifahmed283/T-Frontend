@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 
-import { Contours, CountUp, Reveal, SplitText } from "@/components/motion/fx"
-
-import { ledger } from "@/pages/site/home/Evidence"
-
-import { library } from "@/pages/site/home/Knowledge"
-
-import { usePublicCollection } from "@/lib/publicContent"
+import { Contours, Reveal, SplitText } from "@/components/motion/fx"
 
 import type { Lang } from "../types"
 
@@ -14,7 +8,7 @@ import { RequestDialog, type RequestConfig } from "./RequestDialog"
 
 /* Hero — dark editorial ground. A vast emblem-globe rises from the horizon like a
    planet over a plain; the headline sits on it. Pointer moves the light, not the
-   layout. Blueprint §10: one sentence, two buttons, four checkable numbers. */
+   layout. Blueprint §10: one sentence, two buttons. */
 
 function Hero({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
@@ -25,32 +19,9 @@ function Hero({ lang }: { lang: Lang }) {
 
   const [req, setReq] = useState<RequestConfig | null>(null)
 
-  /* The four proof numbers are live counts from the content workspace. The
-     static arrays stay as the prerender/fallback value, so the strip never
-     renders zero while the public API is cold. Ask for the same page size the
-     sections below use, so the shared request cache serves both from one call. */
-
-  const assignments = usePublicCollection("assignments", { pageSize: 100 })
-
-  const publications = usePublicCollection("publications", { pageSize: 50 })
-
-  const instruments = usePublicCollection("instruments", { pageSize: 50 })
-
-  const courses = usePublicCollection("courses", { pageSize: 50 })
-
-  const experts = usePublicCollection("experts", { pageSize: 50 })
-
-  const count = (live: boolean, total: number, fallback: number) =>
-    live ? total : fallback
-
-  const knowledgeCount =
-    publications.live && instruments.live
-      ? publications.total + instruments.total
-      : library.length
-
   /* Drive the globe parallax off a ref, not state — a state update here would
-     re-render the whole Hero (meridians, contours, proof strip) every scroll
-     frame, which is the main source of jank while scrolling the page. */
+     re-render the whole Hero (meridians, contours) every scroll frame, which is
+     the main source of jank while scrolling the page. */
 
   useEffect(() => {
     let raf = 0
@@ -89,9 +60,6 @@ function Hero({ lang }: { lang: Lang }) {
       cancelAnimationFrame(raf)
     }
   }, [])
-
-  /* Fetch course count from the content workspace — admin manages courses in
-     the dashboard, never hard-coded in the frontend. */
 
   /* The light follows a real pointer only, and at most once per frame. Touch
      drags fire pointermove as well, so without this guard every mobile scroll
@@ -140,51 +108,6 @@ function Hero({ lang }: { lang: Lang }) {
 
       context: { intent: "readiness-diagnostic", source: "hero" },
     })
-
-  /* Each number is a live count from the content it links to — never a hard-coded
-     vanity figure. Clicking one lands on the section that proves it. */
-
-  const proof = [
-    {
-      n: count(assignments.live, assignments.total, ledger.length),
-
-      en: "Dated assignments on the ledger",
-
-      ar: "مهام موثّقة بالتاريخ في السجل",
-
-      to: "/evidence",
-    },
-
-    {
-      n: knowledgeCount,
-
-      en: "Publications & open toolkits",
-
-      ar: "إصدارات وأدوات مفتوحة",
-
-      to: "/knowledge",
-    },
-
-    {
-      n: count(courses.live, courses.total, 0),
-
-      en: "Price-bearing learning programmes",
-
-      ar: "برامج تدريبية بأسعار معلنة",
-
-      to: "/learning",
-    },
-
-    {
-      n: count(experts.live, experts.total, 6),
-
-      en: "Experts on the vetted roster",
-
-      ar: "خبيرًا في القائمة المعتمدة",
-
-      to: "/join",
-    },
-  ]
 
   return (
     <>
@@ -287,7 +210,7 @@ function Hero({ lang }: { lang: Lang }) {
           className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[75%] hero-vignette"
         />
 
-        <div className="relative mx-auto flex w-full max-w-[1320px] flex-1 flex-col items-center justify-center px-4 pt-[6vh] text-center sm:px-5 sm:pt-[8vh] md:px-10 md:pt-[10vh]">
+        <div className="relative mx-auto flex w-full max-w-[1320px] flex-1 flex-col items-center justify-center px-4 pt-[6vh] pb-8 text-center sm:px-5 sm:pt-[8vh] sm:pb-12 md:px-10 md:pt-[10vh]">
           <Reveal immediate>
             <p className="eyebrow text-gold-light">
               {ar
@@ -371,39 +294,6 @@ function Hero({ lang }: { lang: Lang }) {
               <span className="scroll-cue absolute inset-0 bg-gold-light" />
             </span>
           </a>
-        </div>
-
-        {/* Proof strip — four checkable numbers, each linked to the section that proves it */}
-        <div className="relative mx-auto w-full max-w-[1320px] px-3 pb-4 sm:px-5 sm:pb-6 md:px-10">
-          <div className="grid grid-cols-2 border-t border-ivory/15 sm:grid-cols-4">
-            {proof.map((x, i) => (
-              <Reveal
-                key={x.to}
-                immediate
-                className={`border-ivory/15 ${i % 2 ? "border-s" : ""} ${
-                  i === 2 ? "sm:border-s" : ""
-                }`}
-              >
-                <a
-                  href={x.to}
-                  className="group flex h-full flex-col items-center gap-2 px-2 py-4 text-center transition hover:bg-ivory/[0.04] min-h-[90px] sm:items-start sm:px-4 sm:py-6 sm:text-start"
-                >
-                  <span className="font-display text-3xl leading-none text-ivory sm:text-4xl md:text-5xl">
-                    <CountUp to={x.n} />
-                  </span>
-                  <span className="text-[11px] leading-snug text-ivory/65 transition group-hover:text-ivory/85 sm:text-xs">
-                    {ar ? x.ar : x.en}
-                  </span>
-                  <span
-                    aria-hidden
-                    className="eyebrow mt-auto pt-1 text-gold-light opacity-0 transition-opacity group-hover:opacity-100 sm:pt-2"
-                  >
-                    ↗
-                  </span>
-                </a>
-              </Reveal>
-            ))}
-          </div>
         </div>
       </section>
       <RequestDialog request={req} onClose={() => setReq(null)} lang={lang} />

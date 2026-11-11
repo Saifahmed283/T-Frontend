@@ -302,7 +302,7 @@ function Header({
         />
         <div className="mx-auto flex max-w-[1320px] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-5 sm:py-4 md:gap-6 md:px-10">
           <a href="/" className="shrink-0">
-            <Logo tone="ivory" className="h-8 w-auto sm:h-10" />
+            <Logo tone="ivory" wordmark="always" className="h-8 w-auto sm:h-10" />
           </a>
           <nav
             className="mx-auto hidden items-center xl:flex"

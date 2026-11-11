@@ -435,28 +435,44 @@ export function Emblem({
 export function Logo({
   tone = "navy",
   className = "",
+  wordmark = "sm",
 }: {
   tone?: "navy" | "ivory"
   className?: string
+  /** "sm" hides the wordmark on phones (footer, 404); "always" keeps it visible. */
+  wordmark?: "sm" | "always"
 }) {
+  const always = wordmark === "always"
   return (
-    <span className={`inline-flex items-center gap-3 ${className}`}>
+    <span className={`inline-flex items-center gap-2 sm:gap-3 ${className}`}>
       <Emblem className="h-9 w-9 shrink-0" tone={tone} />
       {/* The wordmark is visually hidden below `sm` so the header reflows at
           320px (WCAG 1.4.10) but still names the logo link for screen readers;
-          the emblem alone stays as the brand mark. */}
-      <span className="sr-only leading-none sm:not-sr-only sm:block">
+          the emblem alone stays as the brand mark. The header opts into
+          `wordmark="always"` and uses a tighter mobile size that still fits. */}
+      <span
+        className={
+          always
+            ? "block min-w-0 leading-none"
+            : "sr-only leading-none sm:not-sr-only sm:block"
+        }
+      >
         <span
-          className={`block font-display text-xl font-semibold tracking-cta ${
-            tone === "navy" ? "text-navy" : "text-ivory"
-          }`}
+          className={`block whitespace-nowrap font-display font-semibold ${
+            always
+              ? "text-lg tracking-[0.12em] sm:text-xl sm:tracking-cta"
+              : "text-xl tracking-cta"
+          } ${tone === "navy" ? "text-navy" : "text-ivory"}`}
         >
           TERRAMORPH
         </span>
+        {/* The header opts into `wordmark="always"`, so the tagline has to fit
+            the ~150px column left beside the controls at 320px. Tighter tracking
+            below `sm` keeps it on one line without truncating the phrase. */}
         <span
-          className={`mt-1 block text-micro font-medium tracking-[0.42em] ${
-            tone === "navy" ? "text-gold-strong" : "text-gold-light"
-          }`}
+          className={`mt-1 block text-micro font-medium ${
+            always ? "tracking-[0.14em] sm:tracking-[0.42em]" : "tracking-[0.42em]"
+          } ${tone === "navy" ? "text-gold-strong" : "text-gold-light"}`}
         >
           LEVERAGE FOR GOOD
         </span>
