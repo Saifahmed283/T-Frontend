@@ -441,8 +441,9 @@ function Header({
             <button
               className="grid h-9 w-9 min-h-[44px] min-w-[44px] place-items-center xl:hidden"
               onClick={() => setOpen(!open)}
-              aria-label="Menu"
+              aria-label={open ? (ar ? "إغلاق القائمة" : "Close menu") : ar ? "فتح القائمة" : "Open menu"}
               aria-expanded={open}
+              aria-controls="mobile-menu"
             >
               <span className="relative block h-3 w-6">
                 <span
@@ -480,6 +481,9 @@ function Header({
 
       {/* Mobile menu */}
       <div
+        id="mobile-menu"
+        aria-hidden={!open}
+        inert={!open}
         className={`fixed inset-0 z-40 bg-navy-3 pt-24 text-ivory transition-[clip-path] duration-700 ease-[cubic-bezier(.76,0,.24,1)] xl:hidden ${
           open ? "reveal-open" : "pointer-events-none reveal-closed"
         }`}

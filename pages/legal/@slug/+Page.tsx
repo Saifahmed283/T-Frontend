@@ -130,15 +130,22 @@ function LegalPageContent({ content, lang, slug }: { content: LegalContent; lang
           {content.meta.title}
         </Heading>
         <p className="text-sm text-slate-strong font-mono tracking-wide uppercase">
-          Last updated: {content.meta.lastUpdated}
-          {content.meta.effectiveDate && ` · Effective: ${content.meta.effectiveDate}`}
+          {ar ? "آخر تحديث: " : "Last updated: "}
+          {content.meta.lastUpdated}
+          {content.meta.effectiveDate &&
+            (ar
+              ? ` · ساري من: ${content.meta.effectiveDate}`
+              : ` · Effective: ${content.meta.effectiveDate}`)}
           {content.meta.version && ` · v${content.meta.version}`}
         </p>
         <GoldLine className="mt-4" />
       </header>
 
-      <nav className="hidden md:block mb-10 p-4 bg-ivory rounded-lg border border-line" aria-label="Table of contents">
-        <p className="eyebrow text-gold-strong mb-3">Contents</p>
+      <nav
+        className="hidden md:block mb-10 p-4 bg-ivory rounded-lg border border-line"
+        aria-label={ar ? "جدول المحتويات" : "Table of contents"}
+      >
+        <p className="eyebrow text-gold-strong mb-3">{ar ? "المحتويات" : "Contents"}</p>
         <ol className="space-y-1 text-sm">
           {content.sections.map((section) => (
             <li key={section.id}>
@@ -209,11 +216,11 @@ export default function LegalPage() {
       lang={resolvedLang}
     >
       <div className="mx-auto max-w-[800px] px-4 py-12 sm:px-6 sm:py-16 md:px-10 md:py-20 lg:max-w-[900px]">
-        <nav className="mb-8" aria-label="Breadcrumb">
+        <nav className="mb-8" aria-label={resolvedLang === "ar" ? "مسار التنقل" : "Breadcrumb"}>
           <ol className="flex items-center gap-2 text-sm text-slate-strong">
-            <li><a href="/" className="hover:text-navy hover:underline">Home</a></li>
+            <li><a href="/" className="hover:text-navy hover:underline">{resolvedLang === "ar" ? "الرئيسية" : "Home"}</a></li>
             <li aria-hidden="true">/</li>
-            <li><a href="/legal" className="hover:text-navy hover:underline">Legal</a></li>
+            <li><a href="/legal" className="hover:text-navy hover:underline">{resolvedLang === "ar" ? "قانوني" : "Legal"}</a></li>
             <li aria-hidden="true">/</li>
             <li aria-current="page" className="text-navy font-medium">{pageTitle}</li>
           </ol>

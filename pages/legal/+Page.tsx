@@ -41,7 +41,7 @@ const legalPages = [
     title: { en: "DMCA Policy", ar: "سياسة DMCA" },
     description: {
       en: "How to submit a copyright takedown notice to TerraMorph Advisory LLC.",
-      ar: "كيفية تقديم إشعار إزالة dovuto إلى انتهاك حقوق النشر إلى شركة تيرامورف للاستشارات.",
+      ar: "كيفية تقديم إشعار إزالة يتعلق بانتهاك حقوق النشر إلى شركة تيرامورف للاستشارات.",
     },
     lastUpdated: "2026-11-07",
   },
@@ -208,7 +208,7 @@ export default function LegalIndexPage() {
                 ✉
               </span>
               <span>
-                Email:
+                {ar ? "البريد الإلكتروني: " : "Email: "}
                 <a href="mailto:info@askterramorph.com" className="underline decoration-gold underline-offset-2 hover:text-navy font-medium">
                   info@askterramorph.com
                 </a>
