@@ -14,7 +14,6 @@ const BASE = process.argv[2] ?? "http://localhost:8443"
 const ROUTES = [
   "/",
   "/evidence",
-  "/evidence/assignment-ledger",
   "/hub/governments",
   "/dashboard",
   "/no-such-page",

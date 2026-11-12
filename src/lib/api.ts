@@ -487,6 +487,16 @@ const UPLOAD_TIMEOUT_MS = 5 * 60_000
  */
 const inflight = new Map<string, Promise<unknown>>()
 
+/* Read the CSRF token from the page's meta tag. The backend populates
+   <meta name="csrf-token" content="..."> when rendering the page; the token is
+   sent on every state-changing request as an X-CSRF-Token header. Empty when
+   no token is configured (for example before the backend issues one). */
+function csrfToken(): string {
+  if (typeof document === "undefined") return ""
+  const meta = document.querySelector('meta[name="csrf-token"]')
+  return meta?.getAttribute("content") ?? ""
+}
+
 async function performRequest<T>(
   path: string,
   init: RequestInit,
@@ -515,6 +525,12 @@ async function performRequest<T>(
       // The browser must set the multipart boundary itself.
       headers: {
         ...(isForm ? {} : { "Content-Type": "application/json" }),
+
+        // CSRF token on state-changing requests only; GETs are read-only and
+        // carry the session cookie instead.
+        ...(init.method !== "GET" && init.method !== "HEAD"
+          ? { "X-CSRF-Token": csrfToken() }
+          : {}),
 
         ...(init.headers ?? {}),
       },
@@ -582,7 +598,19 @@ function request<T>(
 
   if (method !== "GET") return performRequest<T>(path, init)
 
-  const key = `${method} ${path}`
+  /* The de-duplication key must include the query string: two GETs to the same
+     path with different query parameters (for example ?status=DRAFT vs
+     ?status=PUBLISHED) must not share one network request, otherwise the second
+     caller receives the first caller's response. */
+  const qs = query
+    ? new URLSearchParams(
+        Object.entries(query)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => [k, String(v)]),
+      ).toString()
+    : ""
+
+  const key = `${method} ${path}${qs ? `?${qs}` : ""}`
 
   const pending = inflight.get(key)
 
