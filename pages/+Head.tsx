@@ -1,7 +1,9 @@
 import { usePageContext } from "vike-react/usePageContext"
+import { useData } from "vike-react/useData"
 import { pageForPath, pageBySlug, columnMeta } from "@/content/pages"
 import { hubBySlug } from "@/content/hubs"
 import { SECTION_PATHS } from "@/lib/routes"
+import { SECTION_TITLES, type DetailMeta } from "@/content/publicRoutes"
 
 const BRAND = "TerraMorph"
 const ORIGIN = "https://askterramorph.com"
@@ -264,8 +266,30 @@ function breadcrumbJsonLd(
 export default function Head() {
   const pageContext = usePageContext()
   const { urlPathname, is404 } = pageContext
-  const { title, description, trail, noindex, localBusiness } =
-    resolve(urlPathname)
+  /* `useData()` returns `undefined` on routes without a `+data.ts` (for
+     example the home page), so guard against `undefined` before destructuring. */
+  const detail = useData<{ detail: DetailMeta | null }>()?.detail
+  const base = resolve(urlPathname)
+
+  /* CMS detail pages (partners, vacancies, cases, publications, …) resolve to
+     "Page not found" in `resolve()` because they aren't static routes; the CMS
+     meta loaded by `+data.ts` wins so they get a real title, description and
+     breadcrumb instead of `noindex`. */
+  let { title, description, trail, noindex, localBusiness } = base
+  const cmsDetail = detail && detail.title && !is404
+
+  if (cmsDetail) {
+    title = `${detail.title} | ${BRAND}`
+    description = detail.description ?? base.description
+    trail = [
+      {
+        name: stripBrand(SECTION_TITLES[detail.sectionPath] ?? detail.section),
+        path: detail.sectionPath,
+      },
+      { name: detail.title, path: detail.path },
+    ]
+    noindex = false
+  }
   const canonical = `${ORIGIN}${urlPathname === "/" ? "/" : urlPathname}`
 
   const jsonLd: Record<string, unknown>[] = []

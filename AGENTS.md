@@ -60,13 +60,14 @@ Routing is file-based via Vike: `pages/` contains `+Page.tsx` files (and `+confi
 - `src/styles/fonts.css` - Self-hosted Latin `@font-face` rules (variable weight ranges, `latin`/`latin-ext` unicode-range)
 - `.env.example` - Documents `VITE_API_URL` and `VITE_PROXY_TARGET`
 - `.env.production` - Sets `VITE_API_URL=https://api.askterramorph.com` for production builds. Deliberately tracked in git (unlike `.env`/`.env.example`): the Hostinger build has no other source for it, and it contains no secrets. Without it the built dashboard calls same-origin `/api` and cannot authenticate.
-- `package.json` - Dependencies and scripts (`dev`, `build` = sitemap + vike build, `preview`, `format`, `a11y`, `sitemap`, `og-image`, `test`, `test:watch`, `check`)
+- `package.json` - Dependencies and scripts (`dev`, `build` = sitemap + vike build, `preview`, `format`, `a11y`, `sitemap`, `og-image`, `test`, `test:watch`, `check`, `check:full`)
 - `vitest.config.ts` - Vitest configuration: jsdom, React plugin, `@` alias and `src/test/setup.ts`
 - `src/test/setup.ts` - jest-dom matchers plus `<dialog>` polyfills for the dashboard modal tests
 - `src/lib/api.test.ts` - Vitest coverage for the API client (URLs, credentials, error envelopes, request bodies)
 - `src/lib/publicContent.test.ts` - Public content hooks: caching/de-duplication, fallback behaviour and fetch failures
 - `src/pages/dashboard/ContentEditor.test.tsx` - React Testing Library coverage for localized EN/AR field rendering and editor actions
 - `src/pages/dashboard/hooks/useWorkspace.test.ts` - React Testing Library coverage for the 401 auth gate and workspace loading
+- `src/pages/ResetPassword.test.tsx` - React Testing Library coverage for the forgot/reset password flow (success and invalid-token paths)
 - `vite.config.ts` - Vite configuration: React + Tailwind v4 + Vike plugins, `@` alias, `/api` dev proxy, explicit `build.sourcemap: false`
 - `.mise.toml` - Toolchain versions for Node.js and pnpm
 
@@ -78,7 +79,7 @@ Barrels (`home/index.tsx`, `additions/index.tsx`) re-export section components s
 - Styling: Tailwind CSS v4 with the `@tailwindcss/vite` plugin
 - Build tooling: Vite 8, TypeScript 5.7, `@vitejs/plugin-react`
 - Dev tooling: `cross-env` (cross-platform `NODE_ENV` in the `build` script), `puppeteer-core` (a11y, OG image, console smoke — drives local Chrome/Edge; set `CHROME_PATH` if not auto-detected)
-- Testing: `pnpm check` runs `tsc --noEmit` and `vitest run` (the CI gate); `pnpm test` / `pnpm test:watch` run Vitest alone. Vitest uses a separate `vitest.config.ts` (jsdom + React plugin + `@` alias + `src/test/setup.ts`), so it does not load Vike's build config. Tests live next to their subject: `src/lib/api.test.ts`, `src/lib/publicContent.test.ts`, `src/pages/dashboard/ContentEditor.test.tsx` and `src/pages/dashboard/hooks/useWorkspace.test.ts`.
+- Testing: `pnpm check` runs `tsc --noEmit` and `vitest run` (the CI gate); `pnpm check:full` adds `pnpm a11y` on top (`tsc --noEmit && vitest run && node scripts/a11y.mjs`). `pnpm test` / `pnpm test:watch` run Vitest alone. Vitest uses a separate `vitest.config.ts` (jsdom + React plugin + `@` alias + `src/test/setup.ts`), so it does not load Vike's build config. Tests live next to their subject: `src/lib/api.test.ts`, `src/lib/publicContent.test.ts`, `src/pages/dashboard/ContentEditor.test.tsx`, `src/pages/dashboard/hooks/useWorkspace.test.ts` and `src/pages/ResetPassword.test.tsx`.
 - End-to-end checks: `scripts/a11y.mjs` (`pnpm a11y`) runs a headless axe-core scan against a running dev server (`A11Y_BASE_URL`, default `http://localhost:8443`). It scans the home page (base, search overlay, WhatsNew drawer), the dashboard `/dashboard` (the signed-out auth gate, and the signed-in live workspace via `POST /api/v1/auth/login` with the seeded admin account), a hub page, and the 404 page with `prefers-reduced-motion: reduce`, and exits non-zero on serious/critical violations. `scripts/console-smoke.mjs` checks `/`, `/evidence`, a detail page, a hub, `/dashboard` and a 404 for console errors against `pnpm preview`
 - Linting: no dedicated lint script; `pnpm check` covers typecheck plus unit tests
 - Formatting: oxfmt — see the corruption warning under Code quality BEFORE running it

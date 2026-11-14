@@ -225,7 +225,11 @@ const EMPTY_SETTINGS: PublicSettingsState = {
 }
 
 const SETTINGS_CACHE_MS = 60_000
-let settingsCache: { at: number; value: PublicSettingsState } | null = null
+let settingsCache: {
+  at: number
+
+  value: PublicSettingsState
+} | null = null
 
 export function usePublicSettings(): PublicSettingsState {
   const [state, setState] = useState<PublicSettingsState>(EMPTY_SETTINGS)
@@ -621,6 +625,166 @@ export function mapInstrument(item: PublicContentItem): LivePublication {
     free: true,
 
     href: `/method/${item.slug}`,
+  }
+}
+
+/* Partners are the delivery partnerships shown on the About page and the
+   partner tab of Join. */
+export type LivePartner = {
+  slug: string
+  title: string
+  titleAr: string
+  description: string
+  descriptionAr: string
+  country: string
+  sectors: string
+  languages: string
+  capabilities: string
+  href: string
+}
+
+export function mapPartner(item: PublicContentItem): LivePartner {
+  const data = item.data
+
+  return {
+    slug: item.slug,
+
+    title: titleOf(item, "en"),
+
+    titleAr: titleOf(item, "ar"),
+
+    description: localized(data.description, "en") ?? "",
+
+    descriptionAr:
+      localized(data.description, "ar") ??
+      localized(data.description, "en") ??
+      "",
+
+    country: text(data.country) ?? "",
+
+    sectors: text(data.sectors) ?? "",
+
+    languages: text(data.languages) ?? "",
+
+    capabilities: text(data.capabilities) ?? "",
+
+    href: `/about/${item.slug}`,
+  }
+}
+
+/* Vacancies power the careers tab of Join. `meta` matches the single line the
+   static list prints ("Cairo · Full time"). */
+export type LiveVacancy = {
+  slug: string
+  title: string
+  titleAr: string
+  description: string
+  descriptionAr: string
+  location: string
+  salaryBand: string
+  contractType: string
+  deadline: string | null
+  meta: string
+  metaAr: string
+  href: string
+}
+
+export function mapVacancy(item: PublicContentItem): LiveVacancy {
+  const data = item.data
+
+  const location = text(data.location) ?? ""
+
+  const contractType = text(data.contractType) ?? ""
+
+  const meta = [location, contractType].filter(Boolean).join(" · ")
+
+  return {
+    slug: item.slug,
+
+    title: titleOf(item, "en"),
+
+    titleAr: titleOf(item, "ar"),
+
+    description: localized(data.description, "en") ?? "",
+
+    descriptionAr:
+      localized(data.description, "ar") ??
+      localized(data.description, "en") ??
+      "",
+
+    location,
+
+    salaryBand: text(data.salaryBand) ?? "",
+
+    contractType,
+
+    deadline: text(data.deadline) ?? null,
+
+    meta,
+
+    metaAr: meta,
+
+    href: `/join/${item.slug}`,
+  }
+}
+
+/* Initiative statuses are free text in the CMS; translate the common values and
+   fall back to the source string so new statuses still read correctly. */
+const INITIATIVE_STATUS_AR: Record<string, string> = {
+  "in development": "قيد التطوير",
+
+  active: "نشط",
+
+  ongoing: "جارٍ",
+
+  completed: "مكتمل",
+
+  planned: "مخطط",
+
+  paused: "متوقف مؤقتًا",
+}
+
+export type LiveInitiative = {
+  slug: string
+  title: string
+  titleAr: string
+  description: string
+  descriptionAr: string
+  status: string
+  statusAr: string
+  meta: string
+  metaAr: string
+  href: string
+}
+
+export function mapInitiative(item: PublicContentItem): LiveInitiative {
+  const data = item.data
+
+  const status = text(data.status) ?? ""
+
+  return {
+    slug: item.slug,
+
+    title: titleOf(item, "en"),
+
+    titleAr: titleOf(item, "ar"),
+
+    description: localized(data.description, "en") ?? "",
+
+    descriptionAr:
+      localized(data.description, "ar") ??
+      localized(data.description, "en") ??
+      "",
+
+    status,
+
+    statusAr: INITIATIVE_STATUS_AR[status.toLowerCase()] ?? status,
+
+    meta: text(data.meta) ?? "",
+
+    metaAr: text(data.meta) ?? "",
+
+    href: `/about/${item.slug}`,
   }
 }
 

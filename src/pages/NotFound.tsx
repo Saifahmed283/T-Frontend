@@ -1,7 +1,20 @@
 import { audiences } from "@/content/data"
+
 import { Contours, Logo } from "@/components/motion/fx"
 
+import { mapAudience, usePublicCollection } from "@/lib/publicContent"
+
 export default function NotFound() {
+  /* Audience hubs come from the CMS when the public API answers, with the
+     static list as the render-time fallback. */
+
+  const feed = usePublicCollection("audiences", { pageSize: 20, pollMs: 0 })
+
+  const hubs =
+    feed.live && feed.items.length
+      ? feed.items.map(mapAudience).sort((a, b) => a.order - b.order)
+      : audiences
+
   return (
     <main className="relative grid min-h-screen place-items-center overflow-hidden bg-navy-3 px-5 text-ivory">
       <Contours
@@ -31,7 +44,7 @@ export default function NotFound() {
           aria-label="Audience hubs"
           className="mt-10 flex flex-wrap justify-center gap-2"
         >
-          {audiences.map((a) => (
+          {hubs.map((a) => (
             <a
               key={a.slug}
               href={`/hub/${a.slug}`}

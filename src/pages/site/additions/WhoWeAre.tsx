@@ -4,6 +4,12 @@ import { Emblem, GoldLine, Reveal, Spotlight } from "@/components/motion/fx"
 
 import { labelPath } from "@/content/pages"
 
+import {
+  mapInitiative,
+  mapPartner,
+  usePublicCollection,
+} from "@/lib/publicContent"
+
 import type { Lang } from "../types"
 
 // Who we are: logo + 3–5 lines, philosophy, partnerships, people, testimonials, awards
@@ -113,6 +119,22 @@ const awards = [
 export function WhoWeAre({ lang }: { lang: Lang }) {
   const ar = lang === "ar"
 
+  /* The About page lists the partners and initiatives published in the CMS.
+     Both feeds are optional: the block is hidden until one of them answers, so
+     an unreachable API leaves the static About copy untouched. */
+
+  const partners = usePublicCollection("partners", { pageSize: 50 })
+
+  const initiatives = usePublicCollection("initiatives", { pageSize: 50 })
+
+  const livePartners = partners.live ? partners.items.map(mapPartner) : []
+
+  const liveInitiatives = initiatives.live
+    ? initiatives.items.map(mapInitiative)
+    : []
+
+  const hasDirectory = livePartners.length > 0 || liveInitiatives.length > 0
+
   const [t, setT] = useState(0)
 
   useEffect(() => {
@@ -184,8 +206,10 @@ export function WhoWeAre({ lang }: { lang: Lang }) {
           <p className="eyebrow text-slate">
             {ar ? "آراء العملاء" : "Testimonials"}
           </p>
-          <p className="text-xs text-slate/60 mt-1 mb-4">
-            {ar ? "شهادات توضيحية مستندة إلى تعليقات عملاء حقيقيين. تم إخفاء الأسماء والهيئات لحماية الخصوصية." : "Illustrative testimonials based on real client feedback. Names and organizations withheld to protect privacy."}
+          <p className="mt-1 mb-4 text-xs text-slate">
+            {ar
+              ? "شهادات توضيحية مستندة إلى تعليقات عملاء حقيقيين. تم إخفاء الأسماء والهيئات لحماية الخصوصية."
+              : "Illustrative testimonials based on real client feedback. Names and organizations withheld to protect privacy."}
           </p>
           {testimonials.map((x, k) => (
             <blockquote
@@ -241,6 +265,81 @@ export function WhoWeAre({ lang }: { lang: Lang }) {
           </ul>
         </div>
       </div>
+      {hasDirectory && (
+        <>
+          <GoldLine className="mt-16" />
+          <div className="mt-14 grid gap-12 lg:grid-cols-2">
+            {livePartners.length > 0 && (
+              <div>
+                <p className="eyebrow text-slate">
+                  {ar ? "شركاء التنفيذ" : "Delivery partners"}
+                </p>
+                <ul className="mt-6 divide-y divide-line border-y border-line">
+                  {livePartners.map((p) => (
+                    <li key={p.slug}>
+                      <a
+                        href={p.href}
+                        className="group flex items-start justify-between gap-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                      >
+                        <span>
+                          <span className="font-display text-xl transition-colors group-hover:text-gold-strong">
+                            {ar ? p.titleAr : p.title}
+                          </span>
+                          {(p.sectors || p.description) && (
+                            <span className="mt-1 block text-sm text-slate">
+                              {ar
+                                ? p.descriptionAr || p.sectors
+                                : p.sectors || p.description}
+                            </span>
+                          )}
+                        </span>
+                        <span aria-hidden className="text-gold-strong">
+                          {ar ? "←" : "→"}
+                        </span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {liveInitiatives.length > 0 && (
+              <div>
+                <p className="eyebrow text-slate">
+                  {ar ? "المبادرات" : "Initiatives"}
+                </p>
+                <ul className="mt-6 divide-y divide-line border-y border-line">
+                  {liveInitiatives.map((i) => (
+                    <li key={i.slug}>
+                      <a
+                        href={i.href}
+                        className="group flex items-start justify-between gap-4 py-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                      >
+                        <span>
+                          <span className="font-display text-xl transition-colors group-hover:text-gold-strong">
+                            {ar ? i.titleAr : i.title}
+                          </span>
+                          {(i.description || i.meta) && (
+                            <span className="mt-1 block text-sm text-slate">
+                              {ar
+                                ? i.descriptionAr || i.meta
+                                : i.description || i.meta}
+                            </span>
+                          )}
+                        </span>
+                        {(i.status || i.statusAr) && (
+                          <span className="eyebrow shrink-0 text-gold-strong">
+                            {ar ? i.statusAr : i.status}
+                          </span>
+                        )}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </section>
   )
 }

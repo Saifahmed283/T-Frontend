@@ -7,12 +7,21 @@ import { Head } from "./Head"
 import { api, type SubmissionKind } from "@/lib/api"
 
 import {
+  mapPartner,
+  mapVacancy,
+  usePublicCollection,
+} from "@/lib/publicContent"
+
+import { EmptyState } from "@/components/ui"
+
+import {
   validateAtLeastOne,
   validateEmail,
   validateName,
   validateOptionalUrl,
   validateTerms,
 } from "@/lib/validation"
+
 import { useFormValidation } from "@/lib/useFormValidation"
 
 import {
@@ -96,7 +105,6 @@ const lists: Record<string, {
       kind: "JOB_APPLICATION",
     },
   ],
-
 }
 
 const listLabel: Record<string, string> = {
@@ -153,8 +161,30 @@ const listsAr: Record<string, {
 
     { title: "متدرب بحثي (AAST)", meta: "الإسكندرية · 6 أشهر", cta: "تقدّم" },
   ],
-
 }
+
+/* A single row shape for both the static fallback and live CMS rows, so the tab
+   renderer never has to care which source is on screen. */
+
+type JoinRow = {
+  title: string
+
+  titleAr: string
+
+  meta: string
+
+  metaAr: string
+
+  cta: string
+
+  ctaAr: string
+
+  kind: SubmissionKind
+}
+
+const partnerCta = { en: "Propose teaming", ar: "اقترح شراكة" }
+
+const vacancyCta = { en: "Apply", ar: "تقدّم" }
 
 const areas = [
   "Local economic development",
@@ -195,6 +225,91 @@ export function Join({ lang }: { lang: Lang }) {
 
   const [tab, setTab] = useState("Expert network")
 
+  /* Partners back the "PR Partner" tab and vacancies back "Careers"; each
+     collection replaces its static list only when the public API answers. */
+
+  const partners = usePublicCollection("partners", { pageSize: 50 })
+
+  const vacancies = usePublicCollection("vacancies", { pageSize: 50 })
+
+  const liveRows: Record<string, JoinRow[]> = {
+    "PR Partner": partners.live
+      ? partners.items.map((item) => {
+          const p = mapPartner(item)
+
+          return {
+            title: p.title,
+
+            titleAr: p.titleAr,
+
+            meta: p.sectors || p.description,
+
+            metaAr: p.sectors || p.descriptionAr,
+
+            cta: partnerCta.en,
+
+            ctaAr: partnerCta.ar,
+
+            kind: "TEAM_PROPOSAL" as SubmissionKind,
+          }
+        })
+      : [],
+
+    Careers: vacancies.live
+      ? vacancies.items.map((item) => {
+          const v = mapVacancy(item)
+
+          return {
+            title: v.title,
+
+            titleAr: v.titleAr,
+
+            meta: v.meta,
+
+            metaAr: v.metaAr,
+
+            cta: vacancyCta.en,
+
+            ctaAr: vacancyCta.ar,
+
+            kind: "JOB_APPLICATION" as SubmissionKind,
+          }
+        })
+      : [],
+  }
+
+  const staticRows = (key: string): JoinRow[] =>
+    (lists[key] ?? []).map((row, i) => ({
+      title: row.title,
+
+      titleAr: listsAr[key]?.[i]?.title ?? row.title,
+
+      meta: row.meta,
+
+      metaAr: listsAr[key]?.[i]?.meta ?? row.meta,
+
+      cta: row.cta,
+
+      ctaAr: listsAr[key]?.[i]?.cta ?? row.cta,
+
+      kind: row.kind,
+    }))
+
+  const cmsBacked = tab === "PR Partner" || tab === "Careers"
+
+  const tabLive =
+    cmsBacked && (tab === "PR Partner" ? partners.live : vacancies.live)
+
+  const live = liveRows[tab] ?? []
+
+  const rows: JoinRow[] = !cmsBacked
+    ? []
+    : live.length
+      ? live
+      : tabLive
+        ? []
+        : staticRows(tab)
+
   const [step, setStep] = useState(0)
 
   const steps = ar
@@ -202,6 +317,7 @@ export function Join({ lang }: { lang: Lang }) {
     : ["Profile", "Expertise", "CV", "Status"]
 
   const [cvName, setCvName] = useState("")
+
   const [cvErr, setCvErr] = useState("")
 
   const [req, setReq] = useState<RequestConfig | null>(null)
@@ -212,42 +328,62 @@ export function Join({ lang }: { lang: Lang }) {
     fields: {
       name: {
         initial: "",
+
         validate: (value) => validateName(value, lang),
       },
+
       email: {
         initial: "",
+
         validate: (value) => validateEmail(value, lang),
       },
+
       location: {
         initial: "",
       },
+
       linkedin: {
         initial: "",
+
         validate: (value) => validateOptionalUrl(value, lang),
       },
+
       areas: {
         initial: [] as string[],
+
         validate: (value) => validateAtLeastOne(value, lang),
       },
+
       terms: {
         initial: false,
+
         validate: (value) => validateTerms(value, lang),
       },
     },
+
     onSubmit: async (values) => {
       const emailVal = String(values.email).trim()
+
       const nameVal = String(values.name).trim()
+
       const linkedinVal = String(values.linkedin).trim()
 
       await api.submit({
         kind: "EXPERT_REGISTRATION",
+
         email: emailVal,
+
         name: nameVal || undefined,
+
         source: "site",
+
         payload: {
           location: String(values.location).trim() || undefined,
+
           linkedin: linkedinVal || undefined,
-          areas: (values.areas as string[]) ?? [],
+
+          areas: values.areas as string[] ?? [],
+
           ...(cvName ? { cvFileName: cvName } : {}),
         },
       })
@@ -255,35 +391,31 @@ export function Join({ lang }: { lang: Lang }) {
       setStep(3)
 
       // Record terms acceptance with backend (non-blocking)
+
       void api
+
         .termsAcceptanceRecord({
           email: emailVal,
+
           privacyVersion: "1.0",
+
           termsVersion: "1.0",
+
           source: "join",
         })
+
         .catch(() => {
           /* terms acceptance recording should not block form submission */
         })
     },
   })
 
-  const selectedAreas = (form.values.areas as string[]) ?? []
-
-  const rowText = (t: string, i: number) =>
-    ar
-      ? listsAr[t][i]
-      : {
-          title: lists[t][i].title,
-
-          meta: lists[t][i].meta,
-
-          cta: lists[t][i].cta,
-        }
+  const selectedAreas = form.values.areas as string[] ?? []
 
   const toggleArea = (a: string) =>
     form.setValue(
       "areas",
+
       selectedAreas.includes(a)
         ? selectedAreas.filter((x) => x !== a)
         : [...selectedAreas, a],
@@ -326,11 +458,13 @@ export function Join({ lang }: { lang: Lang }) {
   }
 
   /** Validate the fields owned by `step` before moving forward. */
+
   const advance = () => {
     if (step === 0) {
       for (const field of ["name", "email", "linkedin", "terms"]) {
         form.markTouched(field)
       }
+
       if (
         form.rawError("name") ||
         form.rawError("email") ||
@@ -343,12 +477,15 @@ export function Join({ lang }: { lang: Lang }) {
 
     if (step === 1) {
       form.markTouched("areas")
+
       if (form.rawError("areas")) return
     }
 
     if (step === 2) {
       if (cvErr) return
+
       void form.submit()
+
       return
     }
 
@@ -357,8 +494,11 @@ export function Join({ lang }: { lang: Lang }) {
 
   const startOver = () => {
     setStep(0)
+
     form.reset()
+
     setCvName("")
+
     setCvErr("")
   }
 
@@ -453,7 +593,9 @@ export function Join({ lang }: { lang: Lang }) {
                           autoComplete="name"
                           placeholder={ar ? "الاسم الكامل" : "Full name"}
                           className={`w-full border-b bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none ${
-                            form.error("name") ? "border-error-light" : "border-ivory/20"
+                            form.error("name")
+                              ? "border-error-light"
+                              : "border-ivory/20"
                           }`}
                         />
                         {form.error("name") && (
@@ -472,7 +614,9 @@ export function Join({ lang }: { lang: Lang }) {
                           inputMode="email"
                           placeholder="you@example.com"
                           className={`w-full border-b bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none ${
-                            form.error("email") ? "border-error-light" : "border-ivory/20"
+                            form.error("email")
+                              ? "border-error-light"
+                              : "border-ivory/20"
                           }`}
                         />
                         {form.error("email") && (
@@ -499,7 +643,9 @@ export function Join({ lang }: { lang: Lang }) {
                           autoComplete="url"
                           placeholder={ar ? "رابط LinkedIn" : "LinkedIn URL"}
                           className={`w-full border-b bg-transparent py-3 placeholder:text-ivory/30 focus:border-gold-light focus:outline-none ${
-                            form.error("linkedin") ? "border-error-light" : "border-ivory/20"
+                            form.error("linkedin")
+                              ? "border-error-light"
+                              : "border-ivory/20"
                           }`}
                         />
                         {form.error("linkedin") && (
@@ -543,7 +689,9 @@ export function Join({ lang }: { lang: Lang }) {
                               </a>
                             </span>
                             <p className="mt-1 text-xs text-ivory/50">
-                              {ar ? "بإرسال هذا النموذج، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية." : "By submitting this form, you accept processing of your data per the Privacy Policy."}
+                              {ar
+                                ? "بإرسال هذا النموذج، أنت تقبل معالجة بياناتك وفقًا لسياسة الخصوصية."
+                                : "By submitting this form, you accept processing of your data per the Privacy Policy."}
                             </p>
                             {form.error("terms") && (
                               <p
@@ -685,10 +833,51 @@ export function Join({ lang }: { lang: Lang }) {
               )}
             </div>
           </div>
+        ) : tabLive && rows.length === 0 ? (
+          <div className="mt-8">
+            <EmptyState
+              eyebrow={ar ? "لا عناصر منشورة" : "Nothing published"}
+              title={
+                tab === "PR Partner"
+                  ? ar
+                    ? "لا شركاء مدرجون بعد."
+                    : "No partners listed yet."
+                  : ar
+                    ? "لا وظائف مفتوحة الآن."
+                    : "No open roles right now."
+              }
+              body={
+                tab === "PR Partner"
+                  ? ar
+                    ? "نضيف شركاء التنفيذ من مساحة المحتوى؛ ستظهر هنا فور النشر."
+                    : "Delivery partners are added from the content workspace and appear here as soon as they publish."
+                  : ar
+                    ? "تُنشر الوظائف من مساحة المحتوى؛ عُد قريبًا أو أرسل ملفك على أي حال."
+                    : "Roles are published from the content workspace — check back soon, or send us your profile anyway."
+              }
+              action={{
+                label: ar
+                  ? tab === "PR Partner"
+                    ? "اقترح شراكة"
+                    : "تواصل معنا"
+                  : tab === "PR Partner"
+                    ? "Propose a partnership"
+                    : "Talk to us",
+
+                href: "/contact",
+              }}
+            />
+          </div>
         ) : (
           <ul key={tab} className="mt-6 divide-y divide-ivory/10">
-            {lists[tab].map((row, i) => {
-              const rt = rowText(tab, i)
+            {rows.map((row, i) => {
+              const rt = {
+                title: ar ? row.titleAr : row.title,
+
+                meta: ar ? row.metaAr : row.meta,
+
+                cta: ar ? row.ctaAr : row.cta,
+              }
 
               return (
                 <li

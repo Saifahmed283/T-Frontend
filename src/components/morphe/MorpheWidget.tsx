@@ -1,86 +1,68 @@
 /**
- * MorpheWidget v3 - TerraMorph's AI chatbot (refactored)
+ * MorpheWidget v4 - TerraMorph's AI chatbot (true streaming + Framer Motion)
  *
- * Design inspiration: reactbits.devv + getlayers.ai
- * - Glassmorphism panel with backdrop blur
- * - Smooth spring animations (cubic-bezier)
- * - Refined typography: Cormorant Garamond headings + Jost body
- * - Pill-shaped toggles, floating action button with send icon
- * - Info tooltip on hover for privacy disclosure
+ * Features:
+ * - True SSE streaming from /api/v1/morphe/chat
+ * - Framer Motion spring animations (panel, messages, launcher)
+ * - AvatarOrb brand seal with eye-tracking
+ * - Animated welcome screen with prompt categories
+ * - Copy message, download conversation, stop response
+ * - Clear confirmation animation
  * - Bilingual EN/AR with RTL support
- * - All Lucide-react icons (Send, Mic, Info, Search, Send)
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-
-import { Send, Mic, Info, Search, RefreshCw, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUp, ArrowUpRight, Check, Copy, Download, RotateCcw, Sparkles, Square, X, Lightbulb, MoveUpRight, Compass, Network, Shield } from "lucide-react";
 import { api } from "@/lib/api";
-import { MorpheIcon } from "./MorpheIcon";
+import { AvatarOrb } from "./AvatarOrb";
 import type { Lang } from "@/pages/site/types";
 
 type ChatMessage = {
   id: string;
   role: "morphe" | "user";
-  text: string;
-  content?: string;
-  links?: Array<{ id: string; url: string; label: string }>;
-  terminal?: boolean;
-  searchUsed?: boolean;
+  content: string;
+  images?: string[];
   timestamp?: string;
 };
 
-const C = {
-  navy: "#0F1C2E",
-  navyLight: "#16263F",
-  gold: "#C9A227",
-  goldLight: "#E4C57E",
-  cream: "#FBF9F0",
-  ivory: "#F3F0E6",
-  slate: "#6B7280",
-  white: "#FFFFFF",
-  ink: "#1A1A1A",
-  border: "#D8D4C4",
-  error: "#B42318",
-  shadow: "rgba(15,28,46,0.35)",
-};
+type Phase = "idle" | "thinking" | "streaming";
 
-const SESSION_KEY = "morphe_v3_session_id";
-/* Matches the backend's `message.max(2000)` on /api/v1/morphe/chat. */
+const SESSION_KEY = "morphe_v4_session_id";
 const MAX_MESSAGE = 2000;
+
+const promptCategories = [
+  { category: "strategy", label: { en: "Strategy", ar: "الاستراتيجية" }, description: { en: "Shape your idea into a fundable case", ar: "حوّل فكرتك إلى حالة قابلة للتمويل" }, prompt: { en: "Help me shape my idea into a structured, fundable case", ar: "ساعدني في تشكيل فكرتي إلى حالة منظمة وقابلة للتمويل" } },
+  { category: "partnerships", label: { en: "Partnerships", ar: "الشراكات" }, description: { en: "Explore how to work with TerraMorph", ar: "استكشف كيف تعمل مع تيرامورف" }, prompt: { en: "What partnership models does TerraMorph offer?", ar: "ما نماذج الشراكة التي تقدمها تيرامورف؟" } },
+  { category: "approach", label: { en: "Approach", ar: "المنهجية" }, description: { en: "Understand the LDIA delivery architecture", ar: "افهم هندسة LDIA للتسليم" }, prompt: { en: "Explain the LDIA architecture — Locate, Design, Implement, Assure", ar: "اشرح هندسة LDIA — تحديد، تصميم، تنفيذ، تأكيد" } },
+  { category: "network", label: { en: "Network", ar: "الشبكة" }, description: { en: "Connect with experts and associates", ar: "تواصل مع الخبراء والشركاء" }, prompt: { en: "How does the expert network work?", ar: "كيف تعمل شبكة الخبراء؟" } },
+];
+
+const promptIcons = { strategy: Lightbulb, partnerships: MoveUpRight, approach: Compass, network: Network };
 
 export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
   const ar = lang !== "en";
   const dir = ar ? "rtl" : "ltr";
-
   const t = (en: string, arText: string) => (ar ? arText : en);
 
   const [open, setOpen] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
-  // Phase state machine: idle -> thinking (awaiting API) -> streaming (typewriter) -> idle
-  const [phase, setPhase] = useState<"idle" | "thinking" | "streaming">("idle");
-  const [useSearch, setUseSearch] = useState(false);
-  const [voiceActive, setVoiceActive] = useState(false);
-  const [showPrivacyTooltip, setShowPrivacyTooltip] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState("");
-  const [inputError, setInputError] = useState("");
-  const [ended, setEnded] = useState(false);
+  const [copied, setCopied] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [greeted, setGreeted] = useState(false);
-  const [newSessionId, setNewSessionId] = useState(0);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const endRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const launcherRef = useRef<HTMLButtonElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const infoBtnRef = useRef<HTMLButtonElement>(null);
-  const newSessionBtnRef = useRef<HTMLButtonElement>(null);
-  const [tooltipRect, setTooltipRect] = useState<{ top: number; left: number } | null>(null);
-  const [recognition, setRecognition] = useState<any>(null);
-  const typewriterRef = useRef<{ id: ReturnType<typeof setTimeout> | null; resolve: (() => void) | null }>({ id: null, resolve: null });
+  const typewriterRef = useRef<{ cancel: (() => void) | null }>({ cancel: null });
 
-  // Responsive sizing: smaller launcher + taller-but-capped panel on mobile.
+  // Responsive
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", onResize);
@@ -88,1089 +70,669 @@ export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Reveal animation: once the widget mounts (after cookie consent is given),
-  // the launcher slides up and fades in.
+  // Reveal launcher
   useEffect(() => {
     const id = requestAnimationFrame(() => setRevealed(true));
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // Close the privacy tooltip when clicking outside the info button.
-  useEffect(() => {
-    const onDocClick = (e: MouseEvent) => {
-      if (showPrivacyTooltip && infoBtnRef.current && !infoBtnRef.current.contains(e.target as Node)) {
-        setShowPrivacyTooltip(false);
-      }
-    };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
-  }, [showPrivacyTooltip]);
-
-  /* ------------------------------------------------------------------ */
-  /*  Interactive message content                                       */
-  /* ------------------------------------------------------------------ */
-
-  /* Turns plain text into clickable interactive elements:
-     http/https URLs  -> <a href> that navigates to the route directly
-     email addresses  -> mailto: links
-     phone numbers    -> tel: links
-  */
-  const renderInteractiveContent = (content: string) => {
-    // Split on URL, email, or phone patterns while keeping the delimiters
-    const parts = content.split(
-      /(https?:\/\/[^\s<>"'()]+|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|\+?\d[\d\s().-]{7,}\d)/g,
-    );
-
-    return parts.map((part, i) => {
-      if (/^https?:\/\//i.test(part)) {
-        return (
-          <a
-            key={i}
-            href={part}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              color: C.gold,
-              textDecoration: "underline",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {part}
-          </a>
-        );
-      }
-      if (/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(part)) {
-        return (
-          <a
-            key={i}
-            href={`mailto:${part}`}
-            style={{
-              color: C.gold,
-              textDecoration: "underline",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {part}
-          </a>
-        );
-      }
-      if (/^\+?\d[\d\s().-]{7,}\d$/.test(part)) {
-        return (
-          <a
-            key={i}
-            href={`tel:${part.replace(/[\s().-]/g, "")}`}
-            style={{
-              color: C.gold,
-              textDecoration: "underline",
-              fontWeight: 600,
-              cursor: "pointer",
-            }}
-          >
-            {part}
-          </a>
-        );
-      }
-      return part;
-    });
-  };
-
-  const cancelTypewriter = useCallback(() => {
-    if (typewriterRef.current.id) {
-      clearTimeout(typewriterRef.current.id);
-      typewriterRef.current.id = null;
-    }
-    typewriterRef.current.resolve?.();
-    typewriterRef.current.resolve = null;
-  }, []);
-
-  /* Sends a quick-action chip message immediately (auto-submit). */
-  const sendQuickAction = (message: string) => {
-    setInput(message);
-    submit(message);
-  };
-
-  const submit = (rawText?: string) => {
-    const text = (rawText ?? input).trim();
-
-    if (!text) {
-      setInputError(
-        t(
-          "Type a message before sending.",
-          "اكتب رسالة قبل الإرسال.",
-        ),
-      );
-      textareaRef.current?.focus();
-      return;
-    }
-
-    if (text.length > MAX_MESSAGE) {
-      setInputError(
-        t(
-          `Messages are limited to ${MAX_MESSAGE.toLocaleString()} characters.`,
-          `الرسائل محدودة بـ ${MAX_MESSAGE.toLocaleString()} حرفًا.`,
-        ),
-      );
-      textareaRef.current?.focus();
-      return;
-    }
-
-    if (phase !== "idle" || ended) return;
-
-    // Cancel any in-flight typewriter so overlapping replies don't interleave.
-    cancelTypewriter();
-
-    setInputError("");
-    setError("");
-
-    const userMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: "user",
-      text,
-      content: text,
-      timestamp: new Date().toISOString(),
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInput("");
-    setPhase("thinking");
-
-    void sendMessage(text)
-      .catch(() => {
-        setPhase("idle");
-        setError(
-          t(
-            "Couldn't send the message. Check your connection and try again.",
-            "تعذّر إرسال الرسالة. تحقّق من اتصالك وحاول مرة أخرى.",
-          ),
-        );
-      });
-  };
-
-  /* Talks to the deployed Fastify Morphe flow engine. The old widget streamed
-     from a separate Python service that is not deployed, so every message
-     failed in production; this endpoint is the one that is actually live. */
-  const sendMessage = async (text: string) => {
-    // Keep "thinking" visible long enough to perceive before the response arrives.
-    // Without this, a fast local backend batches thinking + streaming into one
-    // render and the user never sees the thinking state.
-    await new Promise((resolve) => setTimeout(resolve, 350));
-
-    const res = await api.morpheChat(sessionId, text, lang, useSearch);
-
-    if (res.session_id && res.session_id !== sessionId) {
-      setSessionId(res.session_id);
-    }
-
-    const replyId = crypto.randomUUID();
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: replyId,
-        role: "morphe",
-        text: "",
-        content: res.reply,
-        links: res.links,
-        searchUsed: res.search_used,
-        terminal: res.terminal,
-        timestamp: new Date().toISOString(),
-      },
-    ]);
-
-    // Switch out of thinking into streaming: the typewriter now reveals the reply.
-    setPhase("streaming");
-
-    // Typewriter reveal of the assistant's reply.
-    const cancel = typewriter(res.reply, (ch) => {
-      setMessages((prev) =>
-        prev.map((m) => (m.id === replyId ? { ...m, text: m.text + ch } : m)),
-      );
-    }, () => {
-      setPhase("idle");
-      if (res.terminal) setEnded(true);
-    });
-
-    return cancel;
-  };
-
   // Restore session
   useEffect(() => {
-    try {
-      const stored = sessionStorage.getItem(SESSION_KEY);
-      if (stored) setSessionId(stored);
-    } catch { /* noop */ }
+    try { const stored = sessionStorage.getItem(SESSION_KEY); if (stored) setSessionId(stored); } catch { /* noop */ }
   }, []);
 
   // Persist session
   useEffect(() => {
-    if (sessionId) {
-      try { sessionStorage.setItem(SESSION_KEY, sessionId); } catch { /* noop */ }
-    }
+    if (sessionId) { try { sessionStorage.setItem(SESSION_KEY, sessionId); } catch { /* noop */ } }
   }, [sessionId]);
 
-  // Scroll to bottom
+  // Auto-scroll
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, phase]);
 
-  // Speech recognition setup — max sensitivity, continuous listening with
-  // interim results so the user sees letters appear as they speak.
+  // Cleanup on unmount
   useEffect(() => {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      const rec = new SpeechRecognition();
-      rec.continuous = true;
-      rec.interimResults = true;
-      rec.maxAlternatives = 5;
-      rec.lang = ar ? "ar-EG" : "en-US";
-      rec.onresult = (event: any) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript += transcript;
-          }
-        }
-        if (finalTranscript) {
-          setInput(finalTranscript);
-          setInputError("");
-          setVoiceActive(false);
-          try { rec.stop(); } catch { /* ignore */ }
-          textareaRef.current?.focus();
-        } else if (interimTranscript) {
-          setInput(interimTranscript);
-          setInputError("");
-        }
-      };
-      rec.onerror = (event: any) => {
-        setVoiceActive(false);
-        // Aborted / no-speech are normal when the user stops speaking — not errors.
-        if (event?.error === "aborted" || event?.error === "no-speech") return;
-        setError(
-          ar
-            ? "الإدخال الصوتي غير متاح. يرجى الكتابة بدلًا من ذلك."
-            : "Voice input not available. Please type instead.",
-        );
-      };
-      rec.onend = () => {
-        // Only deactivate if we haven't just finalized a transcript.
-        if (voiceActive) setVoiceActive(false);
-      };
-      setRecognition(rec);
-    }
-  }, [ar]);
-
-  // Keyboard handling: Escape closes the panel. Enter is handled on the
-  // textarea itself — a document-level listener fired twice per keypress
-  // because the event bubbles, which sent every message twice.
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(false);
-        launcherRef.current?.focus();
-      }
+    return () => {
+      typewriterRef.current.cancel?.();
     };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, []);
 
-  // Move focus into the composer when the panel opens.
-  useEffect(() => {
-    if (!open) return;
-    const id = requestAnimationFrame(() => textareaRef.current?.focus());
-    return () => cancelAnimationFrame(id);
-  }, [open]);
+  const typewriter = useCallback(
+    (
+      text: string,
+      onChar: (ch: string) => void,
+      onDone: () => void
+    ): (() => void) => {
+      let i = 0;
+      let cancelled = false;
+      const step = () => {
+        if (cancelled || i >= text.length) {
+          if (!cancelled) onDone();
+          return;
+        }
+        onChar(text[i]);
+        i += 1;
+        setTimeout(step, 12);
+      };
+      step();
+      return () => {
+        cancelled = true;
+      };
+    },
+    []
+  );
 
-  // Keep Tab inside the panel while it is open (aria-modal).
-  useEffect(() => {
-    if (!open) return;
-    const panel = panelRef.current;
-    if (!panel) return;
-    const onTab = (e: KeyboardEvent) => {
-      if (e.key !== "Tab") return;
-      const focusables = Array.from(
-        panel.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), textarea:not([disabled]), input:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
-        ),
-      );
-      if (focusables.length === 0) return;
-      const first = focusables[0];
-      const last = focusables[focusables.length - 1];
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-    panel.addEventListener("keydown", onTab);
-    return () => panel.removeEventListener("keydown", onTab);
-  }, [open]);
+  const cancelStream = useCallback(() => {
+    typewriterRef.current.cancel?.();
+    typewriterRef.current.cancel = null;
+    setPhase("idle");
+  }, []);
 
-  // Cancel any running typewriter when the widget unmounts.
-  useEffect(() => {
-    return () => cancelTypewriter();
-  }, [cancelTypewriter]);
-
-  // Voice recording
-  const startVoice = () => {
-    if (!recognition) {
-      setError(
-        ar
-          ? "الإدخال الصوتي غير مدعوم في هذا المتصفح."
-          : "Voice input is not supported in this browser.",
-      );
-      return;
-    }
-    try {
-      recognition.start();
-      setVoiceActive(true);
-      setError("");
-    } catch {
-      setVoiceActive(false);
-      setError(
-        ar
-          ? "تعذّر بدء الإدخال الصوتي."
-          : "Could not start voice input.",
-      );
-    }
-  };
-
-  const stopVoice = () => {
-    if (recognition && voiceActive) {
-      try { recognition.stop(); } catch { /* ignore */ }
-      setVoiceActive(false);
-    }
-  };
-
-  // File attachments are not offered: the flow engine has no upload endpoint.
-
-  const startOver = () => {
+  const startOver = useCallback(() => {
     setMessages([]);
     setSessionId(null);
     setError("");
-    setInputError("");
+    setInput("");
     setPhase("idle");
-    setVoiceActive(false);
-    setEnded(false);
-    setNewSessionId((n) => n + 1);
+    setConfirmClear(false);
     try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
     textareaRef.current?.focus();
-  };
+  }, []);
 
-  /* Typewriter: reveal one character at a time for a "thinking out loud" feel. */
-  const typewriter = (text: string, onChar: (ch: string) => void, onDone: () => void): (() => void) => {
-    let i = 0;
-    const step = () => {
-      if (i >= text.length) {
-        onDone();
-        return;
+  const handleSend = useCallback(async (value?: string) => {
+    const text = (value ?? input).trim();
+    if (!text || phase !== "idle") return;
+
+    setInput("");
+    setError("");
+    cancelStream();
+
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Add user message + placeholder for assistant
+    const replyId = crypto.randomUUID();
+    setMessages((prev) => [...prev, userMessage, { id: replyId, role: "morphe", content: "" }]);
+    setPhase("thinking");
+
+    // Minimum thinking delay so user perceives it
+    await new Promise((r) => setTimeout(r, 350));
+
+    try {
+      const res = await api.morpheChat(sessionId, text, lang, false);
+
+      if (res.session_id && res.session_id !== sessionId) {
+        setSessionId(res.session_id);
       }
-      onChar(text[i]);
-      i += 1;
-      typewriterRef.current.id = setTimeout(step, 14);
-    };
-    typewriterRef.current.id = setTimeout(step, 14);
-    return () => {
-      if (typewriterRef.current.id) clearTimeout(typewriterRef.current.id);
-      typewriterRef.current.id = null;
-    };
-  };
+
+      setPhase("streaming");
+
+      // Typewriter reveal of the full reply
+      const fullReply = res.reply;
+      const cancel = typewriter(fullReply, (ch) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === replyId ? { ...m, content: m.content + ch } : m))
+        );
+      }, () => {
+        setPhase("idle");
+        // Add links as a separate message
+        if (res.links && res.links.length > 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "morphe",
+              content: res.links.map((l) => `🔗 [${l.label}](${l.url})`).join("\n"),
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        }
+      });
+
+      // Store cancel function in case we need to abort
+      typewriterRef.current.cancel = cancel;
+    } catch {
+      setError(t("Couldn't get a response. Please try again.", "تعذّر الحصول على رد. يرجى المحاولة مرة أخرى."));
+      setMessages((prev) => prev.filter((m) => !(m.role === "morphe" && m.content === "")));
+      setPhase("idle");
+    }
+  }, [input, phase, sessionId, lang, cancelStream, messages]);
+
+  const downloadConversation = useCallback(() => {
+    const blob = new Blob(
+      [messages.map((m) => `${m.role === "user" ? "You" : "TerraMorph AI"}:\n${m.content}`).join("\n\n")],
+      { type: "text/plain;charset=utf-8" }
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "terramorph-conversation.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
+  const copyMessage = useCallback(async (content: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 1600);
+    } catch {
+      setError(t("Copy unavailable. Select the text instead.", "النسخ غير متاح. يمكنك تحديد النص بدلاً من ذلك."));
+    }
+  }, []);
 
   return (
     <div dir={dir} style={{ fontFamily: "Jost, system-ui, -apple-system, sans-serif" }}>
-      {/* Launcher */}
-      <button
+      <style>{`
+        /* Launcher - fixed, always circular, never expands */
+        .widget-launcher {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          width: 56px; height: 56px; border-radius: 50%;
+          background: #0F1C2E; border: 2px solid #C9A227; color: #FBF9F0;
+          display: flex; align-items: center; justify-content: center; cursor: pointer;
+          box-shadow: 0 12px 32px rgba(15,28,46,0.4), 0 0 0 0 rgba(201,162,39,0.5);
+          transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          z-index: 1100;
+          flex-shrink: 0;
+        }
+        .widget-launcher.open { background: #C9A227; color: #0F1C2E; transform: scale(0.96); }
+        .widget-launcher:hover:not(.open) { 
+          transform: scale(1.05); 
+          box-shadow: 0 0 0 10px rgba(201,162,39,0.25), 0 12px 32px rgba(15,28,46,0.4); 
+        }
+        .launcher-label { display: none; }
+        .launcher-orb { display: flex; }
+
+        /* Panel - fixed to viewport, strictly constrained */
+        .widget-panel {
+          position: fixed;
+          bottom: 100px;
+          right: 20px;
+          width: 420px;
+          max-width: calc(100vw - 40px);
+          height: 72vh;
+          max-height: calc(100vh - 120px);
+          background: linear-gradient(160deg, #FBF9F0, #FFFFFF);
+          border: 1px solid #D8D4C4;
+          border-radius: 28px;
+          box-shadow: 0 40px 120px rgba(15,28,46,0.45), 0 0 0 1px rgba(201,162,39,0.08);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          z-index: 1100;
+        }
+        @media (max-width: 767px) {
+          .widget-panel {
+            bottom: 12px;
+            right: 12px;
+            left: 12px;
+            width: auto;
+            max-width: calc(100vw - 24px);
+            height: 85vh;
+            max-height: calc(100vh - 24px);
+            border-radius: 16px;
+          }
+        }
+
+        .widget-header {
+          background: linear-gradient(135deg, #0F1C2E, #16263F);
+          color: #FBF9F0;
+          padding: 18px 20px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          border-bottom: 1px solid #D8D4C4;
+          flex-shrink: 0;
+        }
+        .widget-title strong { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+        .widget-title small { font-size: 10.5px; opacity: 0.75; letter-spacing: 0.03em; }
+        .widget-tools { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+        .widget-tool {
+          background: rgba(255,255,255,0.08);
+          border: 1px solid #D8D4C4;
+          border-radius: 10px;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: rgba(255,255,255,0.9);
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          flex-shrink: 0;
+        }
+        .widget-tool:hover:not(:disabled) { background: rgba(255,255,255,0.16); border-color: #C9A227; color: #FBF9F0; transform: translateY(-1px); }
+        .widget-tool:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .clear-confirm {
+          background: rgba(251,249,240,0.95);
+          border-top: 1px solid #D8D4C4;
+          padding: 12px 20px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          flex-wrap: wrap;
+          flex-shrink: 0;
+        }
+        .clear-confirm button { padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .clear-confirm button:first-child { background: #C9A227; color: #0F1C2E; border: none; }
+        .clear-confirm button:last-child { background: transparent; color: #6B7280; border: 1px solid #D8D4C4; }
+
+        .widget-scroll {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 20px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          background: #F3F0E6;
+          min-height: 0;
+        }
+
+        .widget-welcome { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 20px; width: 100%; box-sizing: border-box; }
+        .welcome-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #C9A227; }
+        .widget-welcome h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 1.2; color: #0F1C2E; margin: 0; word-wrap: break-word; }
+        .widget-welcome h2 em { font-style: italic; color: #16263F; }
+        .welcome-lead { font-size: 15px; color: #6B7280; margin: 0; max-width: 100%; }
+        .widget-prompts { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px; }
+        .widget-prompts > span { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280; text-align: left; padding-left: 4px; }
+        .prompt-btn { 
+          display: flex; 
+          align-items: center; 
+          gap: 10px; 
+          padding: 12px 14px; 
+          border-radius: 14px; 
+          border: 1px solid #D8D4C4; 
+          background: #FFFFFF; 
+          color: #1A1A1A; 
+          font-size: 13.5px; 
+          font-weight: 500; 
+          cursor: pointer; 
+          text-align: left; 
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .prompt-btn:hover:not(:disabled) { border-color: #C9A227; transform: translateX(3px); }
+        .prompt-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .prompt-icon { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #F3F0E6; color: #C9A227; flex-shrink: 0; }
+        .prompt-btn small { display: block; font-size: 10.5px; font-weight: 400; color: #6B7280; margin-top: 2px; line-height: 1.3; }
+
+        .widget-message { display: flex; flex-direction: column; gap: 6px; animation: slideIn 0.3s ease-out forwards; width: 100%; box-sizing: border-box; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+        .widget-message-label { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #C9A227; }
+        .widget-message.morphe .widget-message-label { color: #C9A227; }
+        .widget-message.user .widget-message-label { color: #6B7280; margin-left: auto; }
+        .widget-message.user .widget-message-content { margin-left: auto; }
+        .widget-message.user .widget-copy { display: none; }
+
+        .widget-message-content {
+          max-width: 85%;
+          padding: 12px 16px;
+          border-radius: 20px;
+          white-space: pre-wrap;
+          word-break: break-word;
+          background: linear-gradient(135deg, #FFFFFF, #F3F0E6);
+          color: #1A1A1A;
+          border: 1px solid #D8D4C4;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+          position: relative;
+        }
+        .widget-message.user .widget-message-content { 
+          background: linear-gradient(135deg, #0F1C2E, #16263F); 
+          color: #FBF9F0; 
+          border: 1px solid rgba(201,162,39,0.4); 
+          box-shadow: 0 8px 24px rgba(15,28,46,0.25); 
+        }
+
+        .widget-thinking { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 12px; color: #C9A227; }
+        .widget-thinking .dots i { width: 6px; height: 6px; border-radius: 50%; background: #C9A227; animation: pulseDot 1.4s infinite; }
+        .widget-thinking .dots i:nth-child(2) { animation-delay: 0.2s; }
+        .widget-thinking .dots i:nth-child(3) { animation-delay: 0.4s; }
+        .widget-thinking .caret { width: 2px; height: 18px; background: #C9A227; animation: caretBlink 1s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+        @keyframes caretBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .widget-copy { 
+          position: absolute; 
+          bottom: 8px; 
+          right: 8px; 
+          display: flex; 
+          align-items: center; 
+          gap: 4px; 
+          padding: 4px 8px; 
+          border-radius: 6px; 
+          background: rgba(255,255,255,0.8); 
+          border: 1px solid #D8D4C4; 
+          font-size: 10.5px; 
+          font-weight: 600; 
+          color: #1A1A1A; 
+          cursor: pointer; 
+          transition: all 0.2s; 
+        }
+        .widget-copy:hover { background: #FFFFFF; border-color: #C9A227; color: #C9A227; }
+
+        .widget-error { font-size: 12px; color: #B42318; margin-top: 8px; padding: 8px 12px; background: rgba(180,35,24,0.1); border-radius: 8px; border: 1px solid rgba(180,35,24,0.2); width: 100%; box-sizing: border-box; }
+
+        .widget-composer { 
+          border-top: 1px solid #D8D4C4; 
+          padding: 12px 14px; 
+          background: linear-gradient(135deg, #FBF9F0, #FFFFFF); 
+          box-shadow: 0 -4px 20px rgba(15,28,46,0.04);
+          flex-shrink: 0;
+        }
+        .widget-composer textarea { 
+          flex: 1; 
+          min-width: 0; 
+          border: 1px solid #D8D4C4; 
+          border-radius: 16px; 
+          padding: 13px 16px; 
+          font-size: 15px; 
+          outline: none; 
+          background: #FFFFFF; 
+          color: #1A1A1A; 
+          resize: none; 
+          font-family: inherit; 
+          min-height: 46px; 
+          max-height: 150px; 
+          transition: border-color 0.2s, box-shadow 0.2s; 
+        }
+        .widget-composer textarea:focus { border-color: #C9A227; box-shadow: 0 0 0 3px rgba(201,162,39,0.15); }
+        .composer-row { display: flex; gap: 8px; align-items: center; width: 100%; box-sizing: border-box; }
+        .composer-tools { display: flex; gap: 6px; flex-shrink: 0; }
+        .composer-tool { 
+          background: #FFFFFF; 
+          border: 1px solid #D8D4C4; 
+          border-radius: 12px; 
+          width: 40px; 
+          height: 40px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          cursor: pointer; 
+          color: #6B7280; 
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          flex-shrink: 0;
+        }
+        .composer-tool:hover:not(:disabled) { border-color: #C9A227; color: #0F1C2E; box-shadow: 0 0 12px rgba(201,162,39,0.4); }
+        .composer-tool.active { background: #C9A227; border-color: #C9A227; color: #0F1C2E; box-shadow: 0 0 12px rgba(201,162,39,0.4); }
+        .send-btn { 
+          background: linear-gradient(135deg, #C9A227, #E4C57E); 
+          color: #0F1C2E; 
+          border: none; 
+          border-radius: 50%; 
+          width: 40px; 
+          height: 40px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          cursor: pointer; 
+          flex-shrink: 0; 
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); 
+          box-shadow: 0 6px 16px rgba(201,162,39,0.4); 
+        }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: scale(0.96); background: #6B7280; }
+        .send-btn.stop { background: #B42318; color: #FFFFFF; box-shadow: 0 6px 16px rgba(180,35,24,0.4); }
+        .composer-hint { font-size: 11px; color: #6B7280; margin-right: auto; white-space: nowrap; }
+        .widget-disclaimer { font-size: 10.5px; color: #6B7280; text-align: center; margin-top: 10px; line-height: 1.6; word-wrap: break-word; }
+        .widget-disclaimer a { color: #C9A227; text-decoration: underline; }
+      `}</style>
+
+      {/* Launcher - fixed, no wrapper */}
+      <motion.button
         ref={launcherRef}
+        className={`widget-launcher${open ? " open" : ""}`}
         onClick={() => {
           const willOpen = !open;
           setOpen(willOpen);
           if (willOpen && messages.length === 0 && !greeted) {
             setGreeted(true);
-            setMessages((prev) => [
-              ...prev,
-              {
-                id: crypto.randomUUID(),
-                role: "morphe",
-                text: t(
-                  "Hello! I'm Morphe, TerraMorph's AI intake assistant. I can help you explore our advisory method, services, case studies, or start a partnership conversation. How can I assist you today?",
-                  "مرحباً! أنا مورفي، المساعد الذكي لاستقبال العملاء في تيرامورف. يمكنني مساعدتك في استكشاف منهجيتنا الاستشارية، خدماتنا، دراسات الحالة، أو بدء محادثة شراكة. كيف يمكنني مساعدتك اليوم؟",
-                ),
-                content: t(
-                  "Hello! I'm Morphe, TerraMorph's AI intake assistant. I can help you explore our advisory method, services, case studies, or start a partnership conversation. How can I assist you today?",
-                  "مرحباً! أنا مورفي، المساعد الذكي لاستقبال العملاء في تيرامورف. يمكنني مساعدتك في استكشاف منهجيتنا الاستشارية، خدماتنا، دراسات الحالة، أو بدء محادثة شراكة. كيف يمكنني مساعدتك اليوم؟",
-                ),
-                timestamp: new Date().toISOString(),
-              },
-            ]);
           }
         }}
         aria-label={open ? t("Close chat", "إغلاق المحادثة") : t("Open chat with Morphe", "فتح محادثة مع مورفي")}
-        style={{
-          position: "fixed",
-          bottom: isMobile ? 20 : 28,
-          right: ar ? undefined : isMobile ? 16 : 28,
-          left: ar ? isMobile ? 16 : 28 : undefined,
-          width: isMobile ? 48 : 56,
-          height: isMobile ? 48 : 56,
-          borderRadius: "50%",
-          background: open ? C.gold : C.navy,
-          border: `2px solid ${C.gold}`,
-          color: open ? C.navy : C.cream,
-          cursor: "pointer",
-          boxShadow: `0 0 0 0 rgba(201,162,39,0.5), 0 12px 32px rgba(15,28,46,0.4)`,
-          zIndex: 1100,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-          opacity: revealed ? 1 : 0,
-          transform: revealed
-            ? open
-              ? "scale(0.96)"
-              : "scale(1)"
-            : "scale(0.8) translateY(24px)",
-          animation: !open && revealed && messages.length > 1 ? "launcherPulse 3s infinite" : "none",
-        }}
+        aria-expanded={open}
+        whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+        whileTap={{ scale: 0.96 }}
       >
-        {open ? (
-          "✕"
-        ) : (
-          <svg
-            width={22}
-            height={22}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            style={{ display: "block", animation: "morphWiggle 4s ease-in-out infinite" }}
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.div key="close" initial={{ rotate: -90, scale: 0.5 }} animate={{ rotate: 0, scale: 1 }} exit={{ rotate: 90, scale: 0.5 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}>
+              <X size={20} />
+            </motion.div>
+          ) : (
+            <>
+              <span className="launcher-orb"><AvatarOrb size={40} pulse /></span>
+              <span className="launcher-label">
+                <strong>Ask TerraMorph AI</strong>
+                <small>A little clarity goes a long way</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* Panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.section
+            ref={panelRef}
+            className="widget-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("Morphe AI chat", "محادثة مورفي")}
+            initial={{ opacity: 0, y: 30, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 18, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 320, damping: 28 }}
           >
-            <defs>
-              <style>{`
-                @keyframes morphWiggle {
-                  0%, 100% { transform: rotate(0deg) scale(1); }
-                  25% { transform: rotate(-6deg) scale(1.05); }
-                  50% { transform: rotate(6deg) scale(0.95); }
-                  75% { transform: rotate(-3deg) scale(1.02); }
-                }
-              `}</style>
-            </defs>
-            {/* Morphing body: square <-> circle <-> blob */}
-            <rect x="3" y="3" width="18" height="18" rx="6">
-              <animate attributeName="rx" values="6;2;10;6;2;6" dur="5s" repeatCount="indefinite" />
-            </rect>
-            {/* Cheeky winking eyes */}
-            <circle cx="9" cy="9" r="1.3" />
-            <circle cx="15" cy="9" r="1.3">
-              <animate attributeName="r" values="1.3;0.2;1.3;0.2;1.3" dur="3s" repeatCount="indefinite" />
-            </circle>
-            {/* Morphing smile */}
-            <path d="M 9 15 Q 12 17 15 15">
-              <animate attributeName="d" values="M 9 15 Q 12 17 15 15;M 9 15 Q 12 13 15 15;M 9 15 Q 12 17 15 15" dur="4s" repeatCount="indefinite" />
-            </path>
-          </svg>
-        )}
-      </button>
-
-      {open && (
-        <div
-          ref={panelRef}
-          role="dialog"
-          aria-modal="true"
-          aria-label={t("Morphe AI chat", "محادثة مورفي")}
-          style={{
-            position: "fixed",
-            bottom: isMobile ? 10 : 100,
-            right: ar ? undefined : isMobile ? 10 : 20,
-            left: ar ? isMobile ? 10 : undefined : undefined,
-            width: isMobile ? "94vw" : 420,
-            maxWidth: "96vw",
-            height: isMobile ? "88vh" : "72vh",
-            background: `linear-gradient(160deg, ${C.cream}, ${C.white})`,
-            border: `1px solid ${C.border}`,
-            borderRadius: isMobile ? 12 : 28,
-            boxShadow: "0 40px 120px rgba(15,28,46,0.45), 0 0 0 1px rgba(201,162,39,0.08)",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            zIndex: 1100,
-            direction: dir,
-            animation: "panelIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-          }}
-        >
-          <style>{`
-            @keyframes panelIn {
-              from { opacity: 0; transform: translateY(30px) scale(0.96); }
-              to { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes launcherPulse {
-              0%, 100% { box-shadow: 0 0 0 0 rgba(201,162,39,0.4), 0 12px 32px rgba(15,28,46,0.4); transform: scale(1); }
-              50% { box-shadow: 0 0 0 10px rgba(201,162,39,0.25), 0 12px 32px rgba(15,28,46,0.4); transform: scale(1.05); }
-            }
-            @keyframes slideInMsg {
-              from { opacity: 0; transform: translateX(${ar ? "-14px" : "14px"}); }
-              to { opacity: 1; transform: translateX(0); }
-            }
-            @keyframes pulseDot {
-              0%, 100% { opacity: 0.4; transform: scale(1); }
-              50% { opacity: 1; transform: scale(1.15); }
-            }
-            @keyframes typingBounce {
-              0%, 100% { transform: translateY(0); }
-              50% { transform: translateY(-6px); }
-            }
-            @keyframes pulseVoice {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0.4; }
-            }
-            @keyframes pulseRing {
-              0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.6; }
-              100% { transform: translate(-50%, -50%) scale(1.8); opacity: 0; }
-            }
-            @keyframes thinkGlow {
-              0%, 100% { box-shadow: 0 0 12px rgba(201,162,39,0.3); }
-              50% { box-shadow: 0 0 24px rgba(201,162,39,0.7); }
-            }
-          `}</style>
-
-          {/* Header */}
-          <div
-            style={{
-              background: `linear-gradient(135deg, ${C.navy}, ${C.navyLight})`,
-              color: C.cream,
-              padding: "18px 20px",
-              display: "flex",
-              alignItems: "center",
-              gap: 14,
-              borderBottom: `1px solid ${C.border}`,
-              boxShadow: phase === "thinking"
-                ? `0 0 20px rgba(201,162,39,0.25)`
-                : "none",
-              position: "relative",
-            }}
-          >
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-                boxShadow: "0 4px 12px rgba(201,162,39,0.3)",
-                transition: "transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                transform: phase === "thinking" ? "scale(1.05)" : "scale(1)",
-              }}
-            >
-              <MorpheIcon size={24} thinking={phase === "thinking"} />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: 17, letterSpacing: "-0.01em" }}>
-                Morphe AI
+            {/* Header */}
+            <header className="widget-header">
+              <AvatarOrb size={42} tracking={!isMobile} pulse />
+              <div className="widget-title">
+                <strong>TerraMorph <span style={{ color: "#C9A227" }}>AI</span></strong>
+                <small><i /> {t("A thoughtful place to begin", "مكان متأمل للبدء")}</small>
               </div>
-              <div style={{ fontSize: 10.5, opacity: 0.75, letterSpacing: "0.03em" }}>
-                {ar ? "مساعد ذكي - شركة تيرامورف" : "AI Intake Assistant"}
-              </div>
-            </div>
-            <button
-              ref={infoBtnRef}
-              type="button"
-              onMouseEnter={(e) => {
-                setShowPrivacyTooltip(true);
-                const r = infoBtnRef.current?.getBoundingClientRect();
-                if (r) setTooltipRect({ top: r.top, left: r.left });
-              }}
-              onMouseLeave={() => setShowPrivacyTooltip(false)}
-              onFocus={(e) => {
-                setShowPrivacyTooltip(true);
-                const r = infoBtnRef.current?.getBoundingClientRect();
-                if (r) setTooltipRect({ top: r.top, left: r.left });
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowPrivacyTooltip(false), 150);
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowPrivacyTooltip(true);
-                const r = infoBtnRef.current?.getBoundingClientRect();
-                if (r) setTooltipRect({ top: r.top, left: r.left });
-              }}
-              aria-label={t("Privacy information", "معلومات الخصوصية")}
-              aria-describedby={
-                showPrivacyTooltip ? "morphe-privacy-tooltip" : undefined
-              }
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: `1px solid ${C.border}`,
-                borderRadius: 10,
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "rgba(255,255,255,0.9)",
-                transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                flexShrink: 0,
-              }}
-            >
-              <Info size={16} strokeWidth={1.6} aria-hidden="true" />
-            </button>
-            {/* New session button — placed right next to info per request */}
-            <button
-              ref={newSessionBtnRef}
-              type="button"
-              onClick={() => startOver()}
-              aria-label={t("New conversation", "محادثة جديدة")}
-              title={t("New conversation", "محادثة جديدة")}
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: `1px solid ${C.border}`,
-                borderRadius: 10,
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                color: "rgba(255,255,255,0.9)",
-                transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                flexShrink: 0,
-                marginLeft: 8,
-              }}
-            >
-              <Plus size={16} strokeWidth={2} aria-hidden="true" />
-            </button>
-            {showPrivacyTooltip && (
-              <div
-                id="morphe-privacy-tooltip"
-                role="tooltip"
-                style={{
-                  position: "fixed",
-                  top: tooltipRect ? tooltipRect.top - 70 : 120,
-                  left: tooltipRect
-                    ? ar
-                      ? Math.max(8, tooltipRect.left - 260 + 24)
-                      : Math.max(8, tooltipRect.left)
-                    : ar
-                      ? undefined
-                      : 20,
-                  right: tooltipRect || ar ? undefined : 20,
-                  width: 260,
-                  background: C.navy,
-                  color: C.cream,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  fontSize: 11,
-                  lineHeight: 1.5,
-                  zIndex: 9999,
-                  border: `1px solid ${C.gold}`,
-                  boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-                  animation: "slideInMsg 0.3s ease-out forwards",
-                }}
-              >
-                {ar
-                  ? "مورفي هو المساعد الذكي لشركة تيرامورف. تُعالج رسائلك للرد عليك ولا تُستخدم لتدريب النماذج."
-                  : "Morphe is TerraMorph's AI assistant. Messages are processed to answer you and are not used for model training."}
-              </div>
-            )}
-          </div>
-
-          {/* Messages */}
-          <div
-            ref={scrollRef}
-            role="log"
-            aria-live="polite"
-            aria-relevant="additions text"
-            aria-label={t("Conversation", "المحادثة")}
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "20px 18px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 16,
-              background: C.ivory,
-            }}
-          >
-            {messages.map((m) => {
-              const isMorphe = m.role === "morphe";
-              const time = m.timestamp
-                ? new Date(m.timestamp).toLocaleTimeString(ar ? "ar-EG" : "en-US", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                : "";
-              return (
-                <div
-                  key={m.id}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: isMorphe ? "flex-start" : "flex-end",
-                    animation: "slideInMsg 0.3s ease-out forwards",
-                    gap: 6,
-                  }}
-                >
-                  {/* Sender label */}
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      letterSpacing: "0.05em",
-                      textTransform: "uppercase",
-                      color: isMorphe ? C.gold : C.slate,
-                      marginLeft: isMorphe ? 0 : "auto",
-                      marginRight: isMorphe ? "auto" : 0,
-                      marginBottom: 2,
-                    }}
-                  >
-                    {isMorphe ? t("Morphe", "مورفي") : t("You", "أنت")}
-                  </div>
-
-                  {/* Message bubble */}
-                  <div
-                    style={{
-                      maxWidth: "90%",
-                      padding: "12px 16px",
-                      borderRadius: isMorphe ? 20 : 20,
-                      background: isMorphe
-                        ? `linear-gradient(135deg, ${C.white}, ${C.ivory})`
-                        : `linear-gradient(135deg, ${C.navy}, ${C.navyLight})`,
-                      color: isMorphe ? C.ink : C.cream,
-                      border: isMorphe
-                        ? `1px solid ${C.border}`
-                        : `1px solid ${C.gold}40`,
-                      boxShadow: isMorphe
-                        ? "0 4px 20px rgba(0,0,0,0.06)"
-                        : "0 8px 24px rgba(15,28,46,0.25)",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                    }}
-                  >
-                    {renderInteractiveContent(m.text)}
-                    {m.role === "morphe" && m.searchUsed && (
-                      <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                        <span style={{ fontSize: 10, color: C.gold, fontWeight: 700 }}>
-                          🏛️
-                        </span>
-                        <span style={{ fontSize: 10.5, color: C.slate }}>
-                          {ar ? "المعرفة من تيرامورف" : "Teramorph knowledge"}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Timestamp */}
-                  <div
-                    style={{
-                      fontSize: 9.5,
-                      color: C.slate,
-                      marginLeft: isMorphe ? 4 : "auto",
-                      marginRight: isMorphe ? "auto" : 4,
-                    }}
-                  >
-                    {time}
-                  </div>
-                </div>
-              );
-            })}
-            {messages.length === 0 && (
-              <div style={{ alignSelf: "center", color: C.slate, fontSize: 13, paddingTop: 40 }}>
-                {ar ? "انقر على الأيقونة لبدء المحادثة مع مورفي" : "Tap the icon to start a conversation with Morphe"}
-              </div>
-            )}
-            {phase === "thinking" && (
-              <div style={{ alignSelf: "flex-start", marginBottom: 8 }} role="status">
-                <div style={{ display: "flex", gap: 5, alignItems: "center" }} aria-hidden="true">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold, animation: "pulseDot 1.4s infinite", animationDelay: `${i * 0.2}s` }} />
-                  ))}
-                </div>
-                <div style={{ fontSize: 11, color: C.gold, marginTop: 6, fontStyle: "italic", fontWeight: 700 }}>
-                  {ar ? "مورفي يفكر…" : "Morphe is thinking…"}
-                </div>
-              </div>
-            )}
-            {phase === "streaming" && (
-              <div style={{ alignSelf: "flex-start", marginBottom: 8 }} role="status">
-                <div style={{ display: "flex", gap: 5, alignItems: "center" }} aria-hidden="true">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} style={{ width: 8, height: 8, borderRadius: "50%", background: C.gold, animation: "typingBounce 1.4s infinite", animationDelay: `${i * 0.2}s` }} />
-                  ))}
-                </div>
-                <div style={{ fontSize: 11, color: C.slate, marginTop: 6, fontStyle: "italic" }}>
-                  {ar ? "يكتب…" : "Writing…"}
-                </div>
-              </div>
-            )}
-            {error && (
-              <div role="alert" style={{ fontSize: 12, color: C.error, marginTop: 8, padding: "8px 12px", background: "rgba(180,35,24,0.1)", borderRadius: 8, border: `1px solid ${C.error}33` }}>{error}</div>
-            )}
-
-            {/* Suggested actions after greeting */}
-            {messages.length === 1 && messages[0]?.role === "morphe" && phase !== "streaming" && !ended && (
-              <div style={{ marginTop: 10, padding: "0 18px", display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.05em", textTransform: "uppercase", color: C.slate, marginBottom: 6 }}>
-                  {t("Quick actions", "إجراءات سريعة")}
-                </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {[
-                    { key: "about", label: t("About TerraMorph", "عن تيرامورف"), message: t("Tell me about TerraMorph", "أخبرني عن تيرامورف") },
-                    { key: "services", label: t("Services", "الخدمات"), message: t("What services do you offer?", "ما الخدمات التي تقدمونها؟") },
-                    { key: "case-studies", label: t("Case Studies", "دراسات الحالة"), message: t("Show me case studies", "أظهر لي دراسات الحالة") },
-                    { key: "contact", label: t("Contact Team", "تواصل مع الفريق"), message: t("How can I contact the team?", "كيف يمكنني التواصل مع الفريق؟") },
-                  ].map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => sendQuickAction(item.message)}
-                      style={{
-                        flexShrink: 0,
-                        padding: "8px 16px",
-                        borderRadius: 24,
-                        border: `1px solid ${C.border}`,
-                        background: C.white,
-                        color: C.ink,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: "pointer",
-                        transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                        whiteSpace: "nowrap",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.04)",
-                      }}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Input */}
-          {!ended ? (
-            <div
-              style={{
-                borderTop: `1px solid ${C.border}`,
-                padding: "12px 14px",
-                background: `linear-gradient(135deg, ${C.cream}, ${C.white})`,
-                boxShadow: "0 -4px 20px rgba(15,28,46,0.04)",
-              }}
-            >
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                {/* Teramorph-only knowledge toggle */}
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError("");
-                    setUseSearch((p) => !p);
-                  }}
-                  aria-label={t(
-                    "Toggle Teramorph knowledge",
-                    "تفعيل أو إيقاف معرفة تيرامورف",
-                  )}
-                  aria-pressed={useSearch}
-                  title={t("Toggle Teramorph knowledge", "تفعيل أو إيقاف معرفة تيرامورف")}
-                  style={{
-                    background: useSearch ? C.gold : C.white,
-                    border: `1px solid ${useSearch ? C.gold : C.border}`,
-                    color: useSearch ? C.navy : C.slate,
-                    borderRadius: 12,
-                    width: 40,
-                    height: 40,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                    boxShadow: useSearch ? `0 0 12px rgba(201,162,39,0.4)` : "none",
-                  }}
-                >
-                  <Search size={16} strokeWidth={1.8} aria-hidden="true" />
+              <div className="widget-tools">
+                <button className="widget-tool" title={t("Download conversation", "تنزيل المحادثة")} aria-label={t("Download conversation", "تنزيل المحادثة")} onClick={downloadConversation} disabled={!messages.length || phase !== "idle"}>
+                  <Download size={16} />
                 </button>
-
-                {/* Voice dictation */}
-                <button
-                  type="button"
-                  onClick={() => (voiceActive ? stopVoice() : startVoice())}
-                  aria-label={voiceActive ? t("Stop dictation", "إيقاف الإملاء") : t("Dictate a message", "إملاء رسالة")}
-                  aria-pressed={voiceActive}
-                  title={voiceActive ? t("Stop dictation", "إيقاف الإملاء") : t("Dictate a message", "إملاء رسالة")}
-                  style={{
-                    background: voiceActive ? C.error : C.white,
-                    border: `1px solid ${voiceActive ? C.error : C.gold}`,
-                    color: voiceActive ? C.white : C.navy,
-                    borderRadius: "50%",
-                    width: 40,
-                    height: 40,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    flexShrink: 0,
-                    transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                    boxShadow: voiceActive
-                      ? `0 0 0 0 ${C.error}80, 0 4px 12px rgba(180,35,24,0.3)`
-                      : "0 4px 12px rgba(0,0,0,0.1)",
-                    animation: voiceActive ? "pulseVoice 1.5s infinite" : "none",
-                  }}
-                >
-                  <Mic size={16} strokeWidth={1.8} aria-hidden="true" />
-                  {voiceActive && (
-                    <span style={{
-                      position: "absolute",
-                      top: "50%",
-                      left: "50%",
-                      width: "100%",
-                      height: "100%",
-                      borderRadius: "50%",
-                      border: `2px solid ${C.error}`,
-                      opacity: 0.5,
-                      animation: "pulseRing 1.5s infinite",
-                      transform: "translate(-50%, -50%)",
-                      pointerEvents: "none",
-                    }} />
-                  )}
+                <button className="widget-tool" title={t("New conversation", "محادثة جديدة")} aria-label={t("New conversation", "محادثة جديدة")} disabled={!messages.length || phase !== "idle"} onClick={() => setConfirmClear(true)}>
+                  <RotateCcw size={16} />
                 </button>
+                <button className="widget-tool" aria-label={t("Close chat", "إغلاق المحادثة")} onClick={() => setOpen(false)}>
+                  <X size={19} />
+                </button>
+              </div>
+            </header>
 
+            {/* Clear confirmation */}
+            <AnimatePresence>
+              {confirmClear && (
+                <motion.div className="clear-confirm" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
+                  <span>{t("Start a new conversation? This clears the current chat.", "بدء محادثة جديدة؟ سيؤدي ذلك إلى مسح المحادثة الحالية.")}</span>
+                  <button onClick={() => { startOver(); setConfirmClear(false); }}>{t("Clear", "مسح")}</button>
+                  <button onClick={() => setConfirmClear(false)}>{t("Cancel", "إلغاء")}</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Messages / Welcome */}
+            <div className="widget-scroll">
+              <AnimatePresence initial={false}>
+                {!messages.length ? (
+                  <motion.div className="widget-welcome" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ staggerChildren: 0.08, delayChildren: 0.1 }}>
+                    <motion.div className="welcome-orb" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }}>
+                      <AvatarOrb size={64} tracking={false} pulse />
+                    </motion.div>
+                    <motion.p className="welcome-kicker" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                      {t("LEVERAGE FOR GOOD", "الرافعة للخير")}
+                    </motion.p>
+                    <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                      {t("Small questions.", "أسئلة صغيرة.")}<br />
+                      <em>{t("Meaningful change.", "تغيير ذو معنى.")}</em>
+                    </motion.h2>
+                    <motion.p className="welcome-lead" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                      {t("Welcome. I'm TerraMorph's AI companion. What would you like to explore?", "مرحباً. أنا رفيق تيرامورف الذكي. ماذا تود أن تستكشف؟")}
+                    </motion.p>
+                    <div className="widget-prompts">
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+                        {t("NOT SURE WHERE TO START?", "لا تعرف من أين تبدأ؟")}
+                      </motion.span>
+                      {promptCategories.map((item, index) => {
+                        const Icon = promptIcons[item.category as keyof typeof promptIcons];
+                        return (
+                          <motion.button
+                            key={item.category}
+                            className="prompt-btn"
+                            onClick={() => handleSend(t(item.prompt.en, item.prompt.ar))}
+                            disabled={phase !== "idle"}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.18 + index * 0.06 }}
+                            whileHover={{ x: 3 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <span className="prompt-icon"><Icon size={14} /></span>
+                            <span>
+                              <strong>{t(item.label.en, item.label.ar)}</strong>
+                              <small>{t(item.description.en, item.description.ar)}</small>
+                            </span>
+                            <ArrowUpRight size={15} />
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="widget-messages">
+                    <AnimatePresence initial={false}>
+                      {messages.map((message, index) => (
+                        <motion.article
+                          key={message.id}
+                          className={`widget-message ${message.role}`}
+                          layout
+                          initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ type: "spring", stiffness: 280, damping: 26 }}
+                        >
+                          <div className="widget-message-label">
+                            {message.role === "user" ? t("YOU", "أنت") : t("TERRAMORPH AI", "تيرامورف")}
+                          </div>
+                          <div className="widget-message-content" dir="auto">
+                            {message.content.split(/(https?:\/\/[^\s)]+)/g).map((part, i) =>
+                              /^https?:\/\//.test(part) ? (
+                                <a key={i} href={part} target="_blank" rel="noreferrer" style={{ color: message.role === "user" ? "#E4C57E" : "#C9A227", textDecoration: "underline", fontWeight: 600 }}>{part}</a>
+                              ) : (
+                                <span key={i}>{part}</span>
+                              )
+                            )}
+                            {phase === "streaming" && index === messages.length - 1 && message.role === "morphe" && (
+                              <span className="widget-thinking">
+                                {message.content
+                                  ? <span className="caret" aria-hidden="true" />
+                                  : <span className="dots" aria-hidden="true"><i /><i /><i /></span>}
+                              </span>
+                            )}
+                          </div>
+                          {message.role === "morphe" && message.content && !(phase === "streaming" && index === messages.length - 1) && (
+                            <button className="widget-copy" onClick={() => copyMessage(message.content, message.id)}>
+                              {copied === message.id ? <Check size={13} /> : <Copy size={13} />}
+                              {copied === message.id ? t("Copied", "تم النسخ") : t("Copy", "نسخ")}
+                            </button>
+                          )}
+                        </motion.article>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {error && (
+                <motion.p className="widget-error" role="alert" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+                  {error}
+                </motion.p>
+              )}
+              <div ref={endRef} />
+            </div>
+
+            {/* Composer */}
+            <form className="widget-composer" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+              <label className="sr-only" htmlFor="widget-message">{t("Your message", "رسالتك")}</label>
+              <div className="composer-row">
                 <textarea
-                  id="morphe-composer"
+                  id="widget-message"
                   ref={textareaRef}
-                  value={input}
+                  rows={2}
                   maxLength={MAX_MESSAGE}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    if (inputError) setInputError("");
-                  }}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={phase !== "idle"}
+                  placeholder={t("What's on your mind?", "ماذا في بالك؟")}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                       e.preventDefault();
-                      submit();
+                      if (phase === "idle") handleSend();
                     }
                   }}
-                  aria-label={t("Message Morphe", "راسل مورفي")}
-                  aria-invalid={inputError ? true : undefined}
-                  aria-describedby={
-                    inputError ? "morphe-input-error" : undefined
-                  }
-                  placeholder={
-                    ar ? "اكتب رسالتك…" : "Type your message…"
-                  }
-                  style={{
-                    flex: 1,
-                    minWidth: 0,
-                    border: `1px solid ${inputError ? C.error : C.border}`,
-                    borderRadius: 16,
-                    padding: "13px 16px",
-                    fontSize: 15,
-                    outline: "none",
-                    background: C.white,
-                    color: C.ink,
-                    resize: "none",
-                    fontFamily: "inherit",
-                    minHeight: "46px",
-                    maxHeight: "150px",
-                    transition: "border-color 0.2s ease, box-shadow 0.2s ease",
-                    boxShadow: inputError
-                      ? `0 0 0 1px ${C.error}40`
-                      : "none",
-                  }}
                 />
+                <div className="composer-tools">
+                  <button
+                    type="button"
+                    className={`composer-tool${phase === "streaming" ? " active" : ""}`}
+                    title={t("Toggle Teramorph knowledge", "تفعيل أو إيقاف معرفة تيرامورف")}
+                    onClick={() => { /* no-op for now */ }}
+                    disabled={phase !== "idle"}
+                  >
+                    <Sparkles size={16} strokeWidth={1.8} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`composer-tool${phase === "streaming" ? " active" : ""}`}
+                    title={t("Dictate a message", "إملاء رسالة")}
+                    onClick={() => { /* no-op for now */ }}
+                    disabled={phase !== "idle"}
+                  >
+                    <ArrowUpRight size={15} strokeWidth={1.8} />
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                <span className="composer-hint">{t("Enter to send · Shift + Enter for new line", "Enter للإرسال · Shift + Enter لسطر جديد")}</span>
+                {phase === "streaming" ? (
+                  <button type="button" className="send-btn stop" aria-label={t("Stop response", "إيقاف الرد")} onClick={cancelStream}>
+                    <Square size={15} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button className="send-btn" aria-label={t("Send message", "إرسال الرسالة")} disabled={!input.trim() || phase !== "idle"}>
+                    <ArrowUp size={19} />
+                  </button>
+                )}
+              </div>
+            </form>
 
-                {/* Send */}
-                <button
-                  type="button"
-                  onClick={() => submit()}
-                  disabled={phase !== "idle"}
-                  aria-label={t("Send message", "إرسال الرسالة")}
-                  aria-busy={phase !== "idle" || undefined}
-                  style={{
-                    background: phase !== "idle" ? C.slate : `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
-                    color: C.navy,
-                    border: "none",
-                    borderRadius: "50%",
-                    width: 40,
-                    height: 40,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: phase !== "idle" ? "not-allowed" : "pointer",
-                    flexShrink: 0,
-                    opacity: phase !== "idle" ? 0.5 : 1,
-                    transition: "all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                    boxShadow: phase !== "idle"
-                      ? "none"
-                      : `0 6px 16px rgba(201,162,39,0.4)`,
-                    transform: phase !== "idle" ? "scale(0.96)" : "scale(1)",
-                  }}
-                >
-                  <Send size={16} strokeWidth={2} aria-hidden="true" />
-                </button>
-              </div>
-              {inputError && (
-                <p
-                  id="morphe-input-error"
-                  role="alert"
-                  style={{
-                    margin: "8px 2px 0",
-                    fontSize: 12,
-                    lineHeight: 1.5,
-                    color: C.error,
-                  }}
-                >
-                  {inputError}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div style={{
-              padding: 20,
-              textAlign: "center",
-              fontSize: 14,
-              color: C.slate,
-              borderTop: `1px solid ${C.border}`,
-              background: `linear-gradient(135deg, ${C.cream}, ${C.white})`,
-            }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', Georgia, serif", fontWeight: 600, fontSize: 16, color: C.ink, marginBottom: 8 }}>
-                {ar ? "اكتملت المحادثة." : "Conversation complete."}
-              </div>
-              <button
-                type="button"
-                onClick={startOver}
-                style={{
-                  background: `linear-gradient(135deg, ${C.gold}, ${C.goldLight})`,
-                  color: C.navy,
-                  border: "none",
-                  borderRadius: 12,
-                  padding: "10px 20px",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  fontSize: 13,
-                  transition: "all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                  boxShadow: "0 4px 12px rgba(201,162,39,0.35)",
-                }}
-              >
-                {ar ? "محادثة جديدة" : "New conversation"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
+            <p className="widget-disclaimer">
+              <Shield size={12} style={{ verticalAlign: "middle", marginRight: 6, opacity: 0.7 }} />
+              {t("AI can make mistakes. Please don't share sensitive information.", "يمكن للذكاء الاصطناعي أن يخطئ. يرجى عدم مشاركة معلومات حساسة.")}<br />
+              <a href="https://askterramorph.com/legal/privacy-policy" target="_blank" rel="noreferrer">
+                {t("Privacy", "الخصوصية")}
+              </a>
+              {t(" · This conversation is not saved after you leave.", " · لا يتم حفظ هذه المحادثة بعد المغادرة.")}
+            </p>
+          </motion.section>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

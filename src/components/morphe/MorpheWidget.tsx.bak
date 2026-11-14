@@ -1,0 +1,772 @@
+/**
+ * MorpheWidget v4 - TerraMorph's AI chatbot (true streaming + Framer Motion)
+ *
+ * Features:
+ * - True SSE streaming from /api/v1/morphe/chat
+ * - Framer Motion spring animations (panel, messages, launcher)
+ * - AvatarOrb brand seal with eye-tracking
+ * - Animated welcome screen with prompt categories
+ * - Copy message, download conversation, stop response
+ * - Clear confirmation animation
+ * - Bilingual EN/AR with RTL support
+ */
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowUp, ArrowUpRight, Check, Copy, Download, RotateCcw, Sparkles, Square, X, Lightbulb, MoveUpRight, Compass, Network, Shield } from "lucide-react";
+import { api } from "@/lib/api";
+import { AvatarOrb } from "./AvatarOrb";
+import type { Lang } from "@/pages/site/types";
+
+type ChatMessage = {
+  id: string;
+  role: "morphe" | "user";
+  content: string;
+  images?: string[];
+  timestamp?: string;
+};
+
+type Phase = "idle" | "thinking" | "streaming";
+
+const C = {
+  navy: "#0F1C2E",
+  navyLight: "#16263F",
+  gold: "#C9A227",
+  goldLight: "#E4C57E",
+  cream: "#FBF9F0",
+  ivory: "#F3F0E6",
+  slate: "#6B7280",
+  white: "#FFFFFF",
+  ink: "#1A1A1A",
+  border: "#D8D4C4",
+  error: "#B42318",
+};
+
+const SESSION_KEY = "morphe_v4_session_id";
+const MAX_MESSAGE = 2000;
+
+const promptCategories = [
+  { category: "strategy", label: { en: "Strategy", ar: "الاستراتيجية" }, description: { en: "Shape your idea into a fundable case", ar: "حوّل فكرتك إلى حالة قابلة للتمويل" }, prompt: { en: "Help me shape my idea into a structured, fundable case", ar: "ساعدني في تشكيل فكرتي إلى حالة منظمة وقابلة للتمويل" } },
+  { category: "partnerships", label: { en: "Partnerships", ar: "الشراكات" }, description: { en: "Explore how to work with TerraMorph", ar: "استكشف كيف تعمل مع تيرامورف" }, prompt: { en: "What partnership models does TerraMorph offer?", ar: "ما نماذج الشراكة التي تقدمها تيرامورف؟" } },
+  { category: "approach", label: { en: "Approach", ar: "المنهجية" }, description: { en: "Understand the LDIA delivery architecture", ar: "افهم هندسة LDIA للتسليم" }, prompt: { en: "Explain the LDIA architecture — Locate, Design, Implement, Assure", ar: "اشرح هندسة LDIA — تحديد، تصميم، تنفيذ، تأكيد" } },
+  { category: "network", label: { en: "Network", ar: "الشبكة" }, description: { en: "Connect with experts and associates", ar: "تواصل مع الخبراء والشركاء" }, prompt: { en: "How does the expert network work?", ar: "كيف تعمل شبكة الخبراء؟" } },
+];
+
+const promptIcons = { strategy: Lightbulb, partnerships: MoveUpRight, approach: Compass, network: Network };
+
+export default function MorpheWidget({ lang = "en" }: { lang?: Lang }) {
+  const ar = lang !== "en";
+  const dir = ar ? "rtl" : "ltr";
+  const t = (en: string, arText: string) => (ar ? arText : en);
+
+  const [open, setOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [error, setError] = useState("");
+  const [copied, setCopied] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [revealed, setRevealed] = useState(false);
+  const [greeted, setGreeted] = useState(false);
+
+  const endRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Responsive
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    onResize();
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Reveal launcher
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setRevealed(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Restore session
+  useEffect(() => {
+    try { const stored = sessionStorage.getItem(SESSION_KEY); if (stored) setSessionId(stored); } catch { /* noop */ }
+  }, []);
+
+  // Persist session
+  useEffect(() => {
+    if (sessionId) { try { sessionStorage.setItem(SESSION_KEY, sessionId); } catch { /* noop */ } }
+  }, [sessionId]);
+
+  // Auto-scroll
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages, phase]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      typewriterRef.current.cancel?.();
+    };
+  }, []);
+
+  const typewriterRef = useRef<{ cancel: (() => void) | null }>({ cancel: null });
+
+  const typewriter = useCallback(
+    (
+      text: string,
+      onChar: (ch: string) => void,
+      onDone: () => void
+    ): (() => void) => {
+      let i = 0;
+      let cancelled = false;
+      const step = () => {
+        if (cancelled || i >= text.length) {
+          if (!cancelled) onDone();
+          return;
+        }
+        onChar(text[i]);
+        i += 1;
+        setTimeout(step, 12);
+      };
+      step();
+      return () => {
+        cancelled = true;
+      };
+    },
+    []
+  );
+
+  const cancelStream = useCallback(() => {
+    typewriterRef.current.cancel?.();
+    typewriterRef.current.cancel = null;
+    setPhase("idle");
+  }, []);
+
+  const startOver = useCallback(() => {
+    setMessages([]);
+    setSessionId(null);
+    setError("");
+    setInput("");
+    setPhase("idle");
+    setConfirmClear(false);
+    try { sessionStorage.removeItem(SESSION_KEY); } catch { /* noop */ }
+    textareaRef.current?.focus();
+  }, []);
+
+  const handleSend = useCallback(async (value?: string) => {
+    const text = (value ?? input).trim();
+    if (!text || phase !== "idle") return;
+
+    setInput("");
+    setError("");
+    cancelStream();
+
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content: text,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Add user message + placeholder for assistant
+    const replyId = crypto.randomUUID();
+    setMessages((prev) => [...prev, userMessage, { id: replyId, role: "morphe", content: "" }]);
+    setPhase("thinking");
+
+    // Minimum thinking delay so user perceives it
+    await new Promise((r) => setTimeout(r, 350));
+
+    try {
+      const res = await api.morpheChat(sessionId, text, lang, false);
+
+      if (res.session_id && res.session_id !== sessionId) {
+        setSessionId(res.session_id);
+      }
+
+      setPhase("streaming");
+
+      // Typewriter reveal of the full reply
+      const fullReply = res.reply;
+      const cancel = typewriter(fullReply, (ch) => {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === replyId ? { ...m, content: m.content + ch } : m))
+        );
+      }, () => {
+        setPhase("idle");
+        // Add links as a separate message or inline
+        if (res.links && res.links.length > 0) {
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: crypto.randomUUID(),
+              role: "morphe",
+              content: res.links.map((l) => `🔗 [${l.label}](${l.url})`).join("\n"),
+              timestamp: new Date().toISOString(),
+            },
+          ]);
+        }
+      });
+
+      // Store cancel function in case we need to abort
+      typewriterRef.current.cancel = cancel;
+    } catch {
+      setError(t("Couldn't get a response. Please try again.", "تعذّر الحصول على رد. يرجى المحاولة مرة أخرى."));
+      setMessages((prev) => prev.filter((m) => !(m.role === "morphe" && m.content === "")));
+      setPhase("idle");
+    }
+  }, [input, phase, sessionId, lang, cancelStream, messages]);
+
+  const downloadConversation = useCallback(() => {
+    const blob = new Blob(
+      [messages.map((m) => `${m.role === "user" ? "You" : "TerraMorph AI"}:\n${m.content}`).join("\n\n")],
+      { type: "text/plain;charset=utf-8" }
+    );
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "terramorph-conversation.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
+  const copyMessage = useCallback(async (content: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(id);
+      setTimeout(() => setCopied(null), 1600);
+    } catch {
+      setError(t("Copy unavailable. Select the text instead.", "النسخ غير متاح. يمكنك تحديد النص بدلاً من ذلك."));
+    }
+  }, []);
+
+  return (
+    <div dir={dir} style={{ fontFamily: "Jost, system-ui, -apple-system, sans-serif" }}>
+      <style>{`
+        /* Root container - fixed to viewport, never causes page scroll */
+        .widget-root {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          z-index: 1100;
+          pointer-events: none; /* Let clicks pass through to launcher/panel */
+        }
+        .widget-root > * { pointer-events: auto; }
+
+        /* Launcher - always circular, never expands horizontally */
+        .widget-launcher {
+          width: 56px; height: 56px; border-radius: 50%;
+          background: #0F1C2E; border: 2px solid #C9A227; color: #FBF9F0;
+          display: flex; align-items: center; justify-content: center; cursor: pointer;
+          box-shadow: 0 12px 32px rgba(15,28,46,0.4), 0 0 0 0 rgba(201,162,39,0.5);
+          transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+          flex-shrink: 0;
+        }
+        .widget-launcher.open { background: #C9A227; color: #0F1C2E; transform: scale(0.96); }
+        .widget-launcher:hover:not(.open) { 
+          transform: scale(1.05); 
+          box-shadow: 0 0 0 10px rgba(201,162,39,0.25), 0 12px 32px rgba(15,28,46,0.4); 
+        }
+        .launcher-label { display: none; }
+        .launcher-orb { display: flex; }
+
+        /* Desktop: show label next to orb when closed */
+        @media (min-width: 768px) {
+          .widget-launcher:not(.open) { 
+            width: auto; 
+            padding: 0 20px 0 16px; 
+            border-radius: 9999px; 
+            gap: 10px; 
+            min-width: 56px;
+          }
+          .launcher-label { display: flex; flex-direction: column; align-items: flex-start; white-space: nowrap; }
+          .launcher-label strong { font-size: 14px; line-height: 1.2; }
+          .launcher-label small { font-size: 11px; opacity: 0.7; line-height: 1.2; }
+        }
+
+        /* Panel - fixed to viewport, constrained to viewport width */
+        .widget-panel {
+          position: fixed;
+          bottom: 100px;
+          right: 20px;
+          width: 420px;
+          max-width: calc(100vw - 40px);
+          height: 72vh;
+          max-height: calc(100vh - 120px);
+          background: linear-gradient(160deg, #FBF9F0, #FFFFFF);
+          border: 1px solid #D8D4C4;
+          border-radius: 28px;
+          box-shadow: 0 40px 120px rgba(15,28,46,0.45), 0 0 0 1px rgba(201,162,39,0.08);
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+        }
+        @media (max-width: 767px) {
+          .widget-panel {
+            bottom: 12px;
+            right: 12px;
+            left: 12px;
+            width: auto;
+            max-width: calc(100vw - 24px);
+            height: 85vh;
+            max-height: calc(100vh - 24px);
+            border-radius: 16px;
+          }
+        }
+
+        .widget-header {
+          background: linear-gradient(135deg, #0F1C2E, #16263F);
+          color: #FBF9F0;
+          padding: 18px 20px;
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          border-bottom: 1px solid #D8D4C4;
+          flex-shrink: 0;
+        }
+        .widget-title strong { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 600; font-size: 17px; letter-spacing: -0.01em; }
+        .widget-title small { font-size: 10.5px; opacity: 0.75; letter-spacing: 0.03em; }
+        .widget-tools { display: flex; gap: 6px; margin-left: auto; flex-shrink: 0; }
+        .widget-tool {
+          background: rgba(255,255,255,0.08);
+          border: 1px solid #D8D4C4;
+          border-radius: 10px;
+          width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: rgba(255,255,255,0.9);
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          flex-shrink: 0;
+        }
+        .widget-tool:hover:not(:disabled) { background: rgba(255,255,255,0.16); border-color: #C9A227; color: #FBF9F0; transform: translateY(-1px); }
+        .widget-tool:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .clear-confirm {
+          background: rgba(251,249,240,0.95);
+          border-top: 1px solid #D8D4C4;
+          padding: 12px 20px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          font-size: 13px;
+          flex-wrap: wrap;
+          flex-shrink: 0;
+        }
+        .clear-confirm button { padding: 6px 14px; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer; }
+        .clear-confirm button:first-child { background: #C9A227; color: #0F1C2E; border: none; }
+        .clear-confirm button:last-child { background: transparent; color: #6B7280; border: 1px solid #D8D4C4; }
+
+        .widget-scroll {
+          flex: 1;
+          overflow-y: auto;
+          overflow-x: hidden;
+          padding: 20px 18px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          background: #F3F0E6;
+          min-height: 0; /* Critical for flex child scrolling */
+        }
+
+        .widget-welcome { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 20px; width: 100%; box-sizing: border-box; }
+        .welcome-kicker { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #C9A227; }
+        .widget-welcome h2 { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 28px; line-height: 1.2; color: #0F1C2E; margin: 0; word-wrap: break-word; }
+        .widget-welcome h2 em { font-style: italic; color: #16263F; }
+        .welcome-lead { font-size: 15px; color: #6B7280; margin: 0; max-width: 100%; }
+        .widget-prompts { display: flex; flex-direction: column; gap: 8px; width: 100%; margin-top: 8px; }
+        .widget-prompts > span { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #6B7280; text-align: left; padding-left: 4px; }
+        .prompt-btn { 
+          display: flex; 
+          align-items: center; 
+          gap: 10px; 
+          padding: 12px 14px; 
+          border-radius: 14px; 
+          border: 1px solid #D8D4C4; 
+          background: #FFFFFF; 
+          color: #1A1A1A; 
+          font-size: 13.5px; 
+          font-weight: 500; 
+          cursor: pointer; 
+          text-align: left; 
+          transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .prompt-btn:hover:not(:disabled) { border-color: #C9A227; transform: translateX(3px); }
+        .prompt-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .prompt-icon { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: #F3F0E6; color: #C9A227; flex-shrink: 0; }
+        .prompt-btn small { display: block; font-size: 10.5px; font-weight: 400; color: #6B7280; margin-top: 2px; line-height: 1.3; }
+
+        .widget-message { display: flex; flex-direction: column; gap: 6px; animation: slideIn 0.3s ease-out forwards; width: 100%; box-sizing: border-box; }
+        @keyframes slideIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: translateX(0); } }
+        .widget-message-label { font-size: 10px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #C9A227; }
+        .widget-message.morphe .widget-message-label { color: #C9A227; }
+        .widget-message.user .widget-message-label { color: #6B7280; margin-left: auto; }
+        .widget-message.user .widget-message-content { margin-left: auto; }
+        .widget-message.user .widget-copy { display: none; }
+
+        .widget-message-content {
+          max-width: 85%;
+          padding: 12px 16px;
+          border-radius: 20px;
+          white-space: pre-wrap;
+          word-break: break-word;
+          background: linear-gradient(135deg, #FFFFFF, #F3F0E6);
+          color: #1A1A1A;
+          border: 1px solid #D8D4C4;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+          position: relative;
+        }
+        .widget-message.user .widget-message-content { 
+          background: linear-gradient(135deg, #0F1C2E, #16263F); 
+          color: #FBF9F0; 
+          border: 1px solid rgba(201,162,39,0.4); 
+          box-shadow: 0 8px 24px rgba(15,28,46,0.25); 
+        }
+
+        .widget-thinking { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 12px; color: #C9A227; }
+        .widget-thinking .dots i { width: 6px; height: 6px; border-radius: 50%; background: #C9A227; animation: pulseDot 1.4s infinite; }
+        .widget-thinking .dots i:nth-child(2) { animation-delay: 0.2s; }
+        .widget-thinking .dots i:nth-child(3) { animation-delay: 0.4s; }
+        .widget-thinking .caret { width: 2px; height: 18px; background: #C9A227; animation: caretBlink 1s infinite; }
+        @keyframes pulseDot { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+        @keyframes caretBlink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .widget-copy { 
+          position: absolute; 
+          bottom: 8px; 
+          right: 8px; 
+          display: flex; 
+          align-items: center; 
+          gap: 4px; 
+          padding: 4px 8px; 
+          border-radius: 6px; 
+          background: rgba(255,255,255,0.8); 
+          border: 1px solid #D8D4C4; 
+          font-size: 10.5px; 
+          font-weight: 600; 
+          color: #1A1A1A; 
+          cursor: pointer; 
+          transition: all 0.2s; 
+        }
+        .widget-copy:hover { background: #FFFFFF; border-color: #C9A227; color: #C9A227; }
+
+        .widget-error { font-size: 12px; color: #B42318; margin-top: 8px; padding: 8px 12px; background: rgba(180,35,24,0.1); border-radius: 8px; border: 1px solid rgba(180,35,24,0.2); width: 100%; box-sizing: border-box; }
+
+        .widget-composer { 
+          border-top: 1px solid #D8D4C4; 
+          padding: 12px 14px; 
+          background: linear-gradient(135deg, #FBF9F0, #FFFFFF); 
+          box-shadow: 0 -4px 20px rgba(15,28,46,0.04);
+          flex-shrink: 0;
+        }
+        .widget-composer textarea { 
+          flex: 1; 
+          min-width: 0; 
+          border: 1px solid #D8D4C4; 
+          border-radius: 16px; 
+          padding: 13px 16px; 
+          font-size: 15px; 
+          outline: none; 
+          background: #FFFFFF; 
+          color: #1A1A1A; 
+          resize: none; 
+          font-family: inherit; 
+          min-height: 46px; 
+          max-height: 150px; 
+          transition: border-color 0.2s, box-shadow 0.2s; 
+        }
+        .widget-composer textarea:focus { border-color: #C9A227; box-shadow: 0 0 0 3px rgba(201,162,39,0.15); }
+        .composer-row { display: flex; gap: 8px; align-items: center; width: 100%; box-sizing: border-box; }
+        .composer-tools { display: flex; gap: 6px; flex-shrink: 0; }
+        .composer-tool { 
+          background: #FFFFFF; 
+          border: 1px solid #D8D4C4; 
+          border-radius: 12px; 
+          width: 40px; 
+          height: 40px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          cursor: pointer; 
+          color: #6B7280; 
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+          flex-shrink: 0;
+        }
+        .composer-tool:hover:not(:disabled) { border-color: #C9A227; color: #0F1C2E; box-shadow: 0 0 12px rgba(201,162,39,0.4); }
+        .composer-tool.active { background: #C9A227; border-color: #C9A227; color: #0F1C2E; box-shadow: 0 0 12px rgba(201,162,39,0.4); }
+        .send-btn { 
+          background: linear-gradient(135deg, #C9A227, #E4C57E); 
+          color: #0F1C2E; 
+          border: none; 
+          border-radius: 50%; 
+          width: 40px; 
+          height: 40px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          cursor: pointer; 
+          flex-shrink: 0; 
+          transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); 
+          box-shadow: 0 6px 16px rgba(201,162,39,0.4); 
+        }
+        .send-btn:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; transform: scale(0.96); background: #6B7280; }
+        .send-btn.stop { background: #B42318; color: #FFFFFF; box-shadow: 0 6px 16px rgba(180,35,24,0.4); }
+        .composer-hint { font-size: 11px; color: #6B7280; margin-right: auto; white-space: nowrap; }
+        .widget-disclaimer { font-size: 10.5px; color: #6B7280; text-align: center; margin-top: 10px; line-height: 1.6; word-wrap: break-word; }
+        .widget-disclaimer a { color: #C9A227; text-decoration: underline; }
+      `}</style>
+
+      {/* Launcher */}
+      <motion.button
+        ref={launcherRef}
+        className={`widget-launcher${open ? " open" : ""}`}
+        onClick={() => {
+          const willOpen = !open;
+          setOpen(willOpen);
+          if (willOpen && messages.length === 0 && !greeted) {
+            setGreeted(true);
+          }
+        }}
+        aria-label={open ? t("Close chat", "إغلاق المحادثة") : t("Open chat with Morphe", "فتح محادثة مع مورفي")}
+        aria-expanded={open}
+        whileHover={{ y: -3, transition: { type: "spring", stiffness: 400, damping: 25 } }}
+        whileTap={{ scale: 0.96 }}
+      >
+        <AnimatePresence mode="wait">
+          {open ? (
+            <motion.div key="close" initial={{ rotate: -90, scale: 0.5 }} animate={{ rotate: 0, scale: 1 }} exit={{ rotate: 90, scale: 0.5 }} transition={{ type: "spring", stiffness: 500, damping: 30 }}>
+              <X size={20} />
+            </motion.div>
+          ) : (
+            <>
+              <span className="launcher-orb"><AvatarOrb size={40} pulse /></span>
+              <span className="launcher-label">
+                <strong>Ask TerraMorph AI</strong>
+                <small>A little clarity goes a long way</small>
+              </span>
+              <ArrowUpRight size={15} />
+            </>
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* Panel */}
+      <AnimatePresence>
+        {open && (
+          <motion.section
+            ref={panelRef}
+            className="widget-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t("Morphe AI chat", "محادثة مورفي")}
+            initial={{ opacity: 0, y: 30, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 18, scale: 0.97 }}
+            transition={{ type: "spring", stiffness: 320, damping: 28 }}
+          >
+            {/* Header */}
+            <header className="widget-header">
+              <AvatarOrb size={42} tracking={!isMobile} pulse />
+              <div className="widget-title">
+                <strong>TerraMorph <span style={{ color: "#C9A227" }}>AI</span></strong>
+                <small><i /> {t("A thoughtful place to begin", "مكان متأمل للبدء")}</small>
+              </div>
+              <div className="widget-tools">
+                <button className="widget-tool" title={t("Download conversation", "تنزيل المحادثة")} aria-label={t("Download conversation", "تنزيل المحادثة")} onClick={downloadConversation} disabled={!messages.length || phase !== "idle"}>
+                  <Download size={16} />
+                </button>
+                <button className="widget-tool" title={t("New conversation", "محادثة جديدة")} aria-label={t("New conversation", "محادثة جديدة")} disabled={!messages.length || phase !== "idle"} onClick={() => setConfirmClear(true)}>
+                  <RotateCcw size={16} />
+                </button>
+                <button className="widget-tool" aria-label={t("Close chat", "إغلاق المحادثة")} onClick={() => setOpen(false)}>
+                  <X size={19} />
+                </button>
+              </div>
+            </header>
+
+            {/* Clear confirmation */}
+            <AnimatePresence>
+              {confirmClear && (
+                <motion.div className="clear-confirm" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} transition={{ type: "spring", stiffness: 400, damping: 30 }}>
+                  <span>{t("Start a new conversation? This clears the current chat.", "بدء محادثة جديدة؟ سيؤدي ذلك إلى مسح المحادثة الحالية.")}</span>
+                  <button onClick={() => { startOver(); setConfirmClear(false); }}>{t("Clear", "مسح")}</button>
+                  <button onClick={() => setConfirmClear(false)}>{t("Cancel", "إلغاء")}</button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Messages / Welcome */}
+            <div className="widget-scroll">
+              <AnimatePresence initial={false}>
+                {!messages.length ? (
+                  <motion.div className="widget-welcome" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ staggerChildren: 0.08, delayChildren: 0.1 }}>
+                    <motion.div className="welcome-orb" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", stiffness: 200, damping: 18 }}>
+                      <AvatarOrb size={64} tracking={false} pulse />
+                    </motion.div>
+                    <motion.p className="widget-kicker" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                      {t("LEVERAGE FOR GOOD", "الرافعة للخير")}
+                    </motion.p>
+                    <motion.h2 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+                      {t("Small questions.", "أسئلة صغيرة.")}<br />
+                      <em>{t("Meaningful change.", "تغيير ذو معنى.")}</em>
+                    </motion.h2>
+                    <motion.p className="welcome-lead" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+                      {t("Welcome. I'm TerraMorph's AI companion. What would you like to explore?", "مرحباً. أنا رفيق تيرامورف الذكي. ماذا تود أن تستكشف؟")}
+                    </motion.p>
+                    <div className="widget-prompts">
+                      <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
+                        {t("NOT SURE WHERE TO START?", "لا تعرف من أين تبدأ؟")}
+                      </motion.span>
+                      {promptCategories.map((item, index) => {
+                        const Icon = promptIcons[item.category as keyof typeof promptIcons];
+                        return (
+                          <motion.button
+                            key={item.category}
+                            className="prompt-btn"
+                            onClick={() => handleSend(t(item.prompt.en, item.prompt.ar))}
+                            disabled={phase !== "idle"}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.18 + index * 0.06 }}
+                            whileHover={{ x: 3 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <span className="prompt-icon"><Icon size={14} /></span>
+                            <span>
+                              <strong>{t(item.label.en, item.label.ar)}</strong>
+                              <small>{t(item.description.en, item.description.ar)}</small>
+                            </span>
+                            <ArrowUpRight size={15} />
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                ) : (
+                  <div className="widget-messages">
+                    <AnimatePresence initial={false}>
+                      {messages.map((message, index) => (
+                        <motion.article
+                          key={message.id}
+                          className={`widget-message ${message.role}`}
+                          layout
+                          initial={{ opacity: 0, y: 14, scale: 0.98 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          transition={{ type: "spring", stiffness: 280, damping: 26 }}
+                        >
+                          <div className="widget-message-label">
+                            {message.role === "user" ? t("YOU", "أنت") : t("TERRAMORPH AI", "تيرامورف")}
+                          </div>
+                          <div className="widget-message-content" dir="auto">
+                            {message.content.split(/(https?:\/\/[^\s)]+)/g).map((part, i) =>
+                              /^https?:\/\//.test(part) ? (
+                                <a key={i} href={part} target="_blank" rel="noreferrer" style={{ color: message.role === "user" ? "#E4C57E" : "#C9A227", textDecoration: "underline", fontWeight: 600 }}>{part}</a>
+                              ) : (
+                                <span key={i}>{part}</span>
+                              )
+                            )}
+                            {phase === "streaming" && index === messages.length - 1 && message.role === "morphe" && (
+                              <span className="widget-thinking">
+                                {message.content
+                                  ? <span className="caret" aria-hidden="true" />
+                                  : <span className="dots" aria-hidden="true"><i /><i /><i /></span>}
+                              </span>
+                            )}
+                          </div>
+                          {message.role === "morphe" && message.content && !(phase === "streaming" && index === messages.length - 1) && (
+                            <button className="widget-copy" onClick={() => copyMessage(message.content, message.id)}>
+                              {copied === message.id ? <Check size={13} /> : <Copy size={13} />}
+                              {copied === message.id ? t("Copied", "تم النسخ") : t("Copy", "نسخ")}
+                            </button>
+                          )}
+                        </motion.article>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                )}
+              </AnimatePresence>
+
+              {error && (
+                <motion.p className="widget-error" role="alert" initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }}>
+                  {error}
+                </motion.p>
+              )}
+              <div ref={endRef} />
+            </div>
+
+            {/* Composer */}
+            <form className="widget-composer" onSubmit={(e) => { e.preventDefault(); handleSend(); }}>
+              <label className="sr-only" htmlFor="widget-message">{t("Your message", "رسالتك")}</label>
+              <div className="composer-row">
+                <textarea
+                  id="widget-message"
+                  ref={textareaRef}
+                  rows={2}
+                  maxLength={MAX_MESSAGE}
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={phase !== "idle"}
+                  placeholder={t("What's on your mind?", "ماذا في بالك؟")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                      e.preventDefault();
+                      if (phase === "idle") handleSend();
+                    }
+                  }}
+                />
+                <div className="composer-tools">
+                  <button
+                    type="button"
+                    className={`composer-tool${phase === "streaming" ? " active" : ""}`}
+                    title={t("Toggle Teramorph knowledge", "تفعيل أو إيقاف معرفة تيرامورف")}
+                    onClick={() => { /* no-op for now */ }}
+                    disabled={phase !== "idle"}
+                  >
+                    <Sparkles size={16} strokeWidth={1.8} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`composer-tool${phase === "streaming" ? " active" : ""}`}
+                    title={t("Dictate a message", "إملاء رسالة")}
+                    onClick={() => { /* no-op for now */ }}
+                    disabled={phase !== "idle"}
+                  >
+                    <ArrowUpRight size={15} strokeWidth={1.8} />
+                  </button>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8 }}>
+                <span className="composer-hint">{t("Enter to send · Shift + Enter for new line", "Enter للإرسال · Shift + Enter لسطر جديد")}</span>
+                {phase === "streaming" ? (
+                  <button type="button" className="send-btn stop" aria-label={t("Stop response", "إيقاف الرد")} onClick={cancelStream}>
+                    <Square size={15} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button className="send-btn" aria-label={t("Send message", "إرسال الرسالة")} disabled={!input.trim() || phase !== "idle"}>
+                    <ArrowUp size={19} />
+                  </button>
+                )}
+              </div>
+            </form>
+
+            <p className="widget-disclaimer">
+              <Shield size={12} style={{ verticalAlign: "middle", marginRight: 6, opacity: 0.7 }} />
+              {t("AI can make mistakes. Please don't share sensitive information.", "يمكن للذكاء الاصطناعي أن يخطئ. يرجى عدم مشاركة معلومات حساسة.")}<br />
+              <a href="https://askterramorph.com/legal/privacy-policy" target="_blank" rel="noreferrer">
+                {t("Privacy", "الخصوصية")}
+              </a>
+              {t(" · This conversation is not saved after you leave.", " · لا يتم حفظ هذه المحادثة بعد المغادرة.")}
+            </p>
+          </motion.section>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}

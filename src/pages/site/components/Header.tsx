@@ -19,7 +19,11 @@ import { Logo } from "@/components/motion/fx"
 
 import { SearchOverlay } from "@/pages/site/home"
 
-import { usePublicSettings } from "@/lib/publicContent"
+import {
+  mapAudience,
+  usePublicCollection,
+  usePublicSettings,
+} from "@/lib/publicContent"
 
 import type { Lang } from "../types"
 
@@ -69,8 +73,12 @@ function isSectionRoute(pathname: string): boolean {
   return sectionRoutes.has(pathname.replace(/\/+$/, "") || "/")
 }
 
-function setting(obj: Record<string, unknown> | null | undefined, key: string): string {
+function setting(
+  obj: Record<string, unknown> | null | undefined,
+  key: string,
+): string {
   const value = obj?.[key]
+
   return typeof value === "string" && value.trim() ? value : ""
 }
 
@@ -191,14 +199,42 @@ function Header({
   setLang: (l: Lang) => void
 }) {
   const { urlPathname } = usePageContext()
+
   const { settings, live } = usePublicSettings()
 
-  const contact = live && settings ? (settings.contact as Record<string, unknown>) : {}
+  /* The audience rail follows the CMS when it answers; the static list stays as
+     the prerendered fallback. `pollMs: 0` keeps the header to one request per
+     page visit instead of a timer on every route. */
+
+  const audienceFeed = usePublicCollection("audiences", {
+    pageSize: 20,
+
+    pollMs: 0,
+  })
+
+  const audienceItems =
+    audienceFeed.live && audienceFeed.items.length
+      ? audienceFeed.items
+
+          .map(mapAudience)
+
+          .sort((a, b) => a.order - b.order)
+      : audiences
+
+  const contact =
+    live && settings ? settings.contact as Record<string, unknown> : {}
+
   const contactEmail = setting(contact, "email")
 
   const onSectionRoute = isSectionRoute(urlPathname)
 
-  const navHref = (n: { id: string; path: string }): string =>
+  const navHref = (
+    n: {
+      id: string
+
+      path: string
+    },
+  ): string =>
     onSectionRoute ? `#${n.id}` : n.path
 
   const [scrolled, setScrolled] = useState(false)
@@ -302,7 +338,11 @@ function Header({
         />
         <div className="mx-auto flex max-w-[1320px] items-center gap-2 px-3 py-3 sm:gap-4 sm:px-5 sm:py-4 md:gap-6 md:px-10">
           <a href="/" className="shrink-0">
-            <Logo tone="ivory" wordmark="always" className="h-8 w-auto sm:h-10" />
+            <Logo
+              tone="ivory"
+              wordmark="always"
+              className="h-8 w-auto sm:h-10"
+            />
           </a>
           <nav
             className="mx-auto hidden items-center xl:flex"
@@ -441,7 +481,15 @@ function Header({
             <button
               className="grid h-9 w-9 min-h-[44px] min-w-[44px] place-items-center xl:hidden"
               onClick={() => setOpen(!open)}
-              aria-label={open ? (ar ? "إغلاق القائمة" : "Close menu") : ar ? "فتح القائمة" : "Open menu"}
+              aria-label={
+                open
+                  ? ar
+                    ? "إغلاق القائمة"
+                    : "Close menu"
+                  : ar
+                    ? "فتح القائمة"
+                    : "Open menu"
+              }
               aria-expanded={open}
               aria-controls="mobile-menu"
             >
@@ -466,7 +514,7 @@ function Header({
             <span className="eyebrow shrink-0 py-2 pe-2 text-gold-light sm:py-2.5 sm:pe-3">
               {ar ? "أنا…" : "I am"}
             </span>
-            {audiences.map((a) => (
+            {audienceItems.map((a) => (
               <a
                 key={a.slug}
                 href={`/hub/${a.slug}`}
@@ -534,7 +582,7 @@ function Header({
             )
           })}
           <div className="mt-8 flex flex-wrap gap-2">
-            {audiences.map((a) => (
+            {audienceItems.map((a) => (
               <a
                 key={a.slug}
                 href={`/hub/${a.slug}`}

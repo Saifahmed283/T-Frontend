@@ -12,7 +12,8 @@
 
 export type PublicSlugMap = Record<string, string[]>
 
-/* Which section route serves each CMS collection. */
+/* Which section route serves each CMS collection. Multiple collections may
+   share a section (e.g. `/evidence` serves both assignments and cases). */
 export const CMS_ROUTE_BASE: Record<string, string> = {
   assignments: "/evidence",
 
@@ -33,6 +34,122 @@ export const CMS_ROUTE_BASE: Record<string, string> = {
   initiatives: "/about",
 
   audiences: "/hub",
+}
+
+/* Human section titles, mirrored from `pages/+Head.tsx` so detail pages can
+   build a breadcrumb without importing React. */
+export const SECTION_TITLES: Record<string, string> = {
+  "/evidence": "Evidence",
+
+  "/knowledge": "Knowledge",
+
+  "/method": "Method",
+
+  "/learning": "Learning",
+
+  "/join": "Join",
+
+  "/about": "About",
+
+  "/hub": "Who we serve",
+}
+
+export function collectionsForSection(section: string): string[] {
+  return Object.entries(CMS_ROUTE_BASE)
+    .filter(([, base]) => base === section)
+    .map(([collection]) => collection)
+}
+
+/* Metadata returned by the public content detail endpoint, normalised so the
+   prerender hook, the sitemap script and `+Head.tsx` can all consume it. */
+export type DetailMeta = {
+  title: string
+
+  description?: string
+
+  section: string
+
+  sectionPath: string
+
+  path: string
+}
+
+export async function fetchDetailMeta(
+  section: string,
+
+  slug: string,
+
+  base: string = publicApiBase(),
+
+  timeoutMs = 4000,
+): Promise<DetailMeta | null> {
+  for (const collection of collectionsForSection(section)) {
+    try {
+      const response = await fetch(
+        `${base}/api/v1/public/content/${collection}/${encodeURIComponent(
+          slug.trim(),
+        )}`,
+        {
+          headers: { accept: "application/json" },
+
+          signal: AbortSignal.timeout(timeoutMs),
+        },
+      )
+
+      if (!response.ok) continue
+
+      const item = (await response.json()) as {
+        title?: string
+
+        description?: string
+
+        seo?: {
+          title?: string
+
+          description?: string
+        } | null
+
+        data?: Record<string, unknown>
+      }
+
+      const seo = item.seo ?? {}
+
+      return {
+        title: seo.title ?? item.title ?? slug,
+
+        description:
+          seo.description ?? item.description ?? localizedMeta(item.data),
+
+        section,
+
+        sectionPath: section,
+
+        path: `${section}/${encodeURIComponent(slug.trim())}`,
+      }
+    } catch {
+      // Try the next collection sharing this section; a 404 in one collection
+      // is not fatal when another collection may own the slug.
+      continue
+    }
+  }
+
+  return null
+}
+
+function localizedMeta(data: Record<string, unknown> | undefined): string {
+  if (!data || typeof data !== "object") return ""
+
+  const description =
+    data.description ??
+    data.descriptionEn ??
+    data.descriptionAr ??
+    data.meta ??
+    data.short ??
+    data.standfirst
+
+  return typeof description === "string" && description.trim()
+    ? description
+    : ""
 }
 
 /* Turn the slug map into de-duplicated route paths. `existing` seeds the set so
@@ -70,6 +187,25 @@ export function cmsPaths(
    separate origin; in development it is the local backend. VITE_API_URL or
    PUBLIC_API_URL can override either. */
 export function publicApiBase(): string {
+  /* In the browser `process.env` is not defined; Vite bakes `import.meta.env`
+     instead. In dev the Vike dev server proxies `/api` to the backend, so
+     same-origin "" keeps the httpOnly session cookie working without CORS. */
+  const isBrowser =
+    typeof process === "undefined" || typeof process.env === "undefined"
+
+  if (isBrowser) {
+    /* Vite/Vike bake `import.meta.env.VITE_API_URL` at build time. In dev it
+       is unset, so fall back to same-origin "" which the Vike dev server
+       proxies to the backend (keeping the httpOnly session cookie working
+       without CORS). */
+    const url =
+      import.meta.env.VITE_API_URL ?? import.meta.env.VITE_PROXY_TARGET
+
+    if (url) return url.replace(/\/+$/, "")
+
+    return ""
+  }
+
   const explicit =
     process.env.PUBLIC_API_URL ??
     process.env.VITE_API_URL ??
