@@ -11,7 +11,6 @@ import { fieldErrors as extractFieldErrors, messageForError } from "./messages"
 
 export type ApiStatus = "ON_TRACK" | "AT_RISK" | "BLOCKED"
 
-export type ApiStage = "G0" | "G1" | "G2" | "G3" | "G4" | "G5" | "G6" | "G7"
 
 // Content workspace
 

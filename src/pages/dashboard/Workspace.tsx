@@ -567,11 +567,9 @@ export function Workspace({ ws }: { ws: ReturnType<typeof useWorkspace> }) {
                       <span>{timeAgo(a.createdAt)}</span>
                       <div>
                         <p>{a.message}</p>
-                        {(a.user || a.assignment) && (
+                        {a.user?.name && (
                           <p className="field-hint">
-                            {[a.user?.name, a.assignment?.name]
-                              .filter(Boolean)
-                              .join(" · ")}
+                            {a.user.name}
                           </p>
                         )}
                       </div>

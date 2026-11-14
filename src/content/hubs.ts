@@ -178,7 +178,7 @@ export const hubs: Hub[] = [
 
         body: "We place bankable uses on a public register of sites and assets, so investment lands where the services already are.",
 
-        meta: "G2",
+        meta: "Advisory",
       },
 
       {
@@ -186,7 +186,7 @@ export const hubs: Hub[] = [
 
         body: "We measure the real cost of rules on firms and rank removals by effect per unit of effort.",
 
-        meta: "G2–G3",
+        meta: "Review",
       },
 
       {
@@ -194,7 +194,7 @@ export const hubs: Hub[] = [
 
         body: "A place-based plan built from the assets, firms and institutions your governorate already has.",
 
-        meta: "G1–G3",
+        meta: "Strategy",
       },
 
       {
@@ -202,11 +202,11 @@ export const hubs: Hub[] = [
 
         body: "We sit inside the authority and report monthly against agreed indicators until the capability transfers.",
 
-        meta: "G5–G7",
+        meta: "Delivery",
       },
     ],
 
-    proofHeading: "Assignments a procurement reader can check.",
+    proofHeading: "Case evidence a procurement reader can check.",
 
     proofAside: "Named, dated, and verifiable against case studies.",
 
@@ -240,7 +240,7 @@ export const hubs: Hub[] = [
 
     steps: [
       {
-        step: "G0",
+        step: "01",
 
         title: "Signed mandate note",
 
@@ -248,7 +248,7 @@ export const hubs: Hub[] = [
       },
 
       {
-        step: "G1",
+        step: "02",
 
         title: "Binding-constraint diagnostic",
 
@@ -256,7 +256,7 @@ export const hubs: Hub[] = [
       },
 
       {
-        step: "G4",
+        step: "03",
 
         title: "Recorded consultation",
 
@@ -264,7 +264,7 @@ export const hubs: Hub[] = [
       },
 
       {
-        step: "G7",
+        step: "04",
 
         title: "Transfer to your team",
 
@@ -282,13 +282,13 @@ export const hubs: Hub[] = [
       {
         q: "Have you done this in Egypt?",
 
-        a: "Eight named, dated assignments on the public ledger — from investment maps in Assiut to a national investment-climate action plan.",
+        a: "Eight verified case studies on the public record — from investment maps in Assiut to a national investment-climate action plan.",
       },
 
       {
         q: "What will it cost us to find out?",
 
-        a: "The G1 diagnostic is fixed-price and scoped up front. If the diagnostic finds no binding constraint, the engagement ends there.",
+        a: "The diagnostic is fixed-price and scoped up front. If the diagnostic finds no binding constraint, the engagement ends there.",
       },
     ],
 
@@ -989,7 +989,7 @@ export const hubs: Hub[] = [
       {
         title: "Joint methodology",
 
-        body: "We align our LDIA/G0–G7 method to your delivery framework so the joint offer reads as one.",
+        body: "We align our delivery methodology to your execution framework so the joint offer reads as one.",
 
         meta: "Method",
       },

@@ -789,7 +789,6 @@ export function mapInitiative(item: PublicContentItem): LiveInitiative {
 }
 
 export const collectionLabels = {
-  assignments: "assignments",
   cases: "case studies",
   publications: "publications",
   instruments: "instruments",

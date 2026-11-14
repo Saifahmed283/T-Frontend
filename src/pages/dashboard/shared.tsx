@@ -73,7 +73,6 @@ export const pageNames: Record<string, string> = Object.fromEntries(
 for (const c of collections) pageNames[c.id] = c.name
 
 export const collectionIcons: Record<string, LucideIcon> = {
-  assignments: BriefcaseBusiness,
   cases: FolderOpen,
   publications: BookOpen,
   instruments: Network,
@@ -89,7 +88,6 @@ export const collectionIcons: Record<string, LucideIcon> = {
    Collections are keyed in the plural. This map is the only correct bridge
    between the two — never derive one from the other by string surgery. */
 export const collectionIdByKind: Record<string, string> = {
-  ASSIGNMENT: "assignments",
   CASE: "cases",
   PUBLICATION: "publications",
   INSTRUMENT: "instruments",

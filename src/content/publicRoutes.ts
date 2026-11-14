@@ -15,8 +15,6 @@ export type PublicSlugMap = Record<string, string[]>
 /* Which section route serves each CMS collection. Multiple collections may
    share a section (e.g. `/evidence` serves both assignments and cases). */
 export const CMS_ROUTE_BASE: Record<string, string> = {
-  assignments: "/evidence",
-
   cases: "/evidence",
 
   publications: "/knowledge",

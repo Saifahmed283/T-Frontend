@@ -84,9 +84,7 @@ export function ActivityPage() {
                 <div>
                   <p>{a.message}</p>
                   <p className="field-hint">
-                    {[a.user?.name, a.assignment?.name]
-                      .filter(Boolean)
-                      .join(" · ") || a.type}
+                    {a.user?.name || a.type}
                   </p>
                 </div>
               </li>

@@ -10,7 +10,7 @@ import { Badge, Button, Field, Input } from "../ui"
 import { collectionIcons, Empty, recordLanguages, statusTone } from "../shared"
 
 /* Collections that have both geography and sector fields for server-side filtering. */
-const COLLECTIONS_WITH_GEO_SECTOR = new Set(["cases", "publications", "instruments", "assignments"])
+const COLLECTIONS_WITH_GEO_SECTOR = new Set(["cases", "publications", "instruments"])
 
 export function CollectionPage({
   collection,

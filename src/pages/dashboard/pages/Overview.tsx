@@ -51,13 +51,6 @@ export function OverviewPage({
     value: number
   }[] = [
     {
-      name: "Assignments",
-      icon: BriefcaseBusiness,
-      detail: "Client mandates & delivery",
-      id: "assignments",
-      value: counts?.byKind?.assignments?.total ?? 0,
-    },
-    {
       name: "Case studies",
       icon: FolderOpen,
       detail: "Evidence ready to share",
@@ -77,6 +70,13 @@ export function OverviewPage({
       detail: "Methods in practice",
       id: "instruments",
       value: counts?.byKind?.instruments?.total ?? 0,
+    },
+    {
+      name: "Experts",
+      icon: Users,
+      detail: "Advisory & delivery network",
+      id: "experts",
+      value: counts?.byKind?.experts?.total ?? 0,
     },
   ]
 
@@ -281,11 +281,9 @@ export function OverviewPage({
                     <span>{timeAgo(a.createdAt)}</span>
                     <div>
                       <p>{a.message}</p>
-                      {(a.user || a.assignment) && (
+                      {a.user?.name && (
                         <p className="field-hint">
-                          {[a.user?.name, a.assignment?.name]
-                            .filter(Boolean)
-                            .join(" · ")}
+                          {a.user.name}
                         </p>
                       )}
                     </div>

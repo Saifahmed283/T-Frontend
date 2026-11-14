@@ -54,10 +54,10 @@ const news = [
 
     titleAr: "انطلاق الدفعة 04 من تدريب المدربين",
 
-    body: "Twenty seats for practitioners who want to carry the G0–G7 method into their own institutions. Certification on completion.",
+    body: "Twenty seats for practitioners who want to carry the delivery method into their own institutions. Certification on completion.",
 
     bodyAr:
-      "عشرون مقعدًا للممارسين الذين يرغبون في نقل منهج G0–G7 إلى مؤسساتهم. شهادة عند الإتمام.",
+      "عشرون مقعدًا للممارسين الذين يرغبون في نقل منهج التنفيذ إلى مؤسساتهم. شهادة عند الإتمام.",
 
     date: "Nov 2026",
 

@@ -1,4 +1,4 @@
-﻿import type { SectionId } from "@/lib/routes"
+import type { SectionId } from "@/lib/routes"
 
 /*
  * Dedicated footer pages.
@@ -202,12 +202,12 @@ export const PAGES: PageDef[] = [
         title: "A governorate investment map that moved EGP 1.2bn.",
         caption:
           "Three under-used industrial zones matched to 46 bankable uses — the register, not a new incentive, was the lever.",
-        credit: "TerraMorph · assignment ledger",
+        credit: "TerraMorph · evidence records",
       },
       {
         kind: "cards",
         heading: "Selected cases",
-        aside: "Four of the assignments procurement teams ask about most.",
+        aside: "Four of the cases procurement teams ask about most.",
         items: [
           {
             kicker: "Local economic development · 2025",
@@ -415,7 +415,7 @@ export const PAGES: PageDef[] = [
           {
             kicker: "Development partners",
             title: "Programmes & donor-funded projects",
-            body: "Registered, framework-eligible delivery with a full assignment ledger behind every claim.",
+            body: "Registered, framework-eligible delivery with verified evidence records behind every claim.",
             badge: "16 engagements",
           },
           {
@@ -508,7 +508,7 @@ export const PAGES: PageDef[] = [
           {
             kicker: "Quality",
             title: "ISO 9001:2015",
-            body: "Quality management system governing the G0–G7 delivery lifecycle and transfer.",
+            body: "Quality management system governing the advisory delivery lifecycle and transfer.",
             badge: "Certified",
           },
         ],
@@ -715,37 +715,37 @@ export const PAGES: PageDef[] = [
             kicker: "Diagnostic",
             title: "Binding-constraint diagnostic",
             body: "Reads institutions, incentives and data to isolate the one constraint worth moving.",
-            badge: "G1",
+            badge: "Phase 1",
           },
           {
             kicker: "Policy",
             title: "Regulatory burden review",
             body: "Maps the actual cost of rules on firms and ranks removals by effect per effort.",
-            badge: "G2–G3",
+            badge: "Phase 2",
           },
           {
             kicker: "Finance",
             title: "Blended-finance structuring",
             body: "Designs first-loss and matching tranches that unlock commercial capital.",
-            badge: "G3",
+            badge: "Phase 3",
           },
           {
             kicker: "Skills",
             title: "Employer-validated curricula",
             body: "Co-signs every module with employers so completion converts to jobs.",
-            badge: "G3–G5",
+            badge: "Phase 4",
           },
           {
             kicker: "Data",
             title: "Investment & land-bank maps",
             body: "Places bankable uses on a public register of sites and assets.",
-            badge: "G2",
+            badge: "Phase 2",
           },
           {
             kicker: "Convening",
             title: "Coalition & consultation design",
             body: "Runs recorded consultation that survives a change of minister.",
-            badge: "G4",
+            badge: "Phase 3",
           },
         ],
       },
@@ -757,32 +757,32 @@ export const PAGES: PageDef[] = [
           [
             "Binding-constraint diagnostic",
             "Diagnostic note",
-            "G1",
+            "Phase 1",
             "Yes — template licensed",
           ],
-          ["Regulatory burden review", "Ranked reform list", "G2–G3", "Yes"],
+          ["Regulatory burden review", "Ranked reform list", "Phase 2", "Yes"],
           [
             "Blended-finance structuring",
             "Finance structure",
-            "G3",
+            "Phase 3",
             "Client retains",
           ],
           [
             "Employer-validated curricula",
             "Curriculum pack",
-            "G3–G5",
+            "Phase 4",
             "Yes — with trainers",
           ],
           [
             "Investment & land-bank maps",
             "Interactive map",
-            "G2",
+            "Phase 2",
             "Yes — open licence",
           ],
           [
             "Coalition & consultation design",
             "Consultation record",
-            "G4",
+            "Phase 3",
             "Yes",
           ],
         ],
@@ -1109,7 +1109,7 @@ export const PAGES: PageDef[] = [
           {
             kicker: "Transfer",
             title: "Designing the exit at the start",
-            body: "Why the transfer kit should be specified in G0, not assembled in G7.",
+            body: "Why the transfer kit should be specified at project inception, not assembled at close.",
             meta: "5 min read",
           },
         ],
@@ -1576,7 +1576,7 @@ export const PAGES: PageDef[] = [
             step: "01",
             title: "Fundamentals",
             meta: "Day 1–2",
-            body: "The LDIA architecture and G0–G7 lifecycle, taught as you will teach it.",
+            body: "The LDIA architecture and delivery lifecycle, taught as you will teach it.",
           },
           {
             step: "02",
@@ -1826,7 +1826,7 @@ export const PAGES: PageDef[] = [
             name: "Amina Hosny",
             role: "Head of Delivery",
             focus:
-              "Keeps engagements on the G0–G7 gates and clients out of avoidable surprises.",
+              "Keeps engagements on track and clients out of avoidable surprises.",
           },
         ],
       },
@@ -2317,9 +2317,9 @@ export const PAGES: PageDef[] = [
     label: "Expert opportunity board",
     eyebrow: "Join · Opportunity board",
     title: "Expert opportunity board.",
-    lede: "Live assignments open to network experts, with sector, geography and the application window. Filter, then express interest once.",
-    meta: "TerraMorph expert opportunity board: live assignments open to network experts.",
-    tags: ["Opportunities", "Assignments", "Live"],
+    lede: "Live opportunities open to network experts, with sector, geography and the application window. Filter, then express interest once.",
+    meta: "TerraMorph expert opportunity board: live opportunities open to network experts.",
+    tags: ["Opportunities", "Network", "Live"],
     updated: "October 2026",
     blocks: [
       {
@@ -2327,7 +2327,7 @@ export const PAGES: PageDef[] = [
         heading: "Live opportunities",
         aside:
           "Open to registered experts. Windows close at 17:00 EET on the stated date.",
-        columns: ["Assignment", "Sector", "Country", "Window", "Status"],
+        columns: ["Opportunity", "Sector", "Country", "Window", "Status"],
         rows: [
           [
             "Urban mobility diagnostic",
@@ -2364,13 +2364,13 @@ export const PAGES: PageDef[] = [
         kind: "prose",
         heading: "How matching works.",
         body: [
-          "When an assignment opens, the method team shortlists registered experts by evidenced domain and geography, then invites a subset to express interest. You are never added to a proposal without consent.",
+          "When an opportunity opens, the method team shortlists registered experts by evidenced domain and geography, then invites a subset to express interest. You are never added to a proposal without consent.",
         ],
       },
       {
         kind: "cta",
         title: "Not registered yet?",
-        body: "You must be in the network to express interest in an assignment.",
+        body: "You must be in the network to express interest in an opportunity.",
         actions: [
           {
             label: "Register as an expert",
@@ -2498,9 +2498,9 @@ export const PAGES: PageDef[] = [
             tag: "Read",
           },
           {
-            title: "Issue 33 — What we changed after 58 assignments",
+            title: "Issue 33 — What we changed after 58 engagements",
             meta: "Sep 2026",
-            body: "Three method edits the ledger forced on us.",
+            body: "Three method edits the evidence forced on us.",
             tag: "Read",
           },
           {
